@@ -4,10 +4,7 @@
 
 <h1 align="center">Strata</h1>
 
-<p align="center">
-  Local-first memory for Claude Code. Episodic + semantic + procedural,
-  kept distinct in one markdown vault on your disk.
-</p>
+<p align="center"><em>Local-first memory for Claude Code.</em></p>
 
 <p align="center">
   <a href="https://github.com/ceracare/strata/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/ceracare/strata/actions/workflows/ci.yml/badge.svg"></a>
@@ -24,81 +21,49 @@
 
 ---
 
-```text
-$ /plugin marketplace add https://github.com/ceracare/strata
-$ /plugin install strata@strata
-$ /strata:init
-✓ Strata initialised at ~/StrataVault/<repo>/
-  scopes: decisions/ domain/ lessons/ procedural/ propositions/ pr-context/
-```
+Every Claude Code session starts cold.
 
-That's the whole setup. Strata is a Claude Code plugin that captures durable knowledge (decisions, domain vocabulary, recipes, per-branch work) into a markdown vault on disk and surfaces it automatically in Claude conversations via the Model Context Protocol.
+You sit down on Monday, open a branch, and find yourself explaining the same things you explained on Friday. The decision your team made about Postgres last quarter. The reason `OrderPriced` fires before `OrderConfirmed`. The convention that domain events are named in the past tense. The bug you almost shipped two weeks ago and how you caught it.
 
-## How it works
+If you're lucky, you remember to copy-paste a context dump. If you're not, Claude guesses, and sometimes the guess is wrong in a way that looks confidently right. By Wednesday, you've re-explained the same constraints three times across three different sessions.
 
-```
-   Claude Code session
-   ─────────────────────────────────────────────────────────
-   You ─→ Claude ─┬─→ slash commands (write)   ─→ Vault (~/StrataVault)
-                  │                                  ├── decisions/
-                  │                                  ├── domain/
-                  │                                  ├── procedural/
-                  │                                  ├── lessons/
-                  │                                  ├── propositions/
-                  │                                  └── pr-context/<branch>/
-                  └─→ MCP tools     (read)     ─→ FTS5 + fastembed index
-                                                    (local SQLite, never synced)
-```
+We built Strata because the loss compounds. The decisions, the domain vocabulary, the post-incident lessons, they're all sitting in your head, in old Slack threads, in PR descriptions nobody re-reads. None of it reaches Claude unless you carry it there by hand.
 
-- **Writes are explicit.** You type `/strata:save`, `/strata:decide`, `/strata:domain`. No tool call can silently mutate the vault.
-- **Reads are ambient.** Claude consults the vault on its own via 18 read-only MCP tools whenever the conversation touches a topic the vault knows about.
-- **Local-first.** SQLite FTS5 for keyword search, on-device fastembed embeddings for semantic recall. No network calls in the runtime path.
-- **Sync agnostic.** The vault is plain markdown + YAML frontmatter. Use Obsidian Sync, Syncthing, iCloud, git, or anything else.
+## The shape of the problem
 
-## Memory model
+The first instinct is to dump everything into one long context file and prepend it to every prompt. That fails for two reasons. The file gets too big and burns the context window. And it returns the wrong shape when you ask a question: you wanted a recipe for adding a new service, you got a definition of what a service is.
 
-Strata splits memory into three kinds, each on its own retrieval path with its own lifetime:
+The second instinct is to use a vector database and hope semantic search figures it out. That fails differently. Vector search collapses everything to "similar by embedding distance" and gives you the most recent thing that pattern-matches, which is often a stale snapshot of something that has since been corrected.
 
-| Type | Holds | Vault scope | Lifetime |
-|---|---|---|---|
-| **Episodic** | What happened on a branch | `pr-context/<branch>/` | Until the branch merges |
-| **Semantic** | Vocabulary, decisions, invariants | `domain/` + `decisions/` | Until superseded or invalidated |
-| **Procedural** | Recipes and runbooks | `procedural/` | Until the recipe changes |
+The real problem is that memory isn't one kind of thing. Cognitive science has names for the kinds, and the kinds have different lifetimes, different retrieval shapes, and different audit rules. Cramming them into one bucket makes recall worse, not better.
 
-`lessons/` bridges episodic and procedural (retrospectives). `propositions/` tracks open questions through their lifecycle.
+## What Strata does
 
-## What's in the box
+Strata splits memory into three kinds and keeps them on separate retrieval paths, all in plain markdown on your disk:
 
-- **24 slash commands** — `save`, `decide`, `domain`, `propose`, `procedure`, `correct`, `invalidate`, `forget`, `find`, `lint`, `bootstrap`, `archive`, `review`, `export-to-repo`, `promote-to-pr`, … most auto-invoke on intent
-- **18-tool MCP server** — `memory_search`, `memory_semantic_search`, `memory_insights`, `recent_decisions`, `pr_context_for_branch`, `decision_chain`, … all read-only
-- **Bootstrap pipeline** — `/strata:bootstrap` migrates existing planning docs (`docs/`, `.planning/`, etc.) into the vault via parallel worker subagents
-- **Lint presets** — `secrets`, `pii`, `phi-uk`, `phi-us`, `financial-iban`. Pluggable JSON.
-- **Optional Graphify integration** — code-structure graph for verified `code_refs` on notes and drift detection
-- **228-test pytest suite** — covers scan, lib, MCP resources, lint presets, decision-symbol resolution
+- **Episodic** — what happened on this branch. Per-PR working notes. Archives when the PR merges.
+- **Semantic** — what things mean and what you've chosen. Vocabulary, invariants, ADRs. Long-lived; superseded explicitly when it changes.
+- **Procedural** — how you do things here. Recipes, runbooks. Stable until the recipe changes.
 
-## Daily flow
+When you ask Claude something, the read path that matches the *shape* of your question runs. Ask "what's our token rotation approach?" and you get the ADR, not a Slack screenshot from April. Ask "how do I add a new service?" and you get the recipe, not the definition.
 
-```
-/strata:save               # 30+ min on a branch and no note? Strata nudges. Write a few bullets.
-/strata:decide "..."       # Architectural choice → ADR with reasoning
-/strata:domain order       # New vocabulary term that the team agrees on
+You don't have to remember any of this. You write notes when something deserves to survive the conversation, and Claude finds them on its own through the MCP layer. The mechanism is invisible until you want to look at it; then the citations are right there in the answer.
 
-Ask Claude something:
-  "what's our token rotation approach?"
-  → Strata surfaces decisions/2026-05-12-jwt-rotation.md
-  → Claude answers with citations
-```
+## How it feels in practice
 
-You almost never call `find` or `recall` directly. The MCP layer does it.
+You make a decision in conversation. You say "let's go with the section-at-once edit pattern". Claude offers to record it; you accept. A 40-line ADR lands in `decisions/` with the context, the chosen option, the alternatives you rejected, and the consequences.
 
-## Privacy & threat model
+Six weeks later a teammate switches to your branch. Their Claude session reads the per-branch notes you saved and primes itself with what you were in the middle of. They ask "why didn't we use per-field PUTs?" and Claude pulls the alternatives section from your ADR, with the file path. No archaeology, no Slack scrolling, no asking you.
 
-- **No network in the runtime path.** Greppable. Scripts only touch the filesystem and (optionally) `gh` for PR metadata.
-- **No telemetry.** No analytics, no error reporting, no version-check ping.
-- **No write tools over MCP.** Writes are user-confirmable by design; prompt injection can't mutate memory.
-- **Sandboxed reads.** `memory_get` resolves only paths inside `<vault>/<repo>/`, rejects symlinks, and validates against traversal.
+A month after that, your team refactors. The old ADR gets superseded by a new one. The old file stays in the vault, marked `status: superseded`, with a forward link to its replacement. The chain is queryable. Nothing gets lost; nothing gets repeated.
 
-See [`SECURITY.md`](./SECURITY.md) for the full threat model and hardening notes for regulated data.
+## Local-first, by design
+
+The vault lives on your disk. Default location is `~/StrataVault`. Inside, one subfolder per repo, namespaced by your git remote. Inside that, one subfolder per scope. Plain markdown with YAML frontmatter.
+
+The search index is a local SQLite FTS5 database plus an on-device fastembed model for semantic recall. No network calls in the runtime path. No telemetry. No analytics. Greppable in the source.
+
+Sync your vault however you already sync things: Obsidian Sync, Syncthing, iCloud, Dropbox, a private git repo. Strata doesn't care. The format is text; everything else is your choice.
 
 ## Install
 
@@ -110,28 +75,30 @@ In any Claude Code session:
 /strata:init
 ```
 
-Requirements: Python 3.10+ on `PATH`. A `.venv/` is auto-created inside the plugin directory on first run with two pinned deps (`mcp`, `python-frontmatter`). Nothing global.
+Requirements: Python 3.10 or newer on `PATH`. A `.venv/` is created inside the plugin directory on first run with two pinned dependencies (`mcp`, `python-frontmatter`). Nothing global, nothing system-wide.
 
-Full install notes, team-config patterns, pre-push lint hook setup: [`INSTALL.md`](./INSTALL.md).
+Full setup notes, team-config patterns, pre-push lint hook: [`INSTALL.md`](./INSTALL.md).
 
-## Documentation
+## Read the docs
 
-- [What is Strata](https://ceracare.github.io/strata/guide/what-is-strata/) — plain-English intro
-- [Getting started](https://ceracare.github.io/strata/guide/getting-started/) — five-minute setup
+The site at **[ceracare.github.io/strata](https://ceracare.github.io/strata/)** covers:
+
+- [What is Strata](https://ceracare.github.io/strata/guide/what-is-strata/) — plain-English intro, no jargon
+- [Getting started](https://ceracare.github.io/strata/guide/getting-started/) — five-minute walkthrough
 - [Memory architecture](https://ceracare.github.io/strata/guide/memory-architecture/) — why three kinds
 - [Skills](https://ceracare.github.io/strata/guide/skills/) — every slash command
-- [MCP tools](https://ceracare.github.io/strata/guide/mcp-tools/) — every tool exposed to Claude
-- [Bootstrap](https://ceracare.github.io/strata/guide/bootstrap/) — migrating existing docs
-- [Correcting the vault](https://ceracare.github.io/strata/guide/correcting/) — four operations with audit trail
+- [MCP tools](https://ceracare.github.io/strata/guide/mcp-tools/) — every read tool exposed to Claude
+- [Bootstrap](https://ceracare.github.io/strata/guide/bootstrap/) — one-shot migration of existing planning docs
+- [Correcting the vault](https://ceracare.github.io/strata/guide/correcting/) — fix, invalidate, supersede, forget
 - [Architecture](https://ceracare.github.io/strata/guide/architecture/) — how the pieces fit
 - [FAQ](https://ceracare.github.io/strata/guide/faq/)
 
-## What's intentionally NOT here
+## What's intentionally not here
 
-- **No bundled Obsidian MCP.** The vault is plain markdown; pair with any community Obsidian MCP if you want it. See [`OBSIDIAN.md`](./OBSIDIAN.md).
-- **No write tools over MCP.** Writes go through user-confirmable slash commands.
-- **No background monitors.** Hooks and explicit commands only.
-- **No chat-history import.** PII risk and a search-noise multiplier.
+- **No write tools over MCP.** Writes go through user-typed slash commands. Prompt injection can't mutate memory silently.
+- **No bundled Obsidian MCP.** The vault is plain markdown; pair with whichever Obsidian server you prefer. See [`OBSIDIAN.md`](./OBSIDIAN.md).
+- **No background monitors.** Hooks fire on explicit events; everything else is on-demand.
+- **No chat-history import.** Bulk-importing chats into shared memory is a PII risk and a search-noise multiplier.
 - **No telemetry, no network.** Greppable in the source.
 
 ## License
@@ -140,4 +107,4 @@ Full install notes, team-config patterns, pre-push lint hook setup: [`INSTALL.md
 
 ## Contributing
 
-Issues and PRs welcome. Keep it stdlib-leaning, keep the threat model intact, and put new functionality behind opt-in flags rather than enabling by default.
+Issues and PRs welcome. Keep it stdlib-leaning, keep the threat model intact, and put new functionality behind opt-in flags rather than enabling it by default.
