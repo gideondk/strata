@@ -1,11 +1,11 @@
 # Pairing Strata with an Obsidian MCP
 
-Strata operates on plain markdown — Obsidian doesn't need to be running. But
+Strata operates on plain markdown, Obsidian doesn't need to be running. But
 if you're using Obsidian as the human-facing UI and want Claude to do
 Obsidian-specific operations (linking, daily-note creation, tag manipulation,
 canvas, etc.), pair Strata with one of the public Obsidian MCP servers.
 
-We don't bundle these — different teams have different trust models. Pick the
+We don't bundle these, different teams have different trust models. Pick the
 one that matches yours and install it as a separate MCP server in your
 `settings.json`.
 
@@ -47,7 +47,7 @@ one that matches yours and install it as a separate MCP server in your
 | Deps | `mcp`, `python-frontmatter` | Whatever the plugin uses + Obsidian itself |
 
 **Recommended pairing:** use Strata for structured memory (ADRs,
-session notes, domain notes — the things the team agrees on the shape of),
+session notes, domain notes, the things the team agrees on the shape of),
 and use the Obsidian MCP for Obsidian-specific actions (link a note,
 attach to a canvas, render a graph, create a daily note).
 
@@ -62,7 +62,7 @@ If you install an Obsidian MCP alongside Strata:
 3. **Restrict the Local REST API plugin** to localhost; never expose its
    port to the network.
 4. **Keep Strata as the ADR / decision authority.** It's the one with
-   no write surface — that's a feature, not a bug.
+   no write surface, that's a feature, not a bug.
 
 ## Why we don't bundle one
 

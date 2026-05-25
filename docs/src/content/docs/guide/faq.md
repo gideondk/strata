@@ -15,7 +15,7 @@ Just the notes in your vault for the current project. When you ask Claude someth
 
 No. Strata writes markdown to your disk, reads it locally with SQLite full-text search and an on-device embedding model. It has no network code. No telemetry, no analytics, no cloud sync.
 
-If you want the vault to sync between your machines, you choose how: Obsidian Sync, Syncthing, iCloud, Dropbox, a git repo — Strata doesn't care.
+If you want the vault to sync between your machines, you choose how: Obsidian Sync, Syncthing, iCloud, Dropbox, a git repo, Strata doesn't care.
 
 ## Do I need to know Markdown?
 
@@ -66,7 +66,7 @@ A separate tool that builds a graph of your code (functions, classes, who calls 
 
 ## Is this open source?
 
-Yes, under the 0BSD license — the most permissive software license. Use it, modify it, ship it commercially, fork it, no attribution required. The license file is in the repo root.
+Yes, under the 0BSD license, the most permissive software license. Use it, modify it, ship it commercially, fork it, no attribution required. The license file is in the repo root.
 
 ## How do I uninstall?
 

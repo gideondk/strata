@@ -30,7 +30,7 @@
       <!-- Grain texture for each stratum -->
       <filter id="stratum-grain" x="0" y="0" width="100%" height="100%">
         <feTurbulence type="fractalNoise" baseFrequency="1.2" numOctaves="2" seed="7"/>
-        <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0"/>
+        <feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.06 0"/>
         <feComposite in2="SourceGraphic" operator="in"/>
       </filter>
 
@@ -49,26 +49,26 @@
       </linearGradient>
 
       <!-- Clip masks so each band crops its own particles + flow -->
-      <clipPath id="stratum-1-clip"><path d="M 0 0   Q 110 -3 220  1   T 460 -1   L 460 60   L 0 64  Z"/></clipPath>
-      <clipPath id="stratum-2-clip"><path d="M 0 64  Q 120 67 240 63   T 460 62   L 460 138  L 0 142 Z"/></clipPath>
-      <clipPath id="stratum-3-clip"><path d="M 0 142 Q 140 145 280 141 T 460 140  L 460 230  L 0 234 Z"/></clipPath>
-      <clipPath id="stratum-4-clip"><path d="M 0 234 Q 130 238 260 233 T 460 232  L 460 310  L 0 314 Z"/></clipPath>
-      <clipPath id="stratum-5-clip"><path d="M 0 314 Q 120 318 240 313 T 460 312  L 460 380  L 0 384 Z"/></clipPath>
-      <clipPath id="stratum-6-clip"><path d="M 0 384 Q 140 388 280 383 T 460 382  L 460 420  L 0 420 Z"/></clipPath>
+      <clipPath id="stratum-1-clip"><path d="M 0 0 Q 110 -3 220 1 T 460 -1 L 460 60 L 0 64 Z"/></clipPath>
+      <clipPath id="stratum-2-clip"><path d="M 0 64 Q 120 67 240 63 T 460 62 L 460 138 L 0 142 Z"/></clipPath>
+      <clipPath id="stratum-3-clip"><path d="M 0 142 Q 140 145 280 141 T 460 140 L 460 230 L 0 234 Z"/></clipPath>
+      <clipPath id="stratum-4-clip"><path d="M 0 234 Q 130 238 260 233 T 460 232 L 460 310 L 0 314 Z"/></clipPath>
+      <clipPath id="stratum-5-clip"><path d="M 0 314 Q 120 318 240 313 T 460 312 L 460 380 L 0 384 Z"/></clipPath>
+      <clipPath id="stratum-6-clip"><path d="M 0 384 Q 140 388 280 383 T 460 382 L 460 420 L 0 420 Z"/></clipPath>
     </defs>
 
     <!-- Six monochrome strata bands -->
     <g class="strata" transform="translate(40, 30)">
-      <path data-stratum="1" d="M 0 0   Q 110 -3 220  1   T 460 -1   L 460 60   L 0 64  Z" fill="var(--stratum-1)"/>
-      <path data-stratum="2" d="M 0 64  Q 120 67 240 63   T 460 62   L 460 138  L 0 142 Z" fill="var(--stratum-2)"/>
-      <path data-stratum="3" d="M 0 142 Q 140 145 280 141 T 460 140  L 460 230  L 0 234 Z" fill="var(--stratum-3)"/>
-      <path data-stratum="4" d="M 0 234 Q 130 238 260 233 T 460 232  L 460 310  L 0 314 Z" fill="var(--stratum-4)"/>
-      <path data-stratum="5" d="M 0 314 Q 120 318 240 313 T 460 312  L 460 380  L 0 384 Z" fill="var(--stratum-5)"/>
-      <path data-stratum="6" d="M 0 384 Q 140 388 280 383 T 460 382  L 460 420  L 0 420 Z" fill="var(--stratum-6)"/>
+      <path data-stratum="1" d="M 0 0 Q 110 -3 220 1 T 460 -1 L 460 60 L 0 64 Z" fill="var(--stratum-1)"/>
+      <path data-stratum="2" d="M 0 64 Q 120 67 240 63 T 460 62 L 460 138 L 0 142 Z" fill="var(--stratum-2)"/>
+      <path data-stratum="3" d="M 0 142 Q 140 145 280 141 T 460 140 L 460 230 L 0 234 Z" fill="var(--stratum-3)"/>
+      <path data-stratum="4" d="M 0 234 Q 130 238 260 233 T 460 232 L 460 310 L 0 314 Z" fill="var(--stratum-4)"/>
+      <path data-stratum="5" d="M 0 314 Q 120 318 240 313 T 460 312 L 460 380 L 0 384 Z" fill="var(--stratum-5)"/>
+      <path data-stratum="6" d="M 0 384 Q 140 388 280 383 T 460 382 L 460 420 L 0 420 Z" fill="var(--stratum-6)"/>
 
       <!-- Boundary lines -->
-      <path d="M 0 0   Q 110 -3 220  1   T 460 -1"  stroke="rgba(0,0,0,0.2)" stroke-width="0.5" fill="none"/>
-      <path d="M 0 64  Q 120 67 240 63   T 460 62"  stroke="rgba(0,0,0,0.22)" stroke-width="0.5" fill="none"/>
+      <path d="M 0 0 Q 110 -3 220 1 T 460 -1"  stroke="rgba(0,0,0,0.2)" stroke-width="0.5" fill="none"/>
+      <path d="M 0 64 Q 120 67 240 63 T 460 62"  stroke="rgba(0,0,0,0.22)" stroke-width="0.5" fill="none"/>
       <path d="M 0 142 Q 140 145 280 141 T 460 140" stroke="rgba(0,0,0,0.24)" stroke-width="0.5" fill="none"/>
       <path d="M 0 234 Q 130 238 260 233 T 460 232" stroke="rgba(0,0,0,0.24)" stroke-width="0.5" fill="none"/>
       <path d="M 0 314 Q 120 318 240 313 T 460 312" stroke="rgba(0,0,0,0.22)" stroke-width="0.5" fill="none"/>
@@ -89,11 +89,11 @@
       <!-- Ambient sediment particles. JS clones these into bands. -->
       <g class="sediment" data-particles></g>
 
-      <!-- Active-band pulse — a soft glow that JS positions on a stratum. -->
+      <!-- Active-band pulse, a soft glow that JS positions on a stratum. -->
       <ellipse class="write-pulse" cx="230" cy="-100" rx="180" ry="40"
                fill="url(#write-pulse)" opacity="0" pointer-events="none"/>
 
-      <!-- Falling write particle — JS animates from top down to the active band. -->
+      <!-- Falling write particle, JS animates from top down to the active band. -->
       <circle class="write-particle" cx="230" cy="-20" r="0" fill="#fde6c2" opacity="0"/>
 
       <!-- Grain overlay (on top of everything for a unified texture) -->
@@ -191,15 +191,15 @@
 
   @keyframes stratum-settle {
     from { opacity: 0; transform: translateY(-6px); }
-    to   { opacity: 1; transform: translateY(0); }
+    to { opacity: 1; transform: translateY(0); }
   }
   @keyframes label-fade {
     from { opacity: 0; transform: translateX(-4px); }
-    to   { opacity: 1; transform: translateX(0); }
+    to { opacity: 1; transform: translateX(0); }
   }
   @keyframes vein-drift {
     from { transform: translateX(0); }
-    to   { transform: translateX(920px); }
+    to { transform: translateX(920px); }
   }
   @keyframes particle-fall {
     0%   { transform: translateY(-20px); opacity: 0; }
@@ -271,7 +271,7 @@
       const x = xPercent * 460;
       const y = BAND_CENTRES[band];
 
-      // Position the falling particle's start + end via transform — using
+      // Position the falling particle's start + end via transform, using
       // the easiest path: set start cx/cy via attributes, then animate
       // a CSS variable for end translate isn't trivial in SVG.
       // Instead, just nudge cx; the CSS keyframes handle cy drop.
@@ -288,7 +288,7 @@
       writeP.classList.add('firing');
       pulse.classList.add('firing');
 
-      // Schedule next write — varied so it doesn't feel metronomic.
+      // Schedule next write, varied so it doesn't feel metronomic.
       const next = 2200 + Math.random() * 2800;
       setTimeout(fireWrite, next);
     }

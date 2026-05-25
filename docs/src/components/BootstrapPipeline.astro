@@ -18,7 +18,7 @@
       </marker>
     </defs>
 
-    <!-- Stage 1 — Scan -->
+    <!-- Stage 1, Scan -->
     <g class="stage">
       <rect x="20" y="140" width="160" height="100" rx="6"
             fill="url(#pipe-stage)" stroke="var(--sl-color-accent)"
@@ -34,7 +34,7 @@
             font-size="10" fill="currentColor" opacity="0.55">SHA-tracked state</text>
     </g>
 
-    <!-- Stage 2 — Group -->
+    <!-- Stage 2, Group -->
     <g class="stage">
       <rect x="220" y="140" width="160" height="100" rx="6"
             fill="url(#pipe-stage)" stroke="var(--sl-color-accent)"
@@ -50,7 +50,7 @@
             font-size="10" fill="currentColor" opacity="0.55">→ one worker</text>
     </g>
 
-    <!-- Stage 3 — Dispatch (5 parallel workers) -->
+    <!-- Stage 3, Dispatch (5 parallel workers) -->
     <g class="stage">
       <rect x="420" y="40" width="280" height="300" rx="8"
             fill="url(#pipe-stage)" stroke="var(--sl-color-accent)"
@@ -100,7 +100,7 @@
       </g>
     </g>
 
-    <!-- Stage 4 — Aggregate -->
+    <!-- Stage 4, Aggregate -->
     <g class="stage">
       <rect x="740" y="140" width="160" height="100" rx="6"
             fill="url(#pipe-stage)" stroke="var(--sl-color-accent)"
@@ -182,6 +182,6 @@
   }
   @keyframes worker-in {
     from { opacity: 0; transform: translateX(-4px); }
-    to   { opacity: 1; transform: translateX(0); }
+    to { opacity: 1; transform: translateX(0); }
   }
 </style>
