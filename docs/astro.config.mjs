@@ -79,7 +79,9 @@ export default defineConfig({
         {
           label: 'Start here',
           items: [
-            { label: 'What is Strata', link: '/guide/getting-started/' },
+            { label: 'What is Strata', link: '/guide/what-is-strata/' },
+            { label: 'Getting started', link: '/guide/getting-started/' },
+            { label: 'FAQ', link: '/guide/faq/' },
             { label: 'Memory architecture', link: '/guide/memory-architecture/' },
             { label: 'Concepts', link: '/guide/concepts/' },
           ],
