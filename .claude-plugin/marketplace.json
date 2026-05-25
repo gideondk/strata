@@ -10,9 +10,9 @@
       "name": "strata",
       "source": "./",
       "description": "Branch- and PR-aware shared memory plugin for Claude Code teams. Vault-outside-the-repo, read-only MCP, pluggable PHI/secret lint, no network.",
-      "version": "0.5.0",
-      "license": "MIT",
-      "homepage": "https://github.com/your-fork/strata",
+      "version": "0.12.0",
+      "license": "0BSD",
+      "homepage": "https://github.com/ceracare/strata",
       "keywords": [
         "memory",
         "branch-aware",

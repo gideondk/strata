@@ -234,7 +234,6 @@ def main() -> int:
 
     # Refresh index
     import importlib.util
-    import os
     spec = importlib.util.spec_from_file_location(
         "refresh_index",
         os.path.join(os.path.dirname(__file__), "refresh-index.py"),

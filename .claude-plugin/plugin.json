@@ -7,7 +7,7 @@
   "author": {
     "name": "Strata Contributors"
   },
-  "license": "MIT",
+  "license": "0BSD",
   "keywords": [
     "memory",
     "branch-aware",
