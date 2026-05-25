@@ -1,0 +1,57 @@
+---
+/**
+ * Scroll-reveal wrapper. Adds a small fade-up animation when the
+ * element enters viewport. IntersectionObserver-based, lazily attached.
+ * Falls back to no-animation when prefers-reduced-motion is set.
+ */
+---
+
+<div class="reveal">
+  <slot />
+</div>
+
+<style>
+  /* Default: visible. Progressive enhancement only when JS attaches the
+     `.reveal-arm` class. This guarantees content is never silently
+     hidden if JS fails, blocked, or doesn't load fast enough. */
+  .reveal-arm {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.7s cubic-bezier(0.22, 0.61, 0.36, 1),
+                transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  .reveal-arm.in-view {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal-arm {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  // Arm reveal effect only after JS is running. Then IO attaches.
+  // If JS never runs, the elements stay visible (no .reveal-arm class).
+  if ('IntersectionObserver' in window) {
+    const els = document.querySelectorAll('.reveal');
+    els.forEach((el) => el.classList.add('reveal-arm'));
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add('in-view');
+            io.unobserve(e.target);
+          }
+        }
+      },
+      { rootMargin: '0px 0px -5% 0px', threshold: 0.01 },
+    );
+    els.forEach((el) => io.observe(el));
+  }
+</script>

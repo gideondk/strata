@@ -1,0 +1,58 @@
+---
+/**
+ * Header override that prepends a scroll-progress strip above the default
+ * Starlight header. Re-exports Default so we don't have to re-implement
+ * the search bar, nav, theme toggle, etc.
+ */
+import Default from '@astrojs/starlight/components/Header.astro';
+---
+
+<div class="scroll-progress" aria-hidden="true">
+  <div class="scroll-progress-bar" id="scroll-progress-bar"></div>
+</div>
+
+<Default><slot /></Default>
+
+<style>
+  .scroll-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: transparent;
+    z-index: 1000;
+    pointer-events: none;
+  }
+  .scroll-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--sl-color-accent) 60%, transparent),
+      var(--sl-color-accent)
+    );
+    transition: width 0.08s linear;
+    box-shadow: 0 0 8px color-mix(in srgb, var(--sl-color-accent) 40%, transparent);
+  }
+</style>
+
+<script>
+  const bar = document.getElementById('scroll-progress-bar');
+  if (bar) {
+    let raf = 0;
+    const update = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      const pct = max > 0 ? (h.scrollTop / max) * 100 : 0;
+      bar.style.width = pct + '%';
+      raf = 0;
+    };
+    window.addEventListener(
+      'scroll',
+      () => { if (!raf) raf = requestAnimationFrame(update); },
+      { passive: true },
+    );
+    update();
+  }
+</script>

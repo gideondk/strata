@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "strata",
+  "description": "Single-plugin marketplace shipping Strata. Fork this repo and pin the version for team-scoped distribution.",
+  "owner": {
+    "name": "Strata Contributors"
+  },
+  "plugins": [
+    {
+      "name": "strata",
+      "source": "./",
+      "description": "Branch- and PR-aware shared memory plugin for Claude Code teams. Vault-outside-the-repo, read-only MCP, pluggable PHI/secret lint, no network.",
+      "version": "0.5.0",
+      "license": "MIT",
+      "homepage": "https://github.com/your-fork/strata",
+      "keywords": [
+        "memory",
+        "branch-aware",
+        "pr-context",
+        "mcp",
+        "obsidian",
+        "team",
+        "knowledge-base"
+      ]
+    }
+  ]
+}

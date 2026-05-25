@@ -1,0 +1,174 @@
+---
+/**
+ * By-the-numbers strip. Hairline dividers, big Fraunces numerals,
+ * monospace labels. Counters animate from 0 when the section
+ * enters the viewport (once).
+ */
+---
+
+<section class="stats" data-stats>
+  <div class="stat">
+    <p class="stat-num" data-count="6">0</p>
+    <p class="stat-label">memory scopes</p>
+    <p class="stat-sub">episodic / semantic / procedural / propositions / lessons / pr-context</p>
+  </div>
+  <div class="stat">
+    <p class="stat-num" data-count="9">0</p>
+    <p class="stat-label">graphify hooks</p>
+    <p class="stat-sub">recall, drift, churn, ADR linkage, projection, verification</p>
+  </div>
+  <div class="stat">
+    <p class="stat-num" data-count="0" data-static="0">0</p>
+    <p class="stat-label">network calls</p>
+    <p class="stat-sub">local FTS5 + fastembed, no port, no telemetry</p>
+  </div>
+  <div class="stat">
+    <p class="stat-num" data-count="10" data-suffix="×" data-prefix="~">~0×</p>
+    <p class="stat-label">token economy</p>
+    <p class="stat-sub">progressive disclosure vs naive context dump</p>
+  </div>
+</section>
+
+<style>
+  .stats {
+    margin: 5rem auto 3rem;
+    max-width: 64rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--sl-color-hairline);
+    border-bottom: 1px solid var(--sl-color-hairline);
+    position: relative;
+  }
+
+  @media (max-width: 800px) {
+    .stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .stat {
+    padding: 2rem 1.25rem 1.75rem;
+    border-right: 1px solid var(--sl-color-hairline);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    height: 2px;
+    width: 0;
+    background: var(--sl-color-accent);
+    transition: width 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  [data-stats].in-view .stat::after {
+    width: 100%;
+  }
+
+  [data-stats].in-view .stat:nth-child(1)::after { transition-delay: 0.05s; }
+  [data-stats].in-view .stat:nth-child(2)::after { transition-delay: 0.15s; }
+  [data-stats].in-view .stat:nth-child(3)::after { transition-delay: 0.25s; }
+  [data-stats].in-view .stat:nth-child(4)::after { transition-delay: 0.35s; }
+
+  .stats .stat:last-child {
+    border-right: 0;
+  }
+
+  @media (max-width: 800px) {
+    .stat:nth-child(2n) {
+      border-right: 0;
+    }
+    .stat:nth-child(1),
+    .stat:nth-child(2) {
+      border-bottom: 1px solid var(--sl-color-hairline);
+    }
+  }
+
+  .stat-num {
+    font-family: var(--strata-font-display);
+    font-weight: 320;
+    font-size: clamp(2.5rem, 4.5vw, 3.5rem);
+    letter-spacing: -0.045em;
+    color: var(--sl-color-text);
+    line-height: 1;
+    margin: 0 0 0.5rem;
+    font-variation-settings: 'opsz' 144, 'SOFT' 60;
+    font-variant-numeric: tabular-nums;
+    transition: color 0.3s ease;
+  }
+
+  [data-stats].in-view .stat-num {
+    color: var(--sl-color-accent);
+    transition: color 0.6s ease 0.4s;
+  }
+
+  /* Settle to white after the count finishes */
+  [data-stats].in-view.settled .stat-num {
+    color: var(--sl-color-text);
+    transition: color 0.6s ease;
+  }
+
+  .stat-label {
+    font-family: var(--sl-font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--sl-color-accent);
+    margin: 0 0 0.5rem;
+  }
+
+  .stat-sub {
+    font-size: 0.78rem;
+    color: var(--sl-color-gray-3);
+    line-height: 1.45;
+    margin: 0;
+  }
+</style>
+
+<script>
+  function easeOut(t: number) {
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  function animateCount(el: HTMLElement) {
+    if (el.dataset.static) return;
+    const target = Number(el.dataset.count || '0');
+    const prefix = el.dataset.prefix || '';
+    const suffix = el.dataset.suffix || '';
+    if (target === 0) {
+      el.textContent = `${prefix}0${suffix}`;
+      return;
+    }
+    const duration = 900 + target * 40;
+    const start = performance.now();
+    function step(now: number) {
+      const t = Math.min(1, (now - start) / duration);
+      const v = Math.round(easeOut(t) * target);
+      el.textContent = `${prefix}${v}${suffix}`;
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  if ('IntersectionObserver' in window) {
+    const sections = document.querySelectorAll<HTMLElement>('[data-stats]');
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            const section = e.target as HTMLElement;
+            section.classList.add('in-view');
+            section.querySelectorAll<HTMLElement>('.stat-num').forEach(animateCount);
+            setTimeout(() => section.classList.add('settled'), 1600);
+            io.unobserve(section);
+          }
+        }
+      },
+      { threshold: 0.35 },
+    );
+    sections.forEach((s) => io.observe(s));
+  }
+</script>

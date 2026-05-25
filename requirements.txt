@@ -1,0 +1,15 @@
+# Strata runtime dependencies — installed into .venv/ on first session.
+# Pinned to majors so security patches still land but breaking changes don't.
+
+mcp>=1.0.0,<2.0.0
+python-frontmatter>=1.0.0,<2.0.0
+
+# gitignore-style ignore-file parsing for .strataignore / .ignore.
+# Used by black, mypy, ruff — small, zero transitive deps.
+pathspec>=0.12.0,<1.0.0
+
+# Optional: semantic-search layer. CPU-only ONNX runtime + ~30MB model.
+# If install fails (older Python, weird platform), the plugin gracefully
+# falls back to FTS5-only. Comment out to skip.
+fastembed>=0.4.0,<1.0.0
+numpy>=1.26.0,<3.0.0

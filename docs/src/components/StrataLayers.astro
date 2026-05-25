@@ -1,0 +1,297 @@
+---
+/**
+ * StrataLayers — animated geological cross-section.
+ *
+ * Six horizontal sediment bands in graduated amber tones. Adds three
+ * layered motion systems so the figure reads as a living artifact,
+ * not a static illustration:
+ *
+ *   1. Ambient sediment — small particles drift down continuously and
+ *      settle into bands. Always-on background animation.
+ *   2. Memory write pulses — every few seconds a single bright dot
+ *      drops from the top and lands in a band, briefly illuminating it.
+ *      Driven by JS so the cadence + target stays varied.
+ *   3. Slow internal flow — each band's highlight veins drift sideways
+ *      at different rates, suggesting tectonic creep.
+ *
+ * Labels and tick marks live in the right gutter, geological-survey
+ * style. Respects prefers-reduced-motion by stopping all loops.
+ */
+---
+
+<figure class="strata-figure" role="img" aria-label="Memory layers — animated geological cross section">
+  <svg
+    viewBox="0 0 720 480"
+    xmlns="http://www.w3.org/2000/svg"
+    role="presentation"
+    preserveAspectRatio="xMidYMid meet"
+  >
+    <defs>
+      <!-- Grain texture for each stratum -->
+      <filter id="stratum-grain" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="1.2" numOctaves="2" seed="7"/>
+        <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0"/>
+        <feComposite in2="SourceGraphic" operator="in"/>
+      </filter>
+
+      <!-- Memory-write glow: warm radial fade used by the active-band pulse -->
+      <radialGradient id="write-pulse" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"  stop-color="#fde6c2" stop-opacity="0.85"/>
+        <stop offset="50%" stop-color="#d4a574" stop-opacity="0.5"/>
+        <stop offset="100%" stop-color="#d4a574" stop-opacity="0"/>
+      </radialGradient>
+
+      <!-- Vein gradient: subtle horizontal highlight that drifts within bands -->
+      <linearGradient id="vein-shimmer" x1="0" x2="1" y1="0" y2="0">
+        <stop offset="0%"  stop-color="rgba(255,255,255,0)"/>
+        <stop offset="50%" stop-color="rgba(255,240,210,0.35)"/>
+        <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+      </linearGradient>
+
+      <!-- Clip masks so each band crops its own particles + flow -->
+      <clipPath id="stratum-1-clip"><path d="M 0 0   Q 110 -3 220  1   T 460 -1   L 460 60   L 0 64  Z"/></clipPath>
+      <clipPath id="stratum-2-clip"><path d="M 0 64  Q 120 67 240 63   T 460 62   L 460 138  L 0 142 Z"/></clipPath>
+      <clipPath id="stratum-3-clip"><path d="M 0 142 Q 140 145 280 141 T 460 140  L 460 230  L 0 234 Z"/></clipPath>
+      <clipPath id="stratum-4-clip"><path d="M 0 234 Q 130 238 260 233 T 460 232  L 460 310  L 0 314 Z"/></clipPath>
+      <clipPath id="stratum-5-clip"><path d="M 0 314 Q 120 318 240 313 T 460 312  L 460 380  L 0 384 Z"/></clipPath>
+      <clipPath id="stratum-6-clip"><path d="M 0 384 Q 140 388 280 383 T 460 382  L 460 420  L 0 420 Z"/></clipPath>
+    </defs>
+
+    <!-- Six monochrome strata bands -->
+    <g class="strata" transform="translate(40, 30)">
+      <path data-stratum="1" d="M 0 0   Q 110 -3 220  1   T 460 -1   L 460 60   L 0 64  Z" fill="var(--stratum-1)"/>
+      <path data-stratum="2" d="M 0 64  Q 120 67 240 63   T 460 62   L 460 138  L 0 142 Z" fill="var(--stratum-2)"/>
+      <path data-stratum="3" d="M 0 142 Q 140 145 280 141 T 460 140  L 460 230  L 0 234 Z" fill="var(--stratum-3)"/>
+      <path data-stratum="4" d="M 0 234 Q 130 238 260 233 T 460 232  L 460 310  L 0 314 Z" fill="var(--stratum-4)"/>
+      <path data-stratum="5" d="M 0 314 Q 120 318 240 313 T 460 312  L 460 380  L 0 384 Z" fill="var(--stratum-5)"/>
+      <path data-stratum="6" d="M 0 384 Q 140 388 280 383 T 460 382  L 460 420  L 0 420 Z" fill="var(--stratum-6)"/>
+
+      <!-- Boundary lines -->
+      <path d="M 0 0   Q 110 -3 220  1   T 460 -1"  stroke="rgba(0,0,0,0.2)" stroke-width="0.5" fill="none"/>
+      <path d="M 0 64  Q 120 67 240 63   T 460 62"  stroke="rgba(0,0,0,0.22)" stroke-width="0.5" fill="none"/>
+      <path d="M 0 142 Q 140 145 280 141 T 460 140" stroke="rgba(0,0,0,0.24)" stroke-width="0.5" fill="none"/>
+      <path d="M 0 234 Q 130 238 260 233 T 460 232" stroke="rgba(0,0,0,0.24)" stroke-width="0.5" fill="none"/>
+      <path d="M 0 314 Q 120 318 240 313 T 460 312" stroke="rgba(0,0,0,0.22)" stroke-width="0.5" fill="none"/>
+      <path d="M 0 384 Q 140 388 280 383 T 460 382" stroke="rgba(0,0,0,0.2)" stroke-width="0.5" fill="none"/>
+
+      <!-- Drifting highlight veins, one per band, each clipped to its own stratum.
+           Each rectangle uses the vein-shimmer gradient and animates horizontally
+           at a different rate. -->
+      <g class="veins">
+        <g clip-path="url(#stratum-1-clip)"><rect class="vein vein-a" x="-460" y="20" width="460" height="14" fill="url(#vein-shimmer)"/></g>
+        <g clip-path="url(#stratum-2-clip)"><rect class="vein vein-b" x="-460" y="92" width="460" height="18" fill="url(#vein-shimmer)"/></g>
+        <g clip-path="url(#stratum-3-clip)"><rect class="vein vein-c" x="-460" y="178" width="460" height="22" fill="url(#vein-shimmer)"/></g>
+        <g clip-path="url(#stratum-4-clip)"><rect class="vein vein-d" x="-460" y="265" width="460" height="18" fill="url(#vein-shimmer)"/></g>
+        <g clip-path="url(#stratum-5-clip)"><rect class="vein vein-e" x="-460" y="340" width="460" height="14" fill="url(#vein-shimmer)"/></g>
+        <g clip-path="url(#stratum-6-clip)"><rect class="vein vein-f" x="-460" y="395" width="460" height="14" fill="url(#vein-shimmer)"/></g>
+      </g>
+
+      <!-- Ambient sediment particles. JS clones these into bands. -->
+      <g class="sediment" data-particles></g>
+
+      <!-- Active-band pulse — a soft glow that JS positions on a stratum. -->
+      <ellipse class="write-pulse" cx="230" cy="-100" rx="180" ry="40"
+               fill="url(#write-pulse)" opacity="0" pointer-events="none"/>
+
+      <!-- Falling write particle — JS animates from top down to the active band. -->
+      <circle class="write-particle" cx="230" cy="-20" r="0" fill="#fde6c2" opacity="0"/>
+
+      <!-- Grain overlay (on top of everything for a unified texture) -->
+      <rect x="0" y="0" width="460" height="420" filter="url(#stratum-grain)" pointer-events="none"/>
+    </g>
+
+    <!-- Labels -->
+    <g class="strata-labels" font-family="JetBrains Mono Variable, monospace" font-size="10.5" fill="currentColor">
+      <line x1="510" y1="20" x2="700" y2="20" stroke="currentColor" stroke-opacity="0.16"/>
+
+      <line x1="515" y1="58" x2="528" y2="58" stroke="currentColor" stroke-opacity="0.3"/>
+      <text x="534" y="55" font-weight="500" letter-spacing="0.08em">PROCEDURAL</text>
+      <text x="534" y="70" fill-opacity="0.5" font-size="9">procedural/  ·  how we do things</text>
+
+      <line x1="515" y1="100" x2="528" y2="100" stroke="currentColor" stroke-opacity="0.3"/>
+      <text x="534" y="97" font-weight="500" letter-spacing="0.08em">SEMANTIC</text>
+      <text x="534" y="112" fill-opacity="0.5" font-size="9">domain/  ·  what things are</text>
+
+      <line x1="515" y1="186" x2="528" y2="186" stroke="currentColor" stroke-opacity="0.3"/>
+      <text x="534" y="183" font-weight="500" letter-spacing="0.08em">SEMANTIC</text>
+      <text x="534" y="198" fill-opacity="0.5" font-size="9">decisions/  ·  ADRs &amp; supersession</text>
+
+      <line x1="515" y1="272" x2="528" y2="272" stroke="currentColor" stroke-opacity="0.3"/>
+      <text x="534" y="269" font-weight="500" letter-spacing="0.08em">EPISODIC</text>
+      <text x="534" y="284" fill-opacity="0.5" font-size="9">pr-context/  ·  per-branch work</text>
+
+      <line x1="515" y1="348" x2="528" y2="348" stroke="currentColor" stroke-opacity="0.3"/>
+      <text x="534" y="345" font-weight="500" letter-spacing="0.08em">BRIDGE</text>
+      <text x="534" y="360" fill-opacity="0.5" font-size="9">lessons/  ·  retrospectives</text>
+
+      <line x1="515" y1="402" x2="528" y2="402" stroke="currentColor" stroke-opacity="0.3"/>
+      <text x="534" y="399" font-weight="500" letter-spacing="0.08em">LIFECYCLE</text>
+      <text x="534" y="414" fill-opacity="0.5" font-size="9">propositions/  ·  open questions</text>
+
+      <line x1="510" y1="445" x2="700" y2="445" stroke="currentColor" stroke-opacity="0.16"/>
+      <text x="510" y="462" fill-opacity="0.4" font-size="8.5" letter-spacing="0.06em">CROSS-SECTION · VAULT LAYERS</text>
+    </g>
+  </svg>
+</figure>
+
+<style>
+  .strata-figure {
+    margin: 0;
+    max-width: 100%;
+  }
+
+  .strata-figure svg {
+    width: 100%;
+    height: auto;
+    color: var(--sl-color-text);
+  }
+
+  /* Entrance animation for each stratum band (one-shot on load) */
+  @media (prefers-reduced-motion: no-preference) {
+    .strata path[data-stratum] {
+      animation: stratum-settle 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+    }
+    .strata path[data-stratum="1"] { animation-delay: 0.00s; }
+    .strata path[data-stratum="2"] { animation-delay: 0.05s; }
+    .strata path[data-stratum="3"] { animation-delay: 0.10s; }
+    .strata path[data-stratum="4"] { animation-delay: 0.15s; }
+    .strata path[data-stratum="5"] { animation-delay: 0.20s; }
+    .strata path[data-stratum="6"] { animation-delay: 0.25s; }
+
+    .strata-labels text, .strata-labels line {
+      animation: label-fade 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+      animation-delay: 0.4s;
+    }
+
+    /* Horizontal vein shimmer — each band drifts at a different rate so the
+       composition never reads as a single repeating loop. */
+    .vein { animation: vein-drift 11s linear infinite; }
+    .vein-b { animation-duration: 13s; animation-delay: -2s; }
+    .vein-c { animation-duration: 9s;  animation-delay: -5s; }
+    .vein-d { animation-duration: 15s; animation-delay: -1s; }
+    .vein-e { animation-duration: 12s; animation-delay: -4s; }
+    .vein-f { animation-duration: 10s; animation-delay: -7s; }
+
+    /* Sediment particles — slow drift downward + slight sway */
+    .particle {
+      animation: particle-fall var(--fall-dur, 6s) linear infinite;
+      animation-delay: var(--fall-delay, 0s);
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    /* Write pulse + falling write particle controlled by JS via class toggles */
+    .write-pulse.firing {
+      animation: pulse-glow 1.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+    }
+    .write-particle.firing {
+      animation: write-drop 1.4s cubic-bezier(0.5, 0, 0.7, 1) forwards;
+    }
+  }
+
+  @keyframes stratum-settle {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes label-fade {
+    from { opacity: 0; transform: translateX(-4px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes vein-drift {
+    from { transform: translateX(0); }
+    to   { transform: translateX(920px); }
+  }
+  @keyframes particle-fall {
+    0%   { transform: translateY(-20px); opacity: 0; }
+    8%   { opacity: var(--peak-opacity, 0.6); }
+    92%  { opacity: var(--peak-opacity, 0.6); }
+    100% { transform: translateY(440px); opacity: 0; }
+  }
+  @keyframes pulse-glow {
+    0%   { opacity: 0; transform: scaleY(0.7); }
+    25%  { opacity: 1; transform: scaleY(1.05); }
+    100% { opacity: 0; transform: scaleY(1); }
+  }
+  @keyframes write-drop {
+    0%   { opacity: 0; r: 0; cy: -20; }
+    10%  { opacity: 1; r: 3.5; }
+    70%  { opacity: 1; r: 3; }
+    100% { opacity: 0; r: 12; }
+  }
+</style>
+
+<script>
+  // Strata band y-centres (matches the SVG transform translate(40,30) + clip y).
+  const BAND_CENTRES = [32, 100, 188, 272, 348, 402];
+  const BAND_HEIGHTS = [60, 76, 90, 78, 68, 38];
+
+  const sediment = document.querySelector<SVGGElement>('[data-particles]');
+  const pulse = document.querySelector<SVGEllipseElement>('.write-pulse');
+  const writeP = document.querySelector<SVGCircleElement>('.write-particle');
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Seed ambient sediment particles inside the SVG. Each is a tiny circle
+  // that drifts down continuously, looping with a randomised duration +
+  // delay so the system never reads as a stutter.
+  if (sediment && !reduced) {
+    const PARTICLE_COUNT = 14;
+    const svgNs = 'http://www.w3.org/2000/svg';
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const c = document.createElementNS(svgNs, 'circle');
+      const x = 20 + Math.random() * 420;
+      const r = 0.6 + Math.random() * 1.1;
+      const dur = 5 + Math.random() * 7;
+      const delay = -Math.random() * dur;
+      const opacity = 0.25 + Math.random() * 0.45;
+      c.setAttribute('cx', String(x));
+      c.setAttribute('cy', String(0));
+      c.setAttribute('r', String(r));
+      c.setAttribute('fill', '#fde6c2');
+      c.setAttribute('class', 'particle');
+      c.style.setProperty('--fall-dur', `${dur}s`);
+      c.style.setProperty('--fall-delay', `${delay}s`);
+      c.style.setProperty('--peak-opacity', String(opacity));
+      sediment.appendChild(c);
+    }
+  }
+
+  // Periodic memory-write event: a brighter particle drops from the top,
+  // a soft pulse glows in the destination band as it lands. Cycles through
+  // bands semi-randomly so the figure feels alive without ever doing the
+  // same thing twice in a row.
+  if (pulse && writeP && !reduced) {
+    let lastBand = -1;
+    function fireWrite() {
+      let band = Math.floor(Math.random() * 6);
+      if (band === lastBand) band = (band + 1) % 6;
+      lastBand = band;
+
+      const xPercent = 0.15 + Math.random() * 0.7;
+      const x = xPercent * 460;
+      const y = BAND_CENTRES[band];
+
+      // Position the falling particle's start + end via transform — using
+      // the easiest path: set start cx/cy via attributes, then animate
+      // a CSS variable for end translate isn't trivial in SVG.
+      // Instead, just nudge cx; the CSS keyframes handle cy drop.
+      writeP.setAttribute('cx', String(x));
+      // Force class restart by removing+re-adding via rAF
+      writeP.classList.remove('firing');
+      pulse.classList.remove('firing');
+      pulse.setAttribute('cx', String(x));
+      pulse.setAttribute('cy', String(y));
+      pulse.setAttribute('ry', String(BAND_HEIGHTS[band] / 2.2));
+      // Custom landing y for this particle via inline keyframe override
+      writeP.style.setProperty('--land-y', `${y}px`);
+      void writeP.getBoundingClientRect();
+      writeP.classList.add('firing');
+      pulse.classList.add('firing');
+
+      // Schedule next write — varied so it doesn't feel metronomic.
+      const next = 2200 + Math.random() * 2800;
+      setTimeout(fireWrite, next);
+    }
+    setTimeout(fireWrite, 1800);
+  }
+</script>

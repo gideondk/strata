@@ -1,0 +1,9 @@
+# bigbrain — only relevant if you sync your vault VIA GIT (instead of
+# Obsidian Sync / Syncthing / iCloud). Drop into your vault's root .gitattributes.
+#
+# Concurrent edits to pr-context notes and the generated INDEX.md are
+# append-only-ish; the union driver keeps both sides' lines instead of
+# producing a real merge conflict.
+
+*/pr-context/** merge=union
+*/INDEX.md       merge=union

@@ -1,0 +1,12 @@
+{
+  "id": "financial-iban",
+  "description": "IBAN bank account numbers (any country) with ISO 7064 mod-97 validation. Opt-in.",
+  "block": [
+    {
+      "name": "iban",
+      "regex": "\\b[A-Z]{2}\\d{2}[A-Z0-9]{11,30}\\b",
+      "validator": "iban_mod97"
+    }
+  ],
+  "warn": []
+}

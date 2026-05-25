@@ -1,0 +1,382 @@
+---
+/**
+ * Obsidian-style mockup showing the vault rendered as a real workspace.
+ * Three-pane layout (file tree | INDEX.md content | graph). Pure HTML/CSS.
+ * Not an actual screenshot — a stylised reconstruction that reads as
+ * "this is what your vault looks like in the editor you already use."
+ */
+---
+
+<section class="obsidian">
+  <p class="obsidian-eyebrow">the vault is yours</p>
+  <h2 class="obsidian-title">Plain markdown. Your filesystem. No lock-in.</h2>
+  <p class="obsidian-lede">
+    Notes are markdown with YAML frontmatter on your disk. Sync them
+    with whatever you already use. Open the vault in
+    <em>Obsidian, VS Code, or your terminal</em>. Read them years from
+    now without the plugin running.
+  </p>
+
+  <figure class="obsidian-window">
+    <div class="obs-chrome">
+      <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
+      <span class="obs-path">~/StrataVault / myrepo / INDEX.md</span>
+    </div>
+
+    <div class="obs-layout">
+      <!-- LEFT: file tree -->
+      <aside class="obs-tree">
+        <p class="tree-label">EXPLORER</p>
+        <ul>
+          <li class="folder open">📁 decisions
+            <ul>
+              <li>2026-05-24-use-postgres.md</li>
+              <li>2026-05-22-pgvector-not-pinecone.md</li>
+              <li>2026-05-12-event-ordering.md</li>
+            </ul>
+          </li>
+          <li class="folder open">📁 domain
+            <ul>
+              <li>order-aggregate.md</li>
+              <li>tenant.md</li>
+              <li>idempotency-key.md</li>
+            </ul>
+          </li>
+          <li class="folder">📁 lessons</li>
+          <li class="folder">📁 procedural</li>
+          <li class="folder open accent">📁 propositions
+            <ul>
+              <li>2026-05-20-pricing-pipeline.md</li>
+              <li>2026-05-08-multi-region.md</li>
+            </ul>
+          </li>
+          <li class="folder">📁 pr-context</li>
+          <li class="file active">📄 INDEX.md</li>
+        </ul>
+      </aside>
+
+      <!-- CENTER: rendered INDEX.md (the dashboard) -->
+      <article class="obs-content">
+        <h3 class="obs-h1">Strata dashboard</h3>
+        <p class="obs-meta">Generated 2026-05-25 17:42 UTC · auto-regenerated on every write</p>
+
+        <h4 class="obs-h2">Scope counts</h4>
+        <table class="obs-table">
+          <tr><td>Episodic</td><td><code>pr-context/</code></td><td class="num">2</td></tr>
+          <tr><td>Semantic</td><td><code>domain/</code></td><td class="num">21</td></tr>
+          <tr><td>Semantic</td><td><code>decisions/</code></td><td class="num">11</td></tr>
+          <tr><td>Procedural</td><td><code>procedural/</code></td><td class="num">4</td></tr>
+          <tr><td>Lifecycle</td><td><code>propositions/</code></td><td class="num accent">2 open</td></tr>
+          <tr><td>Bridge</td><td><code>lessons/</code></td><td class="num">3</td></tr>
+        </table>
+
+        <h4 class="obs-h2">Drifted notes</h4>
+        <ul class="obs-list">
+          <li><code>domain/old-pattern.md</code> — <span class="muted">3 unresolved · 47 commits since</span></li>
+        </ul>
+
+        <h4 class="obs-h2">Hot files (90d)</h4>
+        <ul class="obs-list">
+          <li><code>services/orders/OrderAggregate.cs</code> — <span class="muted">42 commits</span></li>
+          <li><code>services/orders/Events.cs</code> — <span class="muted">28 commits</span></li>
+        </ul>
+      </article>
+
+      <!-- RIGHT: graph view -->
+      <aside class="obs-graph">
+        <p class="graph-label">GRAPH</p>
+        <svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+          <!-- Edges -->
+          <line x1="40" y1="35" x2="70" y2="65" stroke="var(--sl-color-hairline-shade)" stroke-width="0.6"/>
+          <line x1="70" y1="65" x2="90" y2="40" stroke="var(--sl-color-hairline-shade)" stroke-width="0.6"/>
+          <line x1="70" y1="65" x2="50" y2="100" stroke="var(--sl-color-hairline-shade)" stroke-width="0.6"/>
+          <line x1="70" y1="65" x2="95" y2="105" stroke="var(--sl-color-hairline-shade)" stroke-width="0.6"/>
+          <line x1="50" y1="100" x2="30" y2="120" stroke="var(--sl-color-hairline-shade)" stroke-width="0.6"/>
+          <line x1="95" y1="105" x2="80" y2="125" stroke="var(--sl-color-hairline-shade)" stroke-width="0.6"/>
+          <!-- Nodes — central one is amber, others are graduated -->
+          <circle cx="40" cy="35" r="3.5" fill="var(--stratum-2)"/>
+          <circle cx="90" cy="40" r="3" fill="var(--stratum-3)"/>
+          <circle cx="70" cy="65" r="5.5" fill="var(--sl-color-accent)"/>
+          <circle cx="50" cy="100" r="3.2" fill="var(--stratum-3)"/>
+          <circle cx="95" cy="105" r="3" fill="var(--stratum-2)"/>
+          <circle cx="30" cy="120" r="2.5" fill="var(--stratum-4)"/>
+          <circle cx="80" cy="125" r="2.8" fill="var(--stratum-4)"/>
+        </svg>
+        <p class="graph-caption">vault wikilinks + graphify nodes</p>
+      </aside>
+    </div>
+  </figure>
+</section>
+
+<style>
+  .obsidian {
+    margin: 7rem auto 5rem;
+    max-width: 72rem;
+  }
+
+  .obsidian-eyebrow {
+    font-family: var(--sl-font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+    margin: 0 0 1.25rem;
+  }
+
+  .obsidian-title {
+    font-family: var(--strata-font-display);
+    font-weight: 360;
+    font-size: clamp(1.9rem, 3.8vw, 2.6rem);
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin: 0 0 1rem;
+    font-variation-settings: 'opsz' 144, 'SOFT' 30;
+  }
+
+  .obsidian-lede {
+    font-family: var(--strata-font-display);
+    font-style: italic;
+    font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+    color: var(--sl-color-gray-2);
+    max-width: 40rem;
+    margin: 0 0 2.5rem;
+    line-height: 1.5;
+    font-variation-settings: 'opsz' 36;
+  }
+
+  .obsidian-lede em {
+    font-style: italic;
+    color: var(--sl-color-accent);
+  }
+
+  .obsidian-window {
+    margin: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--sl-color-hairline);
+    background: var(--sl-color-bg-sidebar);
+    box-shadow:
+      0 1px 0 0 var(--sl-color-hairline-light) inset,
+      0 40px 80px -40px color-mix(in srgb, var(--sl-color-accent) 14%, transparent);
+  }
+
+  .obs-chrome {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.65rem 0.9rem;
+    background: var(--sl-color-bg-nav);
+    border-bottom: 1px solid var(--sl-color-hairline);
+  }
+
+  .obs-chrome .dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--sl-color-gray-5);
+    opacity: 0.6;
+  }
+
+  .obs-path {
+    margin-left: 0.5rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.72rem;
+    color: var(--sl-color-gray-3);
+  }
+
+  .obs-layout {
+    display: grid;
+    grid-template-columns: 200px 1fr 220px;
+    min-height: 460px;
+  }
+
+  @media (max-width: 800px) {
+    .obs-layout {
+      grid-template-columns: 1fr;
+    }
+    .obs-tree, .obs-graph {
+      display: none;
+    }
+  }
+
+  /* ---- File tree ---- */
+  .obs-tree {
+    padding: 1rem 0.75rem;
+    border-right: 1px solid var(--sl-color-hairline);
+    font-family: var(--sl-font-mono);
+    font-size: 0.78rem;
+  }
+
+  .tree-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-4);
+    margin: 0 0 0.75rem 0.25rem;
+  }
+
+  .obs-tree ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .obs-tree li {
+    padding: 0.2rem 0.4rem;
+    color: var(--sl-color-gray-2);
+    border-radius: 3px;
+    cursor: default;
+  }
+
+  .obs-tree li.folder.open > ul {
+    padding-left: 1rem;
+    margin-top: 0.2rem;
+  }
+
+  .obs-tree li.folder:not(.open) {
+    color: var(--sl-color-gray-3);
+  }
+
+  .obs-tree li.accent {
+    color: var(--sl-color-accent);
+  }
+
+  .obs-tree li.file {
+    color: var(--sl-color-gray-1);
+    margin-top: 0.5rem;
+  }
+
+  .obs-tree li.active {
+    background: color-mix(in srgb, var(--sl-color-accent) 12%, transparent);
+    color: var(--sl-color-text);
+  }
+
+  /* ---- Content ---- */
+  .obs-content {
+    padding: 1.5rem 2rem;
+    overflow: hidden;
+  }
+
+  .obs-h1 {
+    font-family: var(--strata-font-display);
+    font-weight: 360;
+    font-size: 1.5rem;
+    margin: 0 0 0.25rem;
+    font-variation-settings: 'opsz' 96;
+    color: var(--sl-color-text);
+  }
+
+  .obs-meta {
+    font-family: var(--sl-font-mono);
+    font-size: 0.7rem;
+    color: var(--sl-color-gray-4);
+    margin: 0 0 1.5rem;
+  }
+
+  .obs-h2 {
+    font-family: var(--sl-font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+    margin: 1.5rem 0 0.5rem;
+    font-weight: 540;
+  }
+
+  .obs-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    margin: 0 0 1rem;
+  }
+
+  .obs-table td {
+    padding: 0.32rem 0.5rem;
+    border-bottom: 1px solid var(--sl-color-hairline-light);
+    color: var(--sl-color-gray-2);
+  }
+
+  .obs-table td:first-child {
+    color: var(--sl-color-gray-3);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    width: 90px;
+  }
+
+  .obs-table td:nth-child(2) code {
+    font-family: var(--sl-font-mono);
+    font-size: 0.78rem;
+    color: var(--sl-color-text);
+    background: transparent;
+    padding: 0;
+  }
+
+  .obs-table td.num {
+    font-family: var(--sl-font-mono);
+    text-align: right;
+    color: var(--sl-color-text);
+  }
+
+  .obs-table td.num.accent {
+    color: var(--sl-color-accent);
+  }
+
+  .obs-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .obs-list li {
+    padding: 0.2rem 0;
+    color: var(--sl-color-gray-2);
+  }
+
+  .obs-list code {
+    font-family: var(--sl-font-mono);
+    font-size: 0.8rem;
+    background: transparent;
+    padding: 0;
+    border: 0;
+    color: var(--sl-color-text);
+  }
+
+  .obs-list .muted {
+    color: var(--sl-color-gray-4);
+    font-size: 0.78rem;
+  }
+
+  /* ---- Graph ---- */
+  .obs-graph {
+    padding: 1rem 0.75rem;
+    border-left: 1px solid var(--sl-color-hairline);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .graph-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-4);
+    margin: 0 0 0.5rem 0.25rem;
+    font-family: var(--sl-font-mono);
+  }
+
+  .obs-graph svg {
+    width: 100%;
+    height: auto;
+    flex: 1;
+  }
+
+  .graph-caption {
+    font-family: var(--sl-font-mono);
+    font-size: 0.65rem;
+    color: var(--sl-color-gray-4);
+    text-align: center;
+    margin: 0.5rem 0 0;
+    font-style: italic;
+  }
+</style>

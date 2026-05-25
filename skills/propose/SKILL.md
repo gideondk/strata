@@ -1,0 +1,100 @@
+---
+name: strata:propose
+description: Capture an OPEN question or contested position before it settles. Different from `decide` (which is for chosen options) and `domain` (which is for stable definitions). Propositions track the reasoning lifecycle, open → contested → converging → settled-as-decision (linked forward to an ADR) OR refuted-as-lesson. Invoke autonomously when the user says "we don't know yet whether X", "open question is Y", "we're split on Z", "I'm proposing X but not sure", "let's track this debate". When the question resolves, promote with `--settled-as` or `--refuted-as`.
+---
+
+# strata:propose
+
+The "open question" scope. Closes the gap between **what we know
+(domain)**, **what we've chosen (decisions)**, **what we did (pr-context)**,
+and **what we did wrong (lessons)**, with a fourth: **what we're still
+Figuring out**.
+
+## When to use
+
+| Situation | Skill |
+|---|---|
+| Open question, multiple positions, no choice yet | `strata:propose` |
+| Chosen option with reasoning | `strata:decide` |
+| Stable concept / vocabulary | `strata:domain` |
+| Retrospective fact | `strata:save --scope lessons` |
+| In-flight branch work | `strata:save` |
+
+A proposition is **explicitly time-bounded**. It exists to be resolved.
+A proposition that never gets settled or refuted is itself a signal.
+
+## How
+
+### Create
+
+```bash
+cat <<'EOF' | "${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
+    "${CLAUDE_PLUGIN_ROOT}/scripts/new-proposition.py" \
+    --title "Should we move to Postgres for tenant data?"
+# Should we move to Postgres for tenant data?
+
+## What we're trying to figure out
+<context — why this is open>
+
+## Positions on the table
+- Stay on SQLite: <reasons>
+- Move to Postgres: <reasons>
+
+## What evidence would settle this
+- <what we'd need to know>
+EOF
+```
+
+Default status is `open`. Pass `--status contested` if multiple positions
+are actively defended, or `--status converging` if one is winning.
+
+### Promote (when settled)
+
+```bash
+"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
+  "${CLAUDE_PLUGIN_ROOT}/scripts/new-proposition.py" \
+  --update propositions/2026-05-25-should-we-move-to-postgres.md \
+  --settled-as "decisions/2026-05-30-use-postgres-tenant-data.md"
+```
+
+Bidirectional intent: the ADR has its own reasoning; the proposition
+records the question that led to it. The forward link lets future
+Readers walk back from "we use Postgres" to "we considered the
+Alternatives in this proposition."
+
+### Retire (when refuted)
+
+```bash
+"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
+  "${CLAUDE_PLUGIN_ROOT}/scripts/new-proposition.py" \
+  --update propositions/2026-05-25-foo.md \
+  --refuted-as "lessons/2026-06-02-why-we-didnt.md"
+```
+
+## Status lifecycle
+
+```
+   open  ─→  contested  ─→  converging  ─→  settled-as-decision
+                                       └─→  refuted-as-lesson
+```
+
+`/strata:dashboard` surfaces propositions stuck in `open` or `contested`
+for >30 days. Long-open propositions are a smell, usually means the
+Team is avoiding the decision.
+
+## Why this scope earned its place
+
+Other memory plugins (smcady/Cairn, claude-mem) track decision lifecycle
+via opaque graph state or compressed summaries. Propositions in `strata`
+are **plain markdown files** with `status:` frontmatter, auditable,
+diffable, syncable, readable in Obsidian. Same lifecycle tracking, in
+Durable form.
+
+## Don't do
+
+- Don't propose what's already decided. Use `strata:decide` for chosen
+  options.
+- Don't propose what's stable. Use `strata:domain` for "what is X here."
+- Don't propose what's purely branch-scoped scratch. Use `strata:save`.
+- Don't leave propositions open forever — set a `target_date:` in
+  frontmatter if you want the dashboard to remind you.

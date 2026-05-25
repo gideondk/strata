@@ -1,0 +1,129 @@
+---
+/**
+ * MemoryTriad — three overlapping rings labelling the cognitive-science
+ * memory taxonomy that Strata's vault scopes map onto.
+ *
+ * Episodic ∩ Procedural = `lessons/` bridge
+ * Episodic ∩ Semantic = `decisions/` (events that became facts)
+ * Semantic ∩ Procedural = how-to backed by domain truths
+ */
+---
+
+<figure class="triad" role="img" aria-label="Episodic, semantic, procedural memory — overlapping circles">
+  <svg viewBox="0 0 520 420" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="ring-fill" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="var(--sl-color-accent)" stop-opacity="0.18"/>
+        <stop offset="70%" stop-color="var(--sl-color-accent)" stop-opacity="0.06"/>
+        <stop offset="100%" stop-color="var(--sl-color-accent)" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+
+    <g class="ring-bg">
+      <circle cx="180" cy="180" r="120" fill="url(#ring-fill)"/>
+      <circle cx="340" cy="180" r="120" fill="url(#ring-fill)"/>
+      <circle cx="260" cy="290" r="120" fill="url(#ring-fill)"/>
+    </g>
+
+    <g class="ring-stroke" fill="none" stroke="var(--sl-color-accent)" stroke-width="1.2">
+      <circle cx="180" cy="180" r="120" opacity="0.7"/>
+      <circle cx="340" cy="180" r="120" opacity="0.7"/>
+      <circle cx="260" cy="290" r="120" opacity="0.7"/>
+    </g>
+
+    <g class="ring-labels"
+       font-family="JetBrains Mono Variable, monospace"
+       font-size="11"
+       font-weight="600"
+       letter-spacing="0.1em"
+       fill="currentColor"
+       paint-order="stroke"
+       stroke="var(--sl-color-bg)"
+       stroke-width="4">
+      <text x="100" y="90"  text-anchor="start">EPISODIC</text>
+      <text x="420" y="90"  text-anchor="end">SEMANTIC</text>
+      <text x="260" y="395" text-anchor="middle">PROCEDURAL</text>
+    </g>
+
+    <g class="ring-sublabels"
+       font-family="Inter Variable, sans-serif"
+       font-size="10.5"
+       fill="currentColor"
+       fill-opacity="0.6"
+       paint-order="stroke"
+       stroke="var(--sl-color-bg)"
+       stroke-width="4">
+      <text x="100" y="106" text-anchor="start">pr-context/</text>
+      <text x="420" y="106" text-anchor="end">domain/ · decisions/</text>
+      <text x="260" y="411" text-anchor="middle">procedural/</text>
+    </g>
+
+    <g class="intersections"
+       font-family="Inter Variable, sans-serif"
+       font-size="10.5"
+       font-style="italic"
+       fill="currentColor"
+       fill-opacity="0.85"
+       paint-order="stroke"
+       stroke="var(--sl-color-bg)"
+       stroke-width="4">
+      <text x="260" y="170" text-anchor="middle">decisions ← events</text>
+      <text x="170" y="260" text-anchor="middle">lessons/</text>
+      <text x="350" y="260" text-anchor="middle">how-to with truth</text>
+    </g>
+
+    <g class="centre-label"
+       font-family="Fraunces Variable, Georgia, serif"
+       font-size="13"
+       font-weight="500"
+       fill="var(--sl-color-accent)"
+       paint-order="stroke"
+       stroke="var(--sl-color-bg)"
+       stroke-width="4">
+      <text x="260" y="226" text-anchor="middle" letter-spacing="0.04em">vault</text>
+    </g>
+  </svg>
+  <figcaption>
+    Three memory types from the cognitive-science literature. Strata's six
+    scopes sit at the rings and their overlaps, so the right retrieval
+    shape is always one query away.
+  </figcaption>
+</figure>
+
+<style>
+  .triad {
+    margin: 4rem auto 0;
+    max-width: 40rem;
+    text-align: center;
+  }
+  .triad svg {
+    width: 100%;
+    height: auto;
+    color: var(--sl-color-text);
+  }
+  .triad figcaption {
+    font-family: var(--strata-font-display);
+    font-style: italic;
+    font-variation-settings: 'opsz' 24;
+    color: var(--sl-color-gray-2);
+    font-size: 0.95rem;
+    line-height: 1.55;
+    margin-top: 1rem;
+    padding: 0 1rem;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .ring-bg circle,
+    .ring-stroke circle {
+      animation: ring-in 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+    }
+    .ring-bg circle:nth-child(1), .ring-stroke circle:nth-child(1) { animation-delay: 0.05s; }
+    .ring-bg circle:nth-child(2), .ring-stroke circle:nth-child(2) { animation-delay: 0.15s; }
+    .ring-bg circle:nth-child(3), .ring-stroke circle:nth-child(3) { animation-delay: 0.25s; }
+  }
+
+  @keyframes ring-in {
+    from { opacity: 0; transform: scale(0.94); transform-origin: center; }
+    to   { opacity: 1; transform: scale(1); }
+  }
+</style>

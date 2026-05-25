@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 36" fill="none">
+  <!--
+    Strata wordmark — Hexagram 26 + slab caps with the stratum line.
+    The hexagram is the brand mark; STRATA reads as a caption to it.
+    Each letter is a hand-drawn slab cap (no font dependency) with a
+    single horizontal slit at y=21 — the same stratum line that
+    runs across the wordmark, slicing the letters at one decisive
+    level like a fault line through sedimentary rock.
+
+    Inline <style> sets the amber default so the mark renders
+    consistently through <img> tags where CSS color inheritance from
+    the page doesn't reach the SVG content.
+  -->
+  <style>
+    svg { color: #d4a574; }
+    .ink { fill: currentColor; }
+    .cut { fill: #0d0c0a; }
+  </style>
+
+  <!-- Hexagram 26 — Great Accumulation. Six yao lines, top down:
+       yang / yin / yin / yang / yang / yang. -->
+  <g class="ink">
+    <rect x="3" y="6"  width="22" height="2.4" rx="0.4" opacity="0.55"/>
+    <rect x="3"  y="10" width="9.4" height="2.4" rx="0.4" opacity="0.7"/>
+    <rect x="15.6" y="10" width="9.4" height="2.4" rx="0.4" opacity="0.7"/>
+    <rect x="3"  y="14" width="9.4" height="2.4" rx="0.4" opacity="0.85"/>
+    <rect x="15.6" y="14" width="9.4" height="2.4" rx="0.4" opacity="0.85"/>
+    <rect x="3" y="18" width="22" height="2.4" rx="0.4" opacity="1"/>
+    <rect x="3" y="22" width="22" height="2.4" rx="0.4" opacity="0.95"/>
+    <rect x="3" y="26" width="22" height="2.4" rx="0.4" opacity="0.85"/>
+  </g>
+  <circle cx="27.6" cy="7.2" r="1.1" class="ink" opacity="0.7"/>
+
+  <!-- STRATA — condensed slab caps as hand-drawn paths.
+       Cap height 22, top at y=8, baseline at y=30. -->
+  <g class="ink" id="wm-letters">
+    <!-- S -->
+    <path d="M 40 8 L 54 8 L 54 11.5 L 43.5 11.5 L 43.5 16 L 54 16 L 54 30 L 40 30 L 40 26.5 L 50.5 26.5 L 50.5 19.5 L 40 19.5 Z"/>
+    <!-- T -->
+    <path d="M 62 8 L 76 8 L 76 11.8 L 70.95 11.8 L 70.95 30 L 67.05 30 L 67.05 11.8 L 62 11.8 Z"/>
+    <!-- R -->
+    <path d="M 84 8 L 96 8 L 98 8.6 L 98 17.5 L 96 18.1 L 92.8 18.1 L 98 30 L 94 30 L 88.6 18.1 L 87.5 18.1 L 87.5 30 L 84 30 Z M 87.5 11.5 L 87.5 14.8 L 94.5 14.8 L 94.5 11.5 Z"/>
+    <!-- A -->
+    <path d="M 106 30 L 112 8 L 116 8 L 122 30 L 118.3 30 L 117.1 25.6 L 110.9 25.6 L 109.7 30 Z M 111.7 22.4 L 116.3 22.4 L 114 14.2 Z"/>
+    <!-- T -->
+    <path d="M 128 8 L 142 8 L 142 11.8 L 136.95 11.8 L 136.95 30 L 133.05 30 L 133.05 11.8 L 128 11.8 Z"/>
+    <!-- A -->
+    <path d="M 150 30 L 156 8 L 160 8 L 166 30 L 162.3 30 L 161.1 25.6 L 154.9 25.6 L 153.7 30 Z M 155.7 22.4 L 160.3 22.4 L 158 14.2 Z"/>
+  </g>
+
+  <!-- The stratum line — single decisive horizontal slit at y=20.4
+       cutting through every letter. Clipped so it only appears
+       where the letters have ink. -->
+  <defs>
+    <clipPath id="wm-letter-clip">
+      <use href="#wm-letters"/>
+    </clipPath>
+  </defs>
+  <rect x="38" y="19.6" width="160" height="1.6"
+        clip-path="url(#wm-letter-clip)" class="cut"/>
+</svg>

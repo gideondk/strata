@@ -1,0 +1,187 @@
+---
+/**
+ * BootstrapPipeline — horizontal pipeline visual for the 4-stage bootstrap
+ * workflow: scan → group → dispatch (parallel) → aggregate.
+ */
+---
+
+<figure class="pipe" role="img" aria-label="Bootstrap pipeline: scan, group, dispatch in parallel, aggregate">
+  <svg viewBox="0 0 920 380" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="pipe-stage" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="var(--sl-color-accent)" stop-opacity="0.16"/>
+        <stop offset="100%" stop-color="var(--sl-color-accent)" stop-opacity="0.05"/>
+      </linearGradient>
+      <marker id="pipe-arrow" viewBox="0 0 10 10" refX="9" refY="5"
+              markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--sl-color-accent)"/>
+      </marker>
+    </defs>
+
+    <!-- Stage 1 — Scan -->
+    <g class="stage">
+      <rect x="20" y="140" width="160" height="100" rx="6"
+            fill="url(#pipe-stage)" stroke="var(--sl-color-accent)"
+            stroke-width="1" stroke-opacity="0.6"/>
+      <text x="100" y="170" text-anchor="middle" font-family="JetBrains Mono Variable, monospace"
+            font-size="11" font-weight="600" letter-spacing="0.16em"
+            fill="var(--sl-color-accent)">SCAN</text>
+      <text x="100" y="195" text-anchor="middle" font-family="Inter Variable, sans-serif"
+            font-size="11" fill="currentColor" opacity="0.8">walk *.md</text>
+      <text x="100" y="212" text-anchor="middle" font-family="Inter Variable, sans-serif"
+            font-size="10" fill="currentColor" opacity="0.55">honors .strataignore</text>
+      <text x="100" y="227" text-anchor="middle" font-family="Inter Variable, sans-serif"
+            font-size="10" fill="currentColor" opacity="0.55">SHA-tracked state</text>
+    </g>
+
+    <!-- Stage 2 — Group -->
+    <g class="stage">
+      <rect x="220" y="140" width="160" height="100" rx="6"
+            fill="url(#pipe-stage)" stroke="var(--sl-color-accent)"
+            stroke-width="1" stroke-opacity="0.6"/>
+      <text x="300" y="170" text-anchor="middle" font-family="JetBrains Mono Variable, monospace"
+            font-size="11" font-weight="600" letter-spacing="0.16em"
+            fill="var(--sl-color-accent)">GROUP</text>
+      <text x="300" y="195" text-anchor="middle" font-family="Inter Variable, sans-serif"
+            font-size="11" fill="currentColor" opacity="0.8">by parent dir</text>
+      <text x="300" y="212" text-anchor="middle" font-family="Inter Variable, sans-serif"
+            font-size="10" fill="currentColor" opacity="0.55">PLAN+CONTEXT+SPEC</text>
+      <text x="300" y="227" text-anchor="middle" font-family="Inter Variable, sans-serif"
+            font-size="10" fill="currentColor" opacity="0.55">→ one worker</text>
+    </g>
+
+    <!-- Stage 3 — Dispatch (5 parallel workers) -->
+    <g class="stage">
+      <rect x="420" y="40" width="280" height="300" rx="8"
+            fill="url(#pipe-stage)" stroke="var(--sl-color-accent)"
+            stroke-width="1" stroke-opacity="0.6" stroke-dasharray="0"/>
+      <text x="560" y="64" text-anchor="middle" font-family="JetBrains Mono Variable, monospace"
+            font-size="11" font-weight="600" letter-spacing="0.16em"
+            fill="var(--sl-color-accent)">DISPATCH · 5 PARALLEL WORKERS</text>
+
+      <!-- Five worker cards -->
+      <g font-family="Inter Variable, sans-serif" font-size="10.5"
+         fill="currentColor">
+        <g class="worker">
+          <rect x="440" y="84" width="240" height="44" rx="4"
+                fill="rgba(255,255,255,0.03)" stroke="currentColor"
+                stroke-width="0.7" stroke-opacity="0.18"/>
+          <text x="452" y="102" font-weight="600">worker · auth-rewrite</text>
+          <text x="452" y="118" opacity="0.55">read · correlate · code-map · write</text>
+        </g>
+        <g class="worker">
+          <rect x="440" y="136" width="240" height="44" rx="4"
+                fill="rgba(255,255,255,0.03)" stroke="currentColor"
+                stroke-width="0.7" stroke-opacity="0.18"/>
+          <text x="452" y="154" font-weight="600">worker · scheduling-migration</text>
+          <text x="452" y="170" opacity="0.55">read · correlate · code-map · write</text>
+        </g>
+        <g class="worker">
+          <rect x="440" y="188" width="240" height="44" rx="4"
+                fill="rgba(255,255,255,0.03)" stroke="currentColor"
+                stroke-width="0.7" stroke-opacity="0.18"/>
+          <text x="452" y="206" font-weight="600">worker · tickets/docs/specs</text>
+          <text x="452" y="222" opacity="0.55">read · correlate · code-map · write</text>
+        </g>
+        <g class="worker">
+          <rect x="440" y="240" width="240" height="44" rx="4"
+                fill="rgba(255,255,255,0.03)" stroke="currentColor"
+                stroke-width="0.7" stroke-opacity="0.18"/>
+          <text x="452" y="258" font-weight="600">worker · finance/legacy</text>
+          <text x="452" y="274" opacity="0.55">read · correlate · code-map · write</text>
+        </g>
+        <g class="worker">
+          <rect x="440" y="292" width="240" height="44" rx="4"
+                fill="rgba(255,255,255,0.03)" stroke="currentColor"
+                stroke-width="0.7" stroke-opacity="0.18"/>
+          <text x="452" y="310" font-weight="600">worker · gp-connect</text>
+          <text x="452" y="326" opacity="0.55">read · correlate · code-map · write</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- Stage 4 — Aggregate -->
+    <g class="stage">
+      <rect x="740" y="140" width="160" height="100" rx="6"
+            fill="url(#pipe-stage)" stroke="var(--sl-color-accent)"
+            stroke-width="1" stroke-opacity="0.6"/>
+      <text x="820" y="170" text-anchor="middle" font-family="JetBrains Mono Variable, monospace"
+            font-size="11" font-weight="600" letter-spacing="0.16em"
+            fill="var(--sl-color-accent)">AGGREGATE</text>
+      <text x="820" y="195" text-anchor="middle" font-family="Inter Variable, sans-serif"
+            font-size="11" fill="currentColor" opacity="0.8">collect lines</text>
+      <text x="820" y="212" text-anchor="middle" font-family="Inter Variable, sans-serif"
+            font-size="10" fill="currentColor" opacity="0.55">N domain · A decisions</text>
+      <text x="820" y="227" text-anchor="middle" font-family="Inter Variable, sans-serif"
+            font-size="10" fill="currentColor" opacity="0.55">final tally</text>
+    </g>
+
+    <!-- Connectors -->
+    <g stroke="var(--sl-color-accent)" stroke-width="1.4" fill="none"
+       opacity="0.7" marker-end="url(#pipe-arrow)">
+      <path d="M 180 190 L 215 190"/>
+      <path d="M 380 190 L 415 190"/>
+      <path d="M 700 190 L 735 190"/>
+    </g>
+
+    <!-- Bottom audit lane -->
+    <g>
+      <line x1="20" y1="280" x2="900" y2="280" stroke="currentColor"
+            stroke-opacity="0.12" stroke-dasharray="3 3"/>
+      <text x="100" y="305" text-anchor="middle" font-family="Inter Variable, sans-serif"
+            font-size="9.5" fill="currentColor" opacity="0.55" font-style="italic">
+        idempotent
+      </text>
+      <text x="300" y="305" text-anchor="middle" font-family="Inter Variable, sans-serif"
+            font-size="9.5" fill="currentColor" opacity="0.55" font-style="italic">
+        dedup by parent
+      </text>
+      <text x="820" y="305" text-anchor="middle" font-family="Inter Variable, sans-serif"
+            font-size="9.5" fill="currentColor" opacity="0.55" font-style="italic">
+        one line per write
+      </text>
+    </g>
+  </svg>
+  <figcaption>
+    Source files never enter your main context. Workers do the reading
+    in their own context windows, return one-line summaries, and the
+    aggregator tallies them.
+  </figcaption>
+</figure>
+
+<style>
+  .pipe {
+    margin: 2rem auto;
+    max-width: 56rem;
+  }
+  .pipe svg {
+    width: 100%;
+    height: auto;
+    color: var(--sl-color-text);
+  }
+  .pipe figcaption {
+    font-family: var(--strata-font-display);
+    font-style: italic;
+    font-variation-settings: 'opsz' 24;
+    color: var(--sl-color-gray-2);
+    font-size: 0.92rem;
+    line-height: 1.55;
+    margin-top: 1rem;
+    text-align: center;
+    padding: 0 1rem;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .pipe .worker {
+      animation: worker-in 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+    }
+    .pipe .worker:nth-child(1) { animation-delay: 0.10s; }
+    .pipe .worker:nth-child(2) { animation-delay: 0.18s; }
+    .pipe .worker:nth-child(3) { animation-delay: 0.26s; }
+    .pipe .worker:nth-child(4) { animation-delay: 0.34s; }
+    .pipe .worker:nth-child(5) { animation-delay: 0.42s; }
+  }
+  @keyframes worker-in {
+    from { opacity: 0; transform: translateX(-4px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+</style>

@@ -1,0 +1,563 @@
+---
+/**
+ * Recall demo — reframed as a conversation. The user asks a question
+ * mid-session; Claude consults the vault and answers with citations.
+ * Citation chips open a native popover showing the example note body
+ * so readers can see what a real Strata note looks like, without
+ * leaving the page.
+ */
+---
+
+<section class="recall">
+  <p class="recall-eyebrow">in practice</p>
+  <h2 class="recall-title">Claude remembers what your team decided.</h2>
+  <p class="recall-lede">
+    No commands. No queries. Ask something that touches durable
+    knowledge and Strata surfaces the relevant ADR, domain note, or
+    retrospective. With the exact file paths cited, so the answer
+    is traceable.
+  </p>
+
+  <div class="chat" data-chat>
+    <div class="msg msg-user" data-stage="user">
+      <span class="msg-who">you</span>
+      <p class="msg-body">
+        Quick reminder, what's our ordering for Order events? I keep
+        forgetting whether <code>OrderPriced</code> fires before or
+        after <code>OrderConfirmed</code>.
+      </p>
+    </div>
+
+    <div class="msg msg-thinking" data-stage="thinking">
+      <span class="msg-who">strata</span>
+      <p class="msg-body">
+        <span class="thinking-dots"><span></span><span></span><span></span></span>
+        consulting the vault…
+      </p>
+    </div>
+
+    <div class="msg msg-claude" data-stage="claude">
+      <span class="msg-who">claude</span>
+      <div class="msg-body">
+        <p>
+          <code>OrderPriced</code> fires <strong>before</strong>
+          <code>OrderConfirmed</code>. The reason: confirmation events
+          need to carry the final priced state, otherwise downstream
+          projections see stale totals.
+        </p>
+        <p>
+          You hit this last April, there's a postmortem in
+          <button class="cite" popovertarget="cite-lesson" type="button"
+            aria-label="Preview lessons/2026-04-29-double-confirm-bug.md">
+            lessons/2026-04-29-double-confirm-bug.md
+          </button>. The fix became
+          <button class="cite" popovertarget="cite-decision" type="button"
+            aria-label="Preview decisions/2026-05-12-event-ordering.md">
+            decisions/2026-05-12-event-ordering.md
+          </button>.
+        </p>
+      </div>
+
+      <details class="msg-receipt">
+        <summary>
+          <span class="receipt-icon">⌥</span>
+          consulted 3 notes · 280 tokens · stayed local
+        </summary>
+        <ul class="receipt-list">
+          <li>
+            <span class="r-scope">decisions/</span>
+            <span class="r-path">2026-05-12-event-ordering.md</span>
+            <span class="r-blurb">Use OrderPriced before OrderConfirmed</span>
+          </li>
+          <li>
+            <span class="r-scope">domain/</span>
+            <span class="r-path">order-aggregate.md</span>
+            <span class="r-blurb">Aggregate state, events, transitions</span>
+          </li>
+          <li>
+            <span class="r-scope">lessons/</span>
+            <span class="r-path">2026-04-29-double-confirm-bug.md</span>
+            <span class="r-blurb">What happened, root cause, the fix</span>
+          </li>
+        </ul>
+      </details>
+    </div>
+  </div>
+
+  <p class="recall-footnote">
+    Strata runs the search in a background context. Only the curated
+    answer comes back to your main conversation, so your token budget
+    stays clean. Tap the receipt to see what was consulted; any
+    citation chip opens the source note.
+  </p>
+</section>
+
+<!-- Popovers — example note bodies as a real Strata vault would store them -->
+<div id="cite-lesson" popover class="cite-popup">
+  <div class="cite-popup-head">
+    <span class="cite-scope">lessons/</span>
+    <span class="cite-name">2026-04-29-double-confirm-bug.md</span>
+    <button class="cite-close" popovertarget="cite-lesson" popovertargetaction="hide" aria-label="Close">×</button>
+  </div>
+  <div class="cite-popup-body">
+    <pre><code>---
+title: OrderConfirmed without final price → stale projections
+kind: handoff
+date: 2026-04-29
+branch: feat/order-pricing
+tags: [order, events, ordering]
+---
+
+# What happened
+
+Tuesday 22:14, the Branch Ready projection started showing wrong
+totals. A nightly rebuild from the event store fixed it, but only
+until the next live `OrderConfirmed` arrived.
+
+# Root cause
+
+`OrderConfirmed` was emitted BEFORE `OrderPriced` in the
+`PricingProcessManager`. The confirmation snapshot captured the
+draft total, then pricing finalised and emitted a different one.
+Projections subscribed to confirmation events, so they kept the
+stale figure.
+
+# What we'll do differently
+
+- Confirmation events should always carry the final priced state.
+- Process managers that emit a "settled" event must wait for
+  every dependent calculation to commit first.
+- Add an integration test that asserts the order of these two
+  events for every order lifecycle path.
+</code></pre>
+  </div>
+</div>
+
+<div id="cite-decision" popover class="cite-popup">
+  <div class="cite-popup-head">
+    <span class="cite-scope">decisions/</span>
+    <span class="cite-name">2026-05-12-event-ordering.md</span>
+    <button class="cite-close" popovertarget="cite-decision" popovertargetaction="hide" aria-label="Close">×</button>
+  </div>
+  <div class="cite-popup-body">
+    <pre><code>---
+title: Order events emit in pricing-then-confirmation order
+status: accepted
+date: 2026-05-12
+supersedes: []
+superseded_by: []
+tags: [order, events, ordering, projections]
+---
+
+## Context
+
+Projections that consumed `OrderConfirmed` were occasionally
+seeing pre-pricing totals (see [[lessons/2026-04-29-double-confirm-bug]]).
+We needed a rule that prevents this class of bug for every
+order-pricing path, not a one-off fix.
+
+## Decision
+
+The `Order` aggregate emits events in this order, every time:
+
+1. `OrderPlaced`
+2. `OrderPriced`        ← carries the final total
+3. `OrderConfirmed`     ← snapshots priced state
+
+The `PricingProcessManager` is responsible for sequencing.
+Confirmation cannot complete until pricing has committed to
+the event store.
+
+## Alternatives considered
+
+- Emit `OrderConfirmed` first, then a `PricingFinalised` event
+  that projections subscribe to. Rejected: makes "what's the
+  confirmed total" a two-step lookup.
+- Make pricing synchronous inside the confirmation handler.
+  Rejected: couples two concerns into one transaction; pricing
+  needs to be re-runnable.
+
+## Consequences
+
+- All Order projections subscribe to `OrderConfirmed` and trust
+  the carried total.
+- Adding new pricing inputs requires re-running pricing BEFORE
+  confirmation, never after.
+- Tests assert event order for every order lifecycle path.
+</code></pre>
+  </div>
+</div>
+
+<style>
+  .recall {
+    margin: 7rem auto 5rem;
+    max-width: 56rem;
+  }
+
+  .recall-eyebrow {
+    font-family: var(--sl-font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+    margin: 0 0 1.25rem;
+  }
+
+  .recall-title {
+    font-family: var(--strata-font-display);
+    font-weight: 360;
+    font-size: clamp(1.9rem, 3.8vw, 2.6rem);
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin: 0 0 1rem;
+    font-variation-settings: 'opsz' 144, 'SOFT' 30;
+  }
+
+  .recall-lede {
+    font-family: var(--strata-font-display);
+    font-style: italic;
+    font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+    color: var(--sl-color-gray-2);
+    max-width: 40rem;
+    margin: 0 0 3rem;
+    line-height: 1.55;
+    font-variation-settings: 'opsz' 36;
+  }
+
+  /* ---- Chat container ---- */
+  .chat {
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--sl-color-bg-sidebar);
+    box-shadow:
+      0 1px 0 0 var(--sl-color-hairline-light) inset,
+      0 30px 60px -30px color-mix(in srgb, var(--sl-color-accent) 14%, transparent);
+  }
+
+  .msg {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    gap: 1rem;
+    padding: 1.75rem 1.75rem;
+    border-bottom: 1px solid var(--sl-color-hairline-light);
+  }
+
+  .msg:last-child { border-bottom: 0; }
+  .msg-user { background: transparent; }
+  .msg-thinking { background: transparent; }
+  .msg-claude { background: color-mix(in srgb, var(--sl-color-accent) 3%, transparent); }
+
+  /* Scripted-reveal: all messages start hidden, animate in on view */
+  [data-chat] .msg {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+  }
+  [data-chat].play-1 [data-stage="user"],
+  [data-chat].play-2 [data-stage="user"],
+  [data-chat].play-2 [data-stage="thinking"],
+  [data-chat].play-3 [data-stage="user"],
+  [data-chat].play-3 [data-stage="claude"] {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  /* Thinking only shows in stage 2 */
+  [data-chat] [data-stage="thinking"] { display: grid; }
+  [data-chat].play-3 [data-stage="thinking"] { display: none; }
+  [data-chat]:not(.play-2):not(.play-1):not(.play-3) [data-stage="thinking"] { display: none; }
+  [data-chat]:not(.play-1):not(.play-2):not(.play-3) .msg { display: none; }
+  [data-chat]:not(.play-1):not(.play-2):not(.play-3) [data-stage="user"] { display: grid; }
+
+  /* Thinking dots animation */
+  .thinking-dots {
+    display: inline-flex;
+    gap: 4px;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+  }
+  .thinking-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--sl-color-accent);
+    opacity: 0.4;
+    animation: dots 1.2s infinite;
+  }
+  .thinking-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .thinking-dots span:nth-child(3) { animation-delay: 0.30s; }
+
+  @keyframes dots {
+    0%, 100% { opacity: 0.3; transform: translateY(0); }
+    40% { opacity: 1; transform: translateY(-2px); }
+  }
+
+  .msg-thinking .msg-who { color: var(--sl-color-accent); }
+  .msg-thinking .msg-body { color: var(--sl-color-gray-2); font-style: italic; }
+
+  /* Citations fade in last */
+  [data-chat] .cite { opacity: 0; transform: translateY(2px); transition: opacity 0.3s ease 0.4s, transform 0.3s ease 0.4s; }
+  [data-chat].play-3 .cite { opacity: 1; transform: translateY(0); }
+  [data-chat].play-3 .cite:nth-of-type(2) { transition-delay: 0.55s; }
+
+  .msg-who {
+    font-family: var(--sl-font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-4);
+    padding-top: 0.45rem;
+  }
+
+  .msg-claude .msg-who { color: var(--sl-color-accent); }
+
+  .msg-body {
+    font-size: 1.02rem;
+    line-height: 1.6;
+    color: var(--sl-color-gray-1);
+  }
+
+  .msg-body p { margin: 0 0 0.85rem; }
+  .msg-body p:last-child { margin-bottom: 0; }
+
+  .msg-body code {
+    font-family: var(--sl-font-mono);
+    font-size: 0.85em;
+    background: var(--sl-color-bg-inline-code);
+    padding: 0.1em 0.4em;
+    border-radius: 3px;
+    color: var(--sl-color-text);
+  }
+
+  .msg-body strong { font-weight: 580; color: var(--sl-color-text); }
+
+  /* Citation chip — button styled like a tag, opens a popover */
+  .msg-body .cite {
+    appearance: none;
+    background: var(--sl-color-bg-inline-code);
+    border: 1px solid color-mix(in srgb, var(--sl-color-accent) 35%, transparent);
+    color: var(--sl-color-accent);
+    font-family: var(--sl-font-mono);
+    font-size: 0.82em;
+    padding: 0.15em 0.5em;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    line-height: 1.4;
+    vertical-align: baseline;
+  }
+
+  .msg-body .cite:hover,
+  .msg-body .cite:focus-visible {
+    background: color-mix(in srgb, var(--sl-color-accent) 15%, transparent);
+    border-color: var(--sl-color-accent);
+    color: var(--sl-color-accent-high, var(--sl-color-accent));
+    outline: none;
+  }
+
+  /* ---- Popover ----
+     Note: do NOT set `display` on the base [popover] selector; the user-agent
+     applies display:none to hide it until invoked. We add layout properties
+     in `:popover-open` so the popover stays hidden by default and lays out
+     as a flex column when actually opened. */
+  .cite-popup {
+    border: 1px solid var(--sl-color-hairline-shade);
+    background: var(--sl-color-bg-sidebar);
+    border-radius: 10px;
+    padding: 0;
+    width: min(640px, 92vw);
+    max-height: min(76vh, 640px);
+    color: var(--sl-color-text);
+    box-shadow:
+      0 1px 0 0 var(--sl-color-hairline-light) inset,
+      0 30px 80px -20px rgba(0, 0, 0, 0.6),
+      0 0 0 1px color-mix(in srgb, var(--sl-color-accent) 18%, transparent);
+    overflow: hidden;
+    margin: auto;
+  }
+
+  .cite-popup:popover-open {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cite-popup::backdrop {
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+  }
+
+  .cite-popup-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.9rem 1.1rem;
+    border-bottom: 1px solid var(--sl-color-hairline-light);
+    background: color-mix(in srgb, var(--sl-color-accent) 5%, transparent);
+  }
+
+  .cite-scope {
+    font-family: var(--sl-font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sl-color-accent);
+  }
+
+  .cite-name {
+    font-family: var(--sl-font-mono);
+    font-size: 0.85rem;
+    color: var(--sl-color-text);
+    flex: 1;
+    overflow-wrap: anywhere;
+  }
+
+  .cite-close {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    color: var(--sl-color-gray-2);
+    font-size: 1.3rem;
+    line-height: 1;
+    padding: 0.1rem 0.4rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .cite-close:hover {
+    background: var(--sl-color-bg-inline-code);
+    color: var(--sl-color-text);
+  }
+
+  .cite-popup-body {
+    overflow: auto;
+    padding: 0;
+  }
+
+  .cite-popup-body pre {
+    margin: 0;
+    padding: 1.1rem 1.3rem;
+    background: transparent;
+    font-family: var(--sl-font-mono);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--sl-color-gray-1);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* ---- Receipt ---- */
+  .msg-receipt {
+    margin-top: 1.5rem;
+    border-top: 1px dashed var(--sl-color-hairline-shade);
+    padding-top: 1rem;
+  }
+
+  .msg-receipt summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.78rem;
+    color: var(--sl-color-gray-3);
+    user-select: none;
+  }
+
+  .msg-receipt summary::-webkit-details-marker { display: none; }
+
+  .msg-receipt summary::after {
+    content: '↓';
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--sl-color-gray-4);
+    transition: transform 0.2s ease;
+  }
+
+  .msg-receipt[open] summary::after { transform: rotate(180deg); }
+  .msg-receipt summary:hover { color: var(--sl-color-text); }
+
+  .receipt-icon {
+    color: var(--sl-color-accent);
+    font-family: var(--sl-font-mono);
+  }
+
+  .receipt-list {
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+  }
+
+  .receipt-list li {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 0.5rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--sl-color-hairline-light);
+    font-family: var(--sl-font-mono);
+    font-size: 0.78rem;
+    align-items: baseline;
+  }
+
+  .receipt-list li:last-child { border-bottom: 0; }
+
+  .r-scope {
+    color: var(--sl-color-gray-4);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .r-path { color: var(--sl-color-text); }
+
+  .r-blurb {
+    grid-column: 2;
+    color: var(--sl-color-gray-3);
+    font-family: var(--sl-font);
+    font-size: 0.8rem;
+    margin-top: 0.1rem;
+    font-style: italic;
+  }
+
+  .recall-footnote {
+    margin-top: 2rem;
+    color: var(--sl-color-gray-3);
+    font-size: 0.92rem;
+    line-height: 1.6;
+    max-width: 44rem;
+  }
+</style>
+
+<script>
+  // Play the conversation when the chat scrolls into view: user → thinking → claude.
+  if ('IntersectionObserver' in window) {
+    const chats = document.querySelectorAll<HTMLElement>('[data-chat]');
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          const chat = e.target as HTMLElement;
+          io.unobserve(chat);
+          // Stage 1: user message visible.
+          chat.classList.add('play-1');
+          // Stage 2: thinking dots after a beat.
+          setTimeout(() => {
+            chat.classList.remove('play-1');
+            chat.classList.add('play-2');
+          }, 1100);
+          // Stage 3: claude answer + citations.
+          setTimeout(() => {
+            chat.classList.remove('play-2');
+            chat.classList.add('play-3');
+          }, 2400);
+        }
+      },
+      { threshold: 0.35 },
+    );
+    chats.forEach((c) => io.observe(c));
+  } else {
+    // No-IO fallback: just show the final state.
+    document.querySelectorAll<HTMLElement>('[data-chat]').forEach((c) => c.classList.add('play-3'));
+  }
+</script>

@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.so
+
+# Virtualenv — bootstrapped per host by bin/bootstrap-venv.sh
+.venv/
+venv/
+env/
+
+# Test + lint caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Editors / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Plugin-local data (set via CLAUDE_PLUGIN_DATA, but never inside the repo)
+.strata/
+.bigbrain/
+
+# Scratch artefacts (screenshots, dev notes — never committed)
+.scratch/
+
+# Astro + node build artefacts
+docs/node_modules/
+docs/.astro/
+docs/dist/
+
+# Obsidian metadata if someone opens the repo dir directly
+.obsidian/

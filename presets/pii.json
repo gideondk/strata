@@ -1,0 +1,16 @@
+{
+  "id": "pii-generic",
+  "description": "Generic PII heuristics — credit cards (Luhn), emails next to identifiers. Opt-in.",
+  "block": [
+    {
+      "name": "credit-card",
+      "regex": "(?<!\\d)(\\d[ -]?){12,18}\\d(?!\\d)",
+      "validator": "luhn"
+    }
+  ],
+  "warn": [
+    { "name": "client-id-value",  "regex": "\\bclient[_-]?id\\b\\s*[:=]\\s*[A-Za-z0-9-]{6,}", "flags": "i" },
+    { "name": "user-id-value",    "regex": "\\buser[_-]?id\\b\\s*[:=]\\s*[A-Za-z0-9-]{6,}", "flags": "i" },
+    { "name": "email-with-name",  "regex": "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b" }
+  ]
+}

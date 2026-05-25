@@ -1,0 +1,84 @@
+---
+import StrataLayers from './StrataLayers.astro';
+import Topography from './Topography.astro';
+---
+
+<section class="hero-section">
+  <Topography />
+
+  <div class="hero-text">
+    <div class="hero-badge" aria-hidden="true">
+      <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="none">
+        <g fill="currentColor">
+          <rect x="5" y="7"  width="22" height="2.6" opacity="0.45"/>
+          <rect x="5" y="13" width="22" height="4.2" opacity="0.78"/>
+          <rect x="5" y="20.5" width="22" height="5.5" opacity="1"/>
+        </g>
+      </svg>
+    </div>
+
+    <p class="hero-eyebrow">Local-first memory for Claude Code</p>
+    <h1 class="hero-title">
+      Claude should remember your <em>codebase</em>.
+    </h1>
+    <p class="hero-tagline">
+      Three memory shapes Claude actually needs, kept distinct in
+      one local vault. Markdown on your disk. Indexed on your
+      machine. Surfaces in conversation when it matters.
+    </p>
+    <code class="hero-install">/plugin install strata@strata</code>
+  </div>
+
+  <div class="hero-figure">
+    <StrataLayers />
+  </div>
+</section>
+
+<style>
+  .hero-section {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    align-items: center;
+    padding: 6rem 0 7rem;
+    isolation: isolate;
+  }
+
+  @media (min-width: 1180px) {
+    .hero-section {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 4rem;
+      padding: 7rem 0 9rem;
+    }
+  }
+
+  .hero-text {
+    position: relative;
+    z-index: 1;
+    max-width: 34rem;
+  }
+
+  .hero-figure {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+  }
+
+  .hero-badge {
+    color: var(--sl-color-accent);
+    width: 2.6rem;
+    height: 2.6rem;
+    margin-bottom: 1.5rem;
+    filter: drop-shadow(0 1px 12px color-mix(in srgb, var(--sl-color-accent) 28%, transparent));
+  }
+  .hero-badge svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .hero-text :global(.hero-title) {
+    margin-top: 0;
+  }
+</style>

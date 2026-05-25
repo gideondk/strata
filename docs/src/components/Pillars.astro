@@ -1,0 +1,263 @@
+---
+/**
+ * Three pillars — the memory taxonomy. Restrained cards, hairline rules,
+ * single amber accent for emphasis only. Pairs with the MemoryTriad
+ * diagram so readers see model + mapping in one visual frame.
+ */
+import MemoryTriad from './MemoryTriad.astro';
+---
+
+<section class="pillars">
+  <p class="pillars-eyebrow">the model</p>
+  <h2 class="pillars-title">Three memory shapes, kept distinct.</h2>
+  <p class="pillars-lede">
+    Strata splits memory into three kinds, <em>episodic, semantic,
+    and procedural</em>, each on its own retrieval path with its own
+    lifetime and its own audit rules. The right shape comes back
+    when you ask.
+  </p>
+
+  <MemoryTriad />
+
+  <div class="pillars-grid">
+    <article class="pillar">
+      <div class="pillar-icon" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <g fill="none" stroke="currentColor" stroke-width="1.2">
+            <circle cx="24" cy="24" r="3" fill="currentColor"/>
+            <circle cx="24" cy="24" r="9"  opacity="0.6"/>
+            <circle cx="24" cy="24" r="15" opacity="0.4"/>
+            <circle cx="24" cy="24" r="21" opacity="0.2"/>
+          </g>
+        </svg>
+      </div>
+      <p class="pillar-kind">Episodic</p>
+      <h3>pr-context/</h3>
+      <p class="pillar-body">
+        What happened on this branch. Per-PR working notes that
+        archive when the PR merges. Time-bounded by design.
+      </p>
+      <p class="pillar-cmd"><code>/strata:save</code></p>
+    </article>
+
+    <article class="pillar">
+      <div class="pillar-icon" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <g fill="none" stroke="currentColor" stroke-width="1.2">
+            <path d="M 8 24 L 24 8 L 40 24 L 24 40 Z" opacity="0.4"/>
+            <path d="M 14 24 L 24 14 L 34 24 L 24 34 Z" opacity="0.65"/>
+            <path d="M 20 24 L 24 20 L 28 24 L 24 28 Z" fill="currentColor"/>
+          </g>
+        </svg>
+      </div>
+      <p class="pillar-kind">Semantic</p>
+      <h3>domain/ · decisions/</h3>
+      <p class="pillar-body">
+        What things mean here. What you've chosen and why.
+        Long-lived, stable, audited via ADR supersession.
+      </p>
+      <p class="pillar-cmd">
+        <code>/strata:domain</code> · <code>/strata:decide</code>
+      </p>
+    </article>
+
+    <article class="pillar">
+      <div class="pillar-icon" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <g fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+            <line x1="10" y1="14" x2="38" y2="14" opacity="0.45"/>
+            <line x1="10" y1="22" x2="32" y2="22" opacity="0.7"/>
+            <line x1="10" y1="30" x2="38" y2="30" opacity="0.85"/>
+            <line x1="10" y1="38" x2="26" y2="38" opacity="0.55"/>
+            <circle cx="6" cy="14" r="1.6" fill="currentColor" opacity="0.45"/>
+            <circle cx="6" cy="22" r="1.6" fill="currentColor" opacity="0.7"/>
+            <circle cx="6" cy="30" r="1.6" fill="currentColor" opacity="0.85"/>
+            <circle cx="6" cy="38" r="1.6" fill="currentColor" opacity="0.55"/>
+          </g>
+        </svg>
+      </div>
+      <p class="pillar-kind">Procedural</p>
+      <h3>procedural/</h3>
+      <p class="pillar-body">
+        How you do things here. Recipes and runbooks.
+        The sequence that turns "we should" into "here's the steps."
+      </p>
+      <p class="pillar-cmd"><code>/strata:procedure</code></p>
+    </article>
+  </div>
+
+  <p class="pillars-footnote">
+    <code>lessons/</code> bridges episodic and procedural.
+    <code>propositions/</code> tracks open questions through their
+    lifecycle, from open to contested to settled or refuted.
+  </p>
+</section>
+
+<style>
+  .pillars {
+    margin: 6rem auto 4rem;
+    max-width: 64rem;
+  }
+
+  .pillars-eyebrow {
+    font-family: var(--sl-font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+    margin: 0 0 1.25rem;
+  }
+
+  .pillars-title {
+    font-family: var(--strata-font-display);
+    font-weight: 380;
+    font-size: clamp(1.9rem, 3.8vw, 2.6rem);
+    letter-spacing: -0.028em;
+    line-height: 1.05;
+    margin: 0 0 1rem;
+    font-variation-settings: 'opsz' 144, 'SOFT' 30;
+  }
+
+  .pillars-lede {
+    font-family: var(--strata-font-display);
+    font-style: italic;
+    font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+    color: var(--sl-color-gray-2);
+    max-width: 38rem;
+    margin: 0 0 2rem;
+    line-height: 1.5;
+    font-variation-settings: 'opsz' 36;
+  }
+
+  .pillars-lede em {
+    color: var(--sl-color-accent);
+    font-style: italic;
+  }
+
+  .pillars-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    border-top: 1px solid var(--sl-color-hairline);
+    margin-top: 3rem;
+  }
+
+  @media (min-width: 800px) {
+    .pillars-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .pillar {
+    padding: 2.25rem 1.5rem 1.75rem;
+    border-bottom: 1px solid var(--sl-color-hairline);
+    position: relative;
+    overflow: hidden;
+    transition: background-color 0.3s ease;
+  }
+
+  /* Strata-band hover: a 3px amber bar slides up from the bottom */
+  .pillar::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: var(--sl-color-accent);
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  .pillar:hover {
+    background: color-mix(in srgb, var(--sl-color-accent) 4%, transparent);
+  }
+  .pillar:hover::after {
+    transform: translateY(0);
+  }
+  .pillar:hover .pillar-icon {
+    transform: scale(1.06) rotate(-1.5deg);
+    color: var(--sl-color-accent-high, var(--sl-color-accent));
+  }
+  .pillar:hover .pillar-kind {
+    letter-spacing: 0.18em;
+  }
+
+  @media (min-width: 800px) {
+    .pillar {
+      border-right: 1px solid var(--sl-color-hairline);
+    }
+    .pillar:last-child {
+      border-right: 0;
+    }
+  }
+
+  .pillar-icon {
+    color: var(--sl-color-accent);
+    width: 2.4rem;
+    height: 2.4rem;
+    margin-bottom: 1rem;
+    transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), color 0.25s ease;
+    transform-origin: left center;
+  }
+  .pillar-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .pillar-kind {
+    transition: letter-spacing 0.25s ease;
+  }
+
+  .pillar-kind {
+    font-family: var(--sl-font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--sl-color-accent);
+    margin: 0 0 0.5rem;
+  }
+
+  .pillar h3 {
+    font-family: var(--sl-font-mono);
+    font-weight: 480;
+    font-size: 1rem;
+    margin: 0 0 1rem;
+    letter-spacing: -0.01em;
+    color: var(--sl-color-text);
+  }
+
+  .pillar-body {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--sl-color-gray-2);
+    margin: 0 0 1.5rem;
+  }
+
+  .pillar-cmd {
+    font-size: 0.82rem;
+    margin: 0;
+    color: var(--sl-color-gray-3);
+  }
+
+  .pillar-cmd code {
+    background: transparent !important;
+    padding: 0 !important;
+    border: 0 !important;
+    color: var(--sl-color-text) !important;
+    font-size: 0.85rem;
+  }
+
+  .pillars-footnote {
+    margin-top: 3rem;
+    color: var(--sl-color-gray-3);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    max-width: 42rem;
+  }
+
+  .pillars-footnote code {
+    color: var(--sl-color-text);
+  }
+</style>

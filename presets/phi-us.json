@@ -1,0 +1,17 @@
+{
+  "id": "phi-us",
+  "description": "US PHI — SSN (with validation), DEA numbers (with checksum). Opt-in.",
+  "block": [
+    {
+      "name": "us-ssn",
+      "regex": "(?<!\\d)\\d{3}[ -]?\\d{2}[ -]?\\d{4}(?!\\d)",
+      "validator": "us_ssn"
+    },
+    {
+      "name": "dea-number",
+      "regex": "\\b[A-Z][ABCDEFGHJKLMNPRSTUX][0-9]{7}\\b",
+      "validator": "dea_checksum"
+    }
+  ],
+  "warn": []
+}

@@ -1,0 +1,17 @@
+{
+  "id": "phi-uk",
+  "description": "UK clinical PHI — NHS numbers (Mod-11 verified), UK postcodes. Opt-in.",
+  "block": [
+    {
+      "name": "uk-postcode",
+      "regex": "\\b(?:GIR\\s*0AA|(?:[A-PR-UWYZ](?:[A-HK-Y]?\\d[A-Z0-9]?|\\d[A-Z]?))\\s*\\d[A-Z]{2})\\b",
+      "flags": "i"
+    },
+    {
+      "name": "nhs-number",
+      "regex": "(?<!\\d)(\\d{3})[ -]?(\\d{3})[ -]?(\\d{4})(?!\\d)",
+      "validator": "nhs_mod11"
+    }
+  ],
+  "warn": []
+}

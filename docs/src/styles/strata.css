@@ -1,0 +1,381 @@
+/* ============================================================
+   Strata — restrained tool aesthetic
+   Warm near-black with a single amber accent. No rainbow.
+   Type: Fraunces (display), Inter (body), JetBrains Mono (code).
+   ============================================================ */
+
+:root {
+  --sl-font: 'Inter Variable', system-ui, -apple-system, sans-serif;
+  --sl-font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+  --strata-font-display: 'Fraunces Variable', Georgia, serif;
+  --strata-font-wordmark: 'Bricolage Grotesque Variable', 'Inter Variable', system-ui, sans-serif;
+}
+
+/* ---- Dark (default) — warm-black canvas, amber accent ---- */
+:root,
+:root[data-theme='dark'] {
+  --sl-color-white: #f5f1e8;
+  --sl-color-gray-1: #d8d3c6;
+  --sl-color-gray-2: #b0a99a;
+  --sl-color-gray-3: #807a6c;
+  --sl-color-gray-4: #58534a;
+  --sl-color-gray-5: #38342e;
+  --sl-color-gray-6: #22201c;
+  --sl-color-gray-7: #18171430;
+  --sl-color-black: #0d0c0a;
+
+  --sl-color-accent-low: #2a1f10;
+  --sl-color-accent: #d4a574;
+  --sl-color-accent-high: #e8be8a;
+
+  --sl-color-text: #f5f1e8;
+  --sl-color-text-accent: #d4a574;
+  --sl-color-text-invert: #0d0c0a;
+  --sl-color-bg: #0d0c0a;
+  --sl-color-bg-nav: #14130f;
+  --sl-color-bg-sidebar: #110f0c;
+  --sl-color-bg-inline-code: #1c1a16;
+  --sl-color-bg-accent: #d4a574;
+  --sl-color-hairline-light: rgba(245, 241, 232, 0.04);
+  --sl-color-hairline: rgba(245, 241, 232, 0.08);
+  --sl-color-hairline-shade: rgba(245, 241, 232, 0.14);
+
+  /* Single hue, six lightness steps for the strata illustration */
+  --stratum-1: #e8c89c;  /* lightest top */
+  --stratum-2: #d4a574;
+  --stratum-3: #b8854a;
+  --stratum-4: #8e6432;
+  --stratum-5: #5a3f1e;
+  --stratum-6: #2e2010;  /* deepest bedrock */
+}
+
+/* ---- Light — warm cream, deeper amber for contrast ---- */
+:root[data-theme='light'] {
+  --sl-color-white: #16110a;
+  --sl-color-gray-1: #2e271c;
+  --sl-color-gray-2: #5a5448;
+  --sl-color-gray-3: #7a7264;
+  --sl-color-gray-4: #a09a8c;
+  --sl-color-gray-5: #c8c2b4;
+  --sl-color-gray-6: #e6e1d4;
+  --sl-color-gray-7: #f0ebde;
+  --sl-color-black: #fdfbf6;
+
+  --sl-color-accent-low: #f0e2cc;
+  --sl-color-accent: #a06a30;
+  --sl-color-accent-high: #7a4e1e;
+
+  --sl-color-text: #16110a;
+  --sl-color-text-accent: #a06a30;
+  --sl-color-text-invert: #fdfbf6;
+  --sl-color-bg: #fdfbf6;
+  --sl-color-bg-nav: #f5f1ea;
+  --sl-color-bg-sidebar: #faf6ee;
+  --sl-color-bg-inline-code: #ece6d8;
+  --sl-color-bg-accent: #a06a30;
+  --sl-color-hairline-light: rgba(22, 17, 10, 0.05);
+  --sl-color-hairline: rgba(22, 17, 10, 0.1);
+  --sl-color-hairline-shade: rgba(22, 17, 10, 0.18);
+
+  --stratum-1: #e6cba0;
+  --stratum-2: #c89a64;
+  --stratum-3: #a6743c;
+  --stratum-4: #7e5022;
+  --stratum-5: #553414;
+  --stratum-6: #2a1a0a;
+}
+
+/* ---- Type ---- */
+html {
+  font-family: var(--sl-font);
+  font-feature-settings: 'ss01', 'cv11';
+  font-optical-sizing: auto;
+}
+
+h1, h2, h3, h4, h5, h6,
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3 {
+  font-family: var(--strata-font-display);
+  letter-spacing: -0.025em;
+  font-variation-settings: 'opsz' 96;
+  color: var(--sl-color-text);
+}
+
+h1, .sl-markdown-content h1 {
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  font-weight: 340;
+  letter-spacing: -0.035em;
+  font-variation-settings: 'opsz' 144, 'SOFT' 30;
+  line-height: 1.05;
+  margin-bottom: 1.5rem;
+}
+
+h2, .sl-markdown-content h2 {
+  font-size: clamp(1.45rem, 2.3vw, 1.8rem);
+  font-weight: 420;
+  margin-top: 3.5rem;
+  margin-bottom: 1.25rem;
+  font-variation-settings: 'opsz' 72, 'SOFT' 40;
+  letter-spacing: -0.03em;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--sl-color-hairline-light);
+  position: relative;
+}
+.sl-markdown-content h2::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 2.5rem;
+  height: 1px;
+  background: var(--sl-color-accent);
+}
+.sl-markdown-content > h2:first-child {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 1rem;
+}
+.sl-markdown-content > h2:first-child::before { display: none; }
+
+h3, .sl-markdown-content h3 {
+  font-size: 1.05rem;
+  font-weight: 580;
+  font-variation-settings: 'opsz' 18;
+  margin-top: 2.5rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.015em;
+  color: var(--sl-color-gray-1);
+}
+
+.sl-markdown-content {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  font-weight: 380;
+  color: var(--sl-color-gray-1);
+}
+
+.sl-markdown-content p,
+.sl-markdown-content li {
+  letter-spacing: -0.003em;
+}
+
+.sl-markdown-content p strong {
+  color: var(--sl-color-text);
+  font-weight: 550;
+}
+
+/* Inline code — quiet, no border */
+.sl-markdown-content :not(a) > code:not(pre code) {
+  font-family: var(--sl-font-mono);
+  font-size: 0.88em;
+  background: var(--sl-color-bg-inline-code);
+  padding: 0.125em 0.4em;
+  border-radius: 4px;
+  font-feature-settings: 'calt' 1, 'liga' 0;
+}
+
+/* Code block frame — give blocks a quiet card treatment */
+.sl-markdown-content .expressive-code {
+  margin: 1.5rem 0;
+}
+.sl-markdown-content .expressive-code .frame {
+  box-shadow:
+    0 0 0 1px var(--sl-color-hairline) inset,
+    0 1px 0 0 var(--sl-color-hairline-light) inset !important;
+}
+
+/* Hairline dividers — quiet, NOT rainbow */
+hr,
+.strata-band {
+  border: 0;
+  height: 1px;
+  background: var(--sl-color-hairline);
+  margin: 4rem 0;
+}
+
+/* ---- Splash template overrides ---- */
+/* Starlight's splash template renders the page title as an h1 inside
+   .sl-container before the markdown body. We replace it with our own
+   Hero component, so hide the default. */
+.sl-container > h1,
+.sl-markdown-content > h1:first-child {
+  display: none;
+}
+
+[data-has-toc='false'] .main-pane .sl-markdown-content {
+  max-width: 72rem;
+  margin-inline: auto;
+}
+
+/* ---- Top header ---- */
+header.header {
+  border-bottom: 1px solid var(--sl-color-hairline);
+  backdrop-filter: blur(14px);
+  background-color: color-mix(in srgb, var(--sl-color-bg) 80%, transparent);
+}
+
+/* Wordmark — Chambered Spiral mark + STRATA set in Space Grotesk Bold
+   uppercase with architectural tracking. The mark sits in a 30px box;
+   the wordmark is real HTML text styled via CSS so the typography stays
+   pin-sharp at every size. */
+.site-title {
+  gap: 0.65rem !important;
+  align-items: center !important;
+}
+.site-title > img {
+  width: 30px !important;
+  height: 30px !important;
+  color: var(--sl-color-accent);
+}
+.site-title > span {
+  font-family: var(--strata-font-wordmark) !important;
+  font-weight: 800 !important;
+  font-size: 1rem !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+  color: var(--sl-color-text) !important;
+  padding-top: 1px;
+  padding-right: 0.04em;
+  font-variation-settings: 'wdth' 100, 'opsz' 48;
+}
+
+/* ---- Tables — quiet ---- */
+.sl-markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.5rem 0;
+  font-size: 0.95rem;
+}
+
+.sl-markdown-content table th {
+  font-family: var(--sl-font);
+  font-weight: 540;
+  text-align: left;
+  border-bottom: 1px solid var(--sl-color-hairline-shade);
+  padding: 0.6rem 0.85rem;
+  color: var(--sl-color-gray-2);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sl-markdown-content table td {
+  border-bottom: 1px solid var(--sl-color-hairline-light);
+  padding: 0.75rem 0.85rem;
+  transition: background-color 0.15s ease;
+}
+
+.sl-markdown-content table tbody tr:hover td {
+  background: color-mix(in srgb, var(--sl-color-accent) 4%, transparent);
+}
+
+.sl-markdown-content table td:first-child {
+  color: var(--sl-color-text);
+  font-weight: 500;
+}
+
+/* ---- Blockquote — single amber rule ---- */
+.sl-markdown-content blockquote {
+  border-left: 2px solid var(--sl-color-accent);
+  padding-left: 1.25rem;
+  margin-left: 0;
+  color: var(--sl-color-gray-2);
+  font-style: normal;
+  font-family: var(--strata-font-display);
+  font-variation-settings: 'opsz' 24;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+}
+
+/* ---- Asides — quiet, amber accent on note ---- */
+.starlight-aside {
+  border-radius: 6px;
+  border-left-width: 2px;
+}
+
+.starlight-aside--note { border-left-color: var(--sl-color-accent); }
+.starlight-aside--tip { border-left-color: var(--stratum-2); }
+.starlight-aside--caution { border-left-color: var(--stratum-3); }
+.starlight-aside--danger { border-left-color: var(--stratum-4); }
+
+/* ---- Links ---- */
+.sl-markdown-content a:not(.heading-anchor):not(.no-underline) {
+  color: var(--sl-color-text);
+  text-decoration: none;
+  border-bottom: 1px solid var(--sl-color-hairline-shade);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.sl-markdown-content a:not(.heading-anchor):hover {
+  color: var(--sl-color-accent);
+  border-bottom-color: var(--sl-color-accent);
+}
+
+/* Focus + selection */
+:focus-visible {
+  outline: 1.5px solid var(--sl-color-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--sl-color-accent) 35%, transparent);
+}
+
+/* ---- Hero typography classes ---- */
+.hero-eyebrow {
+  font-family: var(--sl-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-3);
+  margin: 0 0 1.5rem;
+}
+
+.hero-title {
+  font-family: var(--strata-font-display);
+  font-weight: 360;
+  font-size: clamp(2.1rem, 4.4vw, 3.4rem);
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  margin: 0 0 1.5rem;
+  font-variation-settings: 'opsz' 144, 'SOFT' 30;
+  text-wrap: balance;
+  hyphens: none;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+.hero-title em {
+  font-style: italic;
+  font-variation-settings: 'opsz' 144, 'SOFT' 80;
+  color: var(--sl-color-accent);
+}
+
+.hero-tagline {
+  font-family: var(--strata-font-display);
+  font-style: italic;
+  font-variation-settings: 'opsz' 36;
+  font-size: clamp(1.05rem, 1.5vw, 1.2rem);
+  color: var(--sl-color-gray-2);
+  max-width: 32rem;
+  margin: 0 0 2.5rem;
+  line-height: 1.55;
+}
+
+.hero-install {
+  font-family: var(--sl-font-mono);
+  font-size: 0.85rem;
+  background: var(--sl-color-bg-inline-code);
+  border: 1px solid var(--sl-color-hairline);
+  padding: 0.7rem 1rem;
+  border-radius: 5px;
+  display: inline-block;
+  color: var(--sl-color-gray-1);
+}
+
+.hero-install::before {
+  content: '$ ';
+  color: var(--sl-color-gray-4);
+}

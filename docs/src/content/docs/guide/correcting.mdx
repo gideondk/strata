@@ -1,0 +1,150 @@
+---
+title: Correcting the vault
+description: "Knowledge changes. Strata has four ways to handle drift: correct, invalidate, supersede, forget."
+---
+
+import NoteLifecycle from '../../../components/NoteLifecycle.astro';
+
+Knowledge changes. A domain definition shifts after a refactor. An
+ADR turns out to be wrong. A lesson misremembered the conclusion.
+
+Strata has four ways to handle it. Each carries a different blast
+Radius.
+
+<NoteLifecycle />
+
+## The four operations
+
+| Operation | When | Skill |
+|---|---|---|
+| **Correct** | One paragraph is wrong; note overall stays useful | `/strata:correct` |
+| **Invalidate** | The whole note is no longer current; keep history visible | `/strata:invalidate` |
+| **Supersede** (decisions only) | A new ADR replaces an older one with a bidirectional link | `/strata:decide --supersedes <old>` |
+| **Forget** | The note must disappear entirely (PHI, secrets, mistake) | `/strata:forget` |
+
+All four leave a different audit trail. Correct keeps the note and
+records what changed. Invalidate keeps the note and marks it dead.
+Supersede keeps both notes and links them. Forget moves the note to
+`.trash/` with a reason logged.
+
+## Correct
+
+Use for focused edits where the note's overall shape stays intact.
+
+```bash
+# Replace body
+cat <<'EOF' | /strata:correct domain/order-aggregate.md \
+  --reason "OrderPriced now emitted before OrderConfirmed, not after"
+# Order Aggregate
+
+<new body>
+EOF
+
+# Update one frontmatter field
+/strata:correct domain/order-aggregate.md \
+  --set status=stable \
+  --reason "Adopted in production after two-week rollout"
+```
+
+The script:
+
+1. Reads the note and frontmatter.
+2. Applies `--set` updates and optional body replacement.
+3. Appends `{at, by, reason}` to a `corrections:` list.
+4. Bumps `updated:` to today.
+5. Refreshes the FTS index.
+
+`--set` is repeatable. `--reason` is strongly recommended. It's the
+Durable audit trail.
+
+### Auto-invocation
+
+Fires on *"fix the note about X"*, *"the part about Y should say Z"*,
+or *"update the status of `<slug>`"*. Claude proposes the edit, you
+Approve, the script writes.
+
+## Invalidate
+
+Use when a whole note is no longer current but historical context
+Still matters.
+
+```bash
+/strata:invalidate domain/old-aggregate-pattern.md \
+  --reason "Aggregate split into Order + Payment in 2026-05-24 refactor" \
+  --replaced-by "domain/order-aggregate.md"
+```
+
+The note stays in the vault. Readable in Obsidian, in `git log`, in
+Audit reviews. But:
+
+- `status: invalidated` joins the frontmatter.
+- `invalidated_at`, `invalidated_by`, `invalidation_reason` are
+  recorded.
+- Optional `replaced_by:` link points to the successor.
+- Default search filters it out. `memory_search`, `find`, and
+  `domain_lookup` skip invalidated notes.
+- Opt back in with `include_invalidated=true` when you need history.
+
+`--reason` is required. Invalidation without an explanation is just
+Deletion in disguise.
+
+### Auto-invocation
+
+Fires on *"that's no longer true"*, *"stop using \<note\>"*, *"this is
+outdated"*, *"deprecate \<note\>"*.
+
+## Supersede (decisions only)
+
+Decisions get special treatment. A new ADR can formally retire an
+Older one with bidirectional linking.
+
+```bash
+/strata:decide "Use Postgres with pgvector" \
+  --supersedes "2026-03-15-pinecone-for-embeddings"
+```
+
+The new ADR records `supersedes: [2026-03-15-pinecone-for-embeddings]`.
+The old ADR gets `superseded_by: [<new-path>]` written back into its
+frontmatter, and its status flips to `superseded`. The chain survives
+Re-indexing on any machine.
+
+Why not invalidate? Because supersession captures the reasoning
+through the new ADR's body. The whole point of an ADR is the
+Reasoning, so the successor carries that load. A one-line `--reason`
+on invalidate can't.
+
+## Forget
+
+The hard delete. Use only when the note shouldn't exist at all.
+
+```bash
+/strata:forget pr-context/feat-x/2026-05-24-secrets-leaked.md \
+  --reason "Contained API key from .env, removed per GDPR request"
+```
+
+The note moves to `<vault>/<repo>/.trash/` with a JSONL audit log
+Entry recording who, when, why, and SHA256. Recoverable. `.trash/`
+is preserved unless you explicitly clean it.
+
+`--reason` is required. Never auto-invokes. Forget only fires on
+Explicit user request. The audit trail must reflect intent.
+
+## Auto-detection of drift
+
+Two signals flag notes for likely correction.
+
+`code_refs` that no longer resolve. When a note's frontmatter lists
+`code_refs: [Foo, Bar]` and one of those symbols doesn't exist in
+the current `graph.json`, `/strata:review` surfaces the note.
+
+Path claims that broke. For ADRs and lessons extracted via bootstrap,
+`plan_correlate` re-runs to detect when previously-resolved paths no
+Longer exist.
+
+Neither auto-corrects. Both surface in review for you to decide
+between correct, invalidate, supersede, or forget.
+
+---
+
+Next: [MCP tools](/guide/mcp-tools/). Every tool exposed to Claude,
+every argument.

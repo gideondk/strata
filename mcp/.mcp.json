@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "strata": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/server.py"]
+    }
+  }
+}
+

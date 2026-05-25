@@ -1,0 +1,121 @@
+---
+/**
+ * CoreSample — illustration of a vertical core sample, the kind a geologist
+ * pulls from a drill rig. Labels point to the six vault scopes.
+ *
+ * Used as a decorative aside in the Pillars section to reinforce the
+ * stratigraphic metaphor without crowding the cross-section in the hero.
+ */
+---
+
+<figure class="core" role="img" aria-label="Vertical core sample showing the six vault scopes">
+  <svg viewBox="0 0 220 540" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="cyl-side" x1="0" x2="1" y1="0" y2="0">
+        <stop offset="0%"  stop-color="var(--sl-color-bg)" stop-opacity="0.55"/>
+        <stop offset="50%" stop-color="var(--sl-color-bg)" stop-opacity="0"/>
+        <stop offset="100%" stop-color="var(--sl-color-bg)" stop-opacity="0.55"/>
+      </linearGradient>
+    </defs>
+
+    <!-- Cylinder body, six stacked strata segments -->
+    <g class="segments">
+      <rect x="55" y="40"  width="80" height="70" fill="var(--stratum-1)"/>
+      <rect x="55" y="110" width="80" height="80" fill="var(--stratum-2)"/>
+      <rect x="55" y="190" width="80" height="70" fill="var(--stratum-3)"/>
+      <rect x="55" y="260" width="80" height="90" fill="var(--stratum-4)"/>
+      <rect x="55" y="350" width="80" height="70" fill="var(--stratum-5)"/>
+      <rect x="55" y="420" width="80" height="80" fill="var(--stratum-6)"/>
+    </g>
+
+    <!-- Cylinder lighting overlay -->
+    <rect x="55" y="40" width="80" height="460" fill="url(#cyl-side)"/>
+
+    <!-- Top cap ellipse -->
+    <ellipse cx="95" cy="40" rx="40" ry="9" fill="var(--stratum-1)" stroke="rgba(0,0,0,0.25)" stroke-width="0.6"/>
+    <!-- Bottom cap ellipse, suggests the cut at the bottom -->
+    <ellipse cx="95" cy="500" rx="40" ry="9" fill="var(--stratum-6)" stroke="rgba(0,0,0,0.4)" stroke-width="0.6"/>
+
+    <!-- Segment boundary lines on the body -->
+    <g stroke="rgba(0,0,0,0.2)" stroke-width="0.6">
+      <line x1="55" y1="110" x2="135" y2="110"/>
+      <line x1="55" y1="190" x2="135" y2="190"/>
+      <line x1="55" y1="260" x2="135" y2="260"/>
+      <line x1="55" y1="350" x2="135" y2="350"/>
+      <line x1="55" y1="420" x2="135" y2="420"/>
+    </g>
+
+    <!-- Depth ticks on the left -->
+    <g stroke="currentColor" stroke-opacity="0.25" stroke-width="0.6">
+      <line x1="40" y1="40"  x2="50" y2="40"/>
+      <line x1="40" y1="110" x2="50" y2="110"/>
+      <line x1="40" y1="190" x2="50" y2="190"/>
+      <line x1="40" y1="260" x2="50" y2="260"/>
+      <line x1="40" y1="350" x2="50" y2="350"/>
+      <line x1="40" y1="420" x2="50" y2="420"/>
+      <line x1="40" y1="500" x2="50" y2="500"/>
+    </g>
+
+    <!-- Right-side labels with tick connectors -->
+    <g font-family="JetBrains Mono Variable, monospace" font-size="9.5" fill="currentColor">
+      <line x1="135" y1="75"  x2="150" y2="75"  stroke="currentColor" stroke-opacity="0.3"/>
+      <text x="156" y="72" font-weight="600" letter-spacing="0.08em">procedural/</text>
+      <text x="156" y="84" fill-opacity="0.5">recipes &amp; how-tos</text>
+
+      <line x1="135" y1="150" x2="150" y2="150" stroke="currentColor" stroke-opacity="0.3"/>
+      <text x="156" y="147" font-weight="600" letter-spacing="0.08em">domain/</text>
+      <text x="156" y="159" fill-opacity="0.5">vocabulary &amp; invariants</text>
+
+      <line x1="135" y1="225" x2="150" y2="225" stroke="currentColor" stroke-opacity="0.3"/>
+      <text x="156" y="222" font-weight="600" letter-spacing="0.08em">decisions/</text>
+      <text x="156" y="234" fill-opacity="0.5">ADRs &amp; supersession</text>
+
+      <line x1="135" y1="305" x2="150" y2="305" stroke="currentColor" stroke-opacity="0.3"/>
+      <text x="156" y="302" font-weight="600" letter-spacing="0.08em">pr-context/</text>
+      <text x="156" y="314" fill-opacity="0.5">per-branch episodic</text>
+
+      <line x1="135" y1="385" x2="150" y2="385" stroke="currentColor" stroke-opacity="0.3"/>
+      <text x="156" y="382" font-weight="600" letter-spacing="0.08em">lessons/</text>
+      <text x="156" y="394" fill-opacity="0.5">retrospectives</text>
+
+      <line x1="135" y1="460" x2="150" y2="460" stroke="currentColor" stroke-opacity="0.3"/>
+      <text x="156" y="457" font-weight="600" letter-spacing="0.08em">propositions/</text>
+      <text x="156" y="469" fill-opacity="0.5">open questions</text>
+    </g>
+
+    <!-- Top metadata strip -->
+    <g font-family="JetBrains Mono Variable, monospace" font-size="8" fill="currentColor" fill-opacity="0.45" letter-spacing="0.08em">
+      <text x="55" y="25">CORE · STRATA-VAULT-01</text>
+      <text x="55" y="528">DEPTH · 6 SCOPES</text>
+    </g>
+  </svg>
+</figure>
+
+<style>
+  .core {
+    margin: 0;
+    max-width: 100%;
+  }
+  .core svg {
+    width: 100%;
+    height: auto;
+    color: var(--sl-color-text);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .segments rect {
+      animation: settle 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+    }
+    .segments rect:nth-child(1) { animation-delay: 0.0s; }
+    .segments rect:nth-child(2) { animation-delay: 0.05s; }
+    .segments rect:nth-child(3) { animation-delay: 0.1s; }
+    .segments rect:nth-child(4) { animation-delay: 0.15s; }
+    .segments rect:nth-child(5) { animation-delay: 0.2s; }
+    .segments rect:nth-child(6) { animation-delay: 0.25s; }
+  }
+
+  @keyframes settle {
+    from { opacity: 0; transform: translateY(-3px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>

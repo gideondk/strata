@@ -1,0 +1,34 @@
+# .bigbrainignore — what to keep out of `bigbrain:bootstrap` scans.
+# Same syntax as .gitignore. Place this file at your repo root.
+#
+# Defaults already exclude:
+#   - Build / cache dirs: node_modules/, dist/, build/, .venv/, __pycache__,
+#     .next/, .nuxt/, .cache/, .pytest_cache/, .mypy_cache/, .ruff_cache/,
+#     coverage/, htmlcov/
+#   - Meta-scaffolding: .claude/, .github/, .gitlab/, .vscode/, .idea/,
+#     .zed/, .agents/
+#   - Our own outputs: graphify-out/, .bigbrain/
+#   - Common AI-tool configs at root: .impeccable.md, .cursor.md,
+#     .cursorrules, .aider.conf.yml, .aiderrc.md, .copilot.md, .windsurf.md
+#   - Low-signal: CHANGELOG.md, LICENSE.md
+#
+# Use this file to:
+#   1. Add repo-specific noise (legacy docs, vendored READMEs, etc.)
+#   2. Re-include something a default excludes (negate with `!pattern`)
+#
+# Precedence, lowest → highest:
+#   defaults  <  .ignore  <  .bigbrainignore
+#
+# So a `!pattern` here overrides both defaults and `.ignore`.
+
+# --- Examples (remove / replace with your own) ---
+
+# Drop an entire stale docs subtree
+# docs/legacy/
+
+# Drop a single one-off file
+# RUNBOOK-old.md
+
+# Re-include a default-excluded file (e.g. you actually do want
+# .github/CONTRIBUTING.md in the bootstrap)
+# !.github/CONTRIBUTING.md

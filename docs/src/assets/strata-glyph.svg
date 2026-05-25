@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!--
+    Strata mark — three horizontal bars.
+    Hard geometric, no curves, no embellishment. Top to bottom:
+    thinnest + lightest (most recent, most ephemeral), through
+    medium, to thickest + heaviest (most stable, longest-lived).
+    Reads as: layered memory, accumulating downward, with
+    different lifetimes per layer. Inverts cleanly for light
+    and dark. Designed to work at 16px favicon and any larger.
+  -->
+  <g fill="#d4a574">
+    <!-- Top — episodic: thin, light. Per-branch, ephemeral. -->
+    <rect x="5" y="7"  width="22" height="2.6" opacity="0.45"/>
+    <!-- Middle — semantic: medium. Domain + decisions, long-lived. -->
+    <rect x="5" y="13" width="22" height="4.2" opacity="0.78"/>
+    <!-- Bottom — procedural: heavy. Recipes that outlast everything. -->
+    <rect x="5" y="20.5" width="22" height="5.5" opacity="1"/>
+  </g>
+</svg>

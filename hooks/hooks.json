@@ -1,0 +1,46 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/prime-context.py\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/on-bash.py\""
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/flush-on-compact.py\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/on-stop.py\""
+          }
+        ]
+      }
+    ]
+  }
+}
+

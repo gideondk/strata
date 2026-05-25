@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "strata",
+  "displayName": "Strata",
+  "version": "0.12.0",
+  "description": "Branch- and PR-aware shared memory for engineering teams. Read-only MCP, pluggable secret/PHI lint, sync-mechanism agnostic.",
+  "author": {
+    "name": "Strata Contributors"
+  },
+  "license": "MIT",
+  "keywords": [
+    "memory",
+    "branch-aware",
+    "pr-context",
+    "mcp",
+    "obsidian",
+    "team",
+    "knowledge-base"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./mcp/.mcp.json",
+  "userConfig": {
+    "vault_path": {
+      "type": "directory",
+      "title": "Vault path",
+      "description": "Where the shared memory vault lives on disk. Sync it however you like (Obsidian Sync, Syncthing, iCloud, git). Default: ~/StrataVault",
+      "default": "~/StrataVault"
+    },
+    "repo_name": {
+      "type": "string",
+      "title": "Repo namespace (optional)",
+      "description": "Override the auto-detected repo name used as the vault subfolder. Leave blank to derive from git remote / directory name.",
+      "default": ""
+    },
+    "lint_presets": {
+      "type": "string",
+      "title": "Lint presets",
+      "description": "Comma-separated default presets for `/strata:lint`. Bundled: secrets, pii, phi-uk, phi-us. Custom presets go in presets/<name>.json.",
+      "default": "secrets"
+    }
+  }
+}

@@ -1,0 +1,174 @@
+---
+/**
+ * ArchitectureDiagram — block diagram of the Strata stack.
+ * Two interaction surfaces (Skills + MCP) feeding scripts and the
+ * three durable artefacts (vault / FTS / graph). Replaces the
+ * ASCII layout in guide/architecture.
+ */
+---
+
+<figure class="arch" role="img" aria-label="Strata architecture: skills and MCP server interact with Python scripts, which read and write three durable artefacts">
+  <svg viewBox="0 0 760 480" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="arch-band-1" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="var(--sl-color-accent)" stop-opacity="0.18"/>
+        <stop offset="100%" stop-color="var(--sl-color-accent)" stop-opacity="0.06"/>
+      </linearGradient>
+      <marker id="arch-arrow" viewBox="0 0 10 10" refX="9" refY="5"
+              markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--sl-color-accent)"/>
+      </marker>
+    </defs>
+
+    <!-- Skills row (top) -->
+    <g class="arch-row">
+      <rect x="80" y="30" width="600" height="64" rx="6"
+            fill="url(#arch-band-1)" stroke="var(--sl-color-accent)"
+            stroke-width="1" stroke-opacity="0.55"/>
+      <text x="380" y="60" text-anchor="middle"
+            font-family="JetBrains Mono Variable, monospace"
+            font-size="12" font-weight="600" letter-spacing="0.18em"
+            fill="var(--sl-color-accent)">SKILLS</text>
+      <text x="380" y="80" text-anchor="middle"
+            font-family="Inter Variable, sans-serif" font-size="11.5"
+            fill="currentColor" opacity="0.8">
+        skills/&lt;name&gt;/SKILL.md  ·  Claude reads, follows instructions, runs Bash
+      </text>
+    </g>
+
+    <!-- Scripts row -->
+    <g class="arch-row">
+      <rect x="80" y="160" width="600" height="64" rx="6"
+            fill="url(#arch-band-1)" stroke="var(--sl-color-accent)"
+            stroke-width="1" stroke-opacity="0.55"/>
+      <text x="380" y="190" text-anchor="middle"
+            font-family="JetBrains Mono Variable, monospace"
+            font-size="12" font-weight="600" letter-spacing="0.18em"
+            fill="var(--sl-color-accent)">SCRIPTS</text>
+      <text x="380" y="210" text-anchor="middle"
+            font-family="Inter Variable, sans-serif" font-size="11.5"
+            fill="currentColor" opacity="0.8">
+        scripts/*.py  ·  Python runtime invoked via bin/run-python.sh
+      </text>
+    </g>
+
+    <!-- Three artefacts (vault / FTS / graph) -->
+    <g class="arch-row">
+      <rect x="80" y="300" width="180" height="80" rx="6"
+            fill="rgba(255,255,255,0.025)" stroke="currentColor"
+            stroke-width="1" stroke-opacity="0.18"/>
+      <text x="170" y="328" text-anchor="middle"
+            font-family="JetBrains Mono Variable, monospace"
+            font-size="11.5" font-weight="600" letter-spacing="0.12em"
+            fill="currentColor">VAULT</text>
+      <text x="170" y="346" text-anchor="middle"
+            font-family="Inter Variable, sans-serif" font-size="10.5"
+            fill="currentColor" opacity="0.6">markdown + YAML</text>
+      <text x="170" y="362" text-anchor="middle"
+            font-family="Inter Variable, sans-serif" font-size="10"
+            fill="currentColor" opacity="0.45">durable · human-readable</text>
+
+      <rect x="290" y="300" width="180" height="80" rx="6"
+            fill="rgba(255,255,255,0.025)" stroke="currentColor"
+            stroke-width="1" stroke-opacity="0.18"/>
+      <text x="380" y="328" text-anchor="middle"
+            font-family="JetBrains Mono Variable, monospace"
+            font-size="11.5" font-weight="600" letter-spacing="0.12em"
+            fill="currentColor">FTS5 INDEX</text>
+      <text x="380" y="346" text-anchor="middle"
+            font-family="Inter Variable, sans-serif" font-size="10.5"
+            fill="currentColor" opacity="0.6">.strata/strata.db</text>
+      <text x="380" y="362" text-anchor="middle"
+            font-family="Inter Variable, sans-serif" font-size="10"
+            fill="currentColor" opacity="0.45">regeneratable</text>
+
+      <rect x="500" y="300" width="180" height="80" rx="6"
+            fill="rgba(255,255,255,0.025)" stroke="currentColor"
+            stroke-width="1" stroke-opacity="0.18"/>
+      <text x="590" y="328" text-anchor="middle"
+            font-family="JetBrains Mono Variable, monospace"
+            font-size="11.5" font-weight="600" letter-spacing="0.12em"
+            fill="currentColor">CODE GRAPH</text>
+      <text x="590" y="346" text-anchor="middle"
+            font-family="Inter Variable, sans-serif" font-size="10.5"
+            fill="currentColor" opacity="0.6">graphify-out/graph.json</text>
+      <text x="590" y="362" text-anchor="middle"
+            font-family="Inter Variable, sans-serif" font-size="10"
+            fill="currentColor" opacity="0.45">optional · regeneratable</text>
+    </g>
+
+    <!-- MCP row (bottom) -->
+    <g class="arch-row">
+      <rect x="80" y="420" width="600" height="44" rx="6"
+            fill="url(#arch-band-1)" stroke="var(--sl-color-accent)"
+            stroke-width="1" stroke-opacity="0.55"/>
+      <text x="380" y="442" text-anchor="middle"
+            font-family="JetBrains Mono Variable, monospace"
+            font-size="12" font-weight="600" letter-spacing="0.18em"
+            fill="var(--sl-color-accent)">MCP SERVER</text>
+      <text x="380" y="458" text-anchor="middle"
+            font-family="Inter Variable, sans-serif" font-size="10.5"
+            fill="currentColor" opacity="0.7">
+        mcp/server.py  ·  Claude calls structured tools (read-only)
+      </text>
+    </g>
+
+    <!-- Connectors -->
+    <g stroke="var(--sl-color-accent)" stroke-width="1.2" fill="none"
+       opacity="0.7" marker-end="url(#arch-arrow)">
+      <!-- Skills → Scripts -->
+      <path d="M 380 95 L 380 155"/>
+      <!-- Scripts → Vault -->
+      <path d="M 320 225 L 200 295"/>
+      <!-- Scripts → FTS -->
+      <path d="M 380 225 L 380 295"/>
+      <!-- Scripts → Graph (via graphify) -->
+      <path d="M 440 225 L 560 295"/>
+      <!-- FTS ← MCP -->
+      <path d="M 380 415 L 380 385" marker-end="url(#arch-arrow)"/>
+      <!-- Vault ← MCP -->
+      <path d="M 250 415 L 200 385" marker-end="url(#arch-arrow)"/>
+      <!-- Graph ← MCP -->
+      <path d="M 510 415 L 560 385" marker-end="url(#arch-arrow)"/>
+    </g>
+
+    <!-- Connector labels -->
+    <g font-family="Inter Variable, sans-serif" font-size="9.5"
+       fill="currentColor" opacity="0.55" font-style="italic"
+       paint-order="stroke" stroke="var(--sl-color-bg)" stroke-width="3">
+      <text x="395" y="128" text-anchor="middle">runs</text>
+      <text x="248" y="265" text-anchor="middle">writes</text>
+      <text x="395" y="265" text-anchor="middle">indexes</text>
+      <text x="512" y="265" text-anchor="middle">queries</text>
+      <text x="395" y="405" text-anchor="middle">reads from</text>
+    </g>
+  </svg>
+  <figcaption>
+    Three durable artefacts (vault, FTS index, code graph). Two surfaces
+    that Claude touches (Skills for writing, MCP for reading). Scripts
+    in the middle do the work.
+  </figcaption>
+</figure>
+
+<style>
+  .arch {
+    margin: 2rem auto;
+    max-width: 48rem;
+  }
+  .arch svg {
+    width: 100%;
+    height: auto;
+    color: var(--sl-color-text);
+  }
+  .arch figcaption {
+    font-family: var(--strata-font-display);
+    font-style: italic;
+    font-variation-settings: 'opsz' 24;
+    color: var(--sl-color-gray-2);
+    font-size: 0.92rem;
+    line-height: 1.55;
+    margin-top: 1rem;
+    text-align: center;
+    padding: 0 1rem;
+  }
+</style>

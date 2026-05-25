@@ -1,0 +1,92 @@
+---
+/**
+ * Topography — decorative SVG of topographic contour lines.
+ * Sits behind the hero as a quiet, atmospheric backdrop.
+ * Uses currentColor so it tints with the theme.
+ */
+---
+
+<div class="topo" aria-hidden="true">
+  <svg
+    viewBox="0 0 1400 700"
+    xmlns="http://www.w3.org/2000/svg"
+    preserveAspectRatio="xMidYMid slice"
+  >
+    <g
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1"
+      stroke-linecap="round"
+    >
+      <!-- Contour rings, concentric ellipses with hand-drawn jitter -->
+      <path d="M 700 350 m -540 0 a 540 280 0 1 0 1080 0 a 540 280 0 1 0 -1080 0" opacity="0.10"/>
+      <path d="M 700 350 m -460 0 a 460 240 0 1 0 920 0 a 460 240 0 1 0 -920 0" opacity="0.13"/>
+      <path d="M 700 350 m -380 0 a 380 200 0 1 0 760 0 a 380 200 0 1 0 -760 0" opacity="0.16"/>
+      <path d="M 700 350 m -310 0 a 310 165 0 1 0 620 0 a 310 165 0 1 0 -620 0" opacity="0.18"/>
+      <path d="M 700 350 m -245 0 a 245 132 0 1 0 490 0 a 245 132 0 1 0 -490 0" opacity="0.20"/>
+      <path d="M 700 350 m -185 0 a 185 102 0 1 0 370 0 a 185 102 0 1 0 -370 0" opacity="0.22"/>
+      <path d="M 700 350 m -130 0 a 130 75 0 1 0 260 0 a 130 75 0 1 0 -260 0" opacity="0.24"/>
+      <path d="M 700 350 m -82 0 a 82 50 0 1 0 164 0 a 82 50 0 1 0 -164 0" opacity="0.26"/>
+      <path d="M 700 350 m -42 0 a 42 27 0 1 0 84 0 a 42 27 0 1 0 -84 0" opacity="0.30"/>
+
+      <!-- Off-centre secondary system, suggests a second peak -->
+      <path d="M 1180 180 m -180 0 a 180 100 0 1 0 360 0 a 180 100 0 1 0 -360 0" opacity="0.10"/>
+      <path d="M 1180 180 m -130 0 a 130 75 0 1 0 260 0 a 130 75 0 1 0 -260 0" opacity="0.13"/>
+      <path d="M 1180 180 m -85 0 a 85 50 0 1 0 170 0 a 85 50 0 1 0 -170 0" opacity="0.16"/>
+      <path d="M 1180 180 m -45 0 a 45 28 0 1 0 90 0 a 45 28 0 1 0 -90 0" opacity="0.20"/>
+    </g>
+  </svg>
+</div>
+
+<style>
+  .topo {
+    position: absolute;
+    inset: 0;
+    color: var(--sl-color-accent);
+    opacity: 0.55;
+    pointer-events: none;
+    overflow: hidden;
+    mask-image: radial-gradient(
+      ellipse at 50% 35%,
+      rgba(0, 0, 0, 1) 0%,
+      rgba(0, 0, 0, 0.7) 45%,
+      rgba(0, 0, 0, 0) 80%
+    );
+    -webkit-mask-image: radial-gradient(
+      ellipse at 50% 35%,
+      rgba(0, 0, 0, 1) 0%,
+      rgba(0, 0, 0, 0.7) 45%,
+      rgba(0, 0, 0, 0) 80%
+    );
+  }
+  .topo svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    will-change: transform;
+  }
+</style>
+
+<script>
+  // Subtle parallax: the topo drifts at a slower rate than the hero,
+  // creating depth without distracting.
+  if (window.matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+    const topo = document.querySelector<HTMLElement>('.topo svg');
+    if (topo) {
+      let raf = 0;
+      const apply = () => {
+        const y = window.scrollY;
+        topo.style.transform = `translate3d(0, ${y * 0.18}px, 0)`;
+        raf = 0;
+      };
+      window.addEventListener(
+        'scroll',
+        () => {
+          if (!raf) raf = requestAnimationFrame(apply);
+        },
+        { passive: true },
+      );
+      apply();
+    }
+  }
+</script>
