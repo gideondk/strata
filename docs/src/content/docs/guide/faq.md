@@ -44,7 +44,7 @@ Strata is currently a Claude Code plugin. The vault files are plain markdown, so
 Four options, depending on what's wrong:
 
 - **Correct** — fix a paragraph, leave the rest. `/strata:correct <path>`
-- **Invalidate** — the whole note is stale; keep the history visible. `/strata:invalidate <path>`
+- **Invalidate** — the whole note is stale; keep the history visible. Same skill: `/strata:correct <path>` and say "stop using this" or "this is no longer true".
 - **Supersede** — a new decision replaces an old one. `/strata:decide --supersedes <old>`
 - **Forget** — the note should never have been written. `/strata:forget <path>`
 

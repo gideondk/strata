@@ -12,8 +12,7 @@ Every slash command Strata ships. Some are auto-invokable: when you describe a s
 | `/strata:save <topic>` | "Save this", "capture what we just discussed", Stop hook nudge | `pr-context/<branch>/...md` |
 | `/strata:decide <title>` | "We've decided X", "Let's commit to Y" | `decisions/YYYY-MM-DD-<slug>.md` |
 | `/strata:domain <concept>` | A domain term is defined or refined ("an Order always belongs to one Customer") | `domain/<slug>.md` |
-| `/strata:correct <note>` | "Fix the part about X", "Y is wrong in <note>" | Updates note + audit log |
-| `/strata:invalidate <note>` | "Stop using <note>", "That's no longer true" | Adds invalidation frontmatter |
+| `/strata:correct <note>` | "Fix the part about X", "Stop using <note>", "Y is no longer true" — handles edit, invalidate, and field-update paths | Updates note + audit log |
 | `/strata:lint` | Before commit, automatic via pre-push hook | Scans for secrets / PII |
 | `/strata:review` | Asked to audit vault health | Surfaces stale notes, orphans, drift |
 | `/strata:audit-config` | Asked about plugin config | Reports active settings |

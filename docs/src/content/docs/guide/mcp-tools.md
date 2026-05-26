@@ -7,6 +7,15 @@ Strata ships an MCP server (stdio transport) that exposes the vault and code gra
 
 All tools are **read-only**. Writes happen through visible bash invocations (skills running scripts) so the user sees state changes. The MCP surface is consultation only.
 
+## Two surfaces: ambient vs. on-demand
+
+Strata splits its tools across two layers to keep every conversation cheap:
+
+- **Ambient surface (7 tools)** — always present in Claude's tool palette. Small set, low context cost. Includes `recall` (the unified search entry point), `memory_status`, `current_pr`, `code_graph_status`, `code_map`, `plan_status`, `bootstrap_scan`.
+- **On-demand surface (12 tools)** — only invoked through the `strata:memory-recall` subagent. Heavier reads (`memory_search`, `memory_get`, `decision_chain`, `memory_insights`, etc.) happen in isolated subagent context; only a curated summary returns to the main conversation. This keeps the main session window from filling with tool-result text.
+
+The tools documented below are the **full catalogue** — both surfaces. Anything not in the ambient seven is reachable via the recall agent (Claude dispatches it automatically when you ask synthesis questions). For one-shot lookups, prefer `recall` directly; for cross-note synthesis, the agent.
+
 ## Search & retrieve
 
 ### `memory_search(query, scope?, branch?, limit?, cursor?)`

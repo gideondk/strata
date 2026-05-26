@@ -74,13 +74,29 @@ created: 2026-05-24-1030
 Start a new Claude Code session. The SessionStart primer surfaces what Strata knows:
 
 ```text
-### Strata memory
-_5 decisions  ·  12 domain notes  ·  3 lessons  ·  2 pr-context (feat-auth-rewrite)_
-_recent: token-rotation-design (today), ...
+## Strata primer — `your-repo` @ branch `feat/auth-rewrite`
+_vault: ~/StrataVault_
+
+Legend: 🎯 session  ⚖️ decision  📚 domain  📝 procedural  🎓 lesson  🌱 proposition
+Context economy: 22 notes • skim 2,800t • full read 19,400t • 86% savings
+
+### Files with recent context
+
+- `src/auth/token-rotation.ts`
+  - 🎯 `pr-context/feat-auth-rewrite/2026-05-26-design.md` — Token rotation design
+  - ⚖️ `decisions/2026-05-25-rotate-on-refresh.md` — Rotate refresh tokens on use
+- `src/auth/session.ts`
+  - 📚 `domain/session-aggregate.md` — Session aggregate
+
+### PR context — `feat-auth-rewrite` (2 note(s))
+... (recent session notes, excerpted)
+
+### Recent decisions (3)
+- `decisions/2026-05-25-rotate-on-refresh.md` — Rotate refresh tokens on use
+- ...
 
 ### Code graph (Graphify)
-_built 2h ago  ·  348 nodes  ·  1,204 edges_
-_top hubs: OrderAggregate, OrderRouter, ServiceBase, ...
+_built 2h ago  ·  348 nodes  ·  1,204 edges  ·  top hubs: SessionService, AuthGuard_
 ```
 
 When you ask a question that overlaps the vault (*"what's the token rotation approach?"*), Claude calls `memory_search` via MCP and finds the note. No `/find` invocation needed.

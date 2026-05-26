@@ -18,7 +18,7 @@ Radius.
 | Operation | When | Skill |
 |---|---|---|
 | **Correct** | One paragraph is wrong; note overall stays useful | `/strata:correct` |
-| **Invalidate** | The whole note is no longer current; keep history visible | `/strata:invalidate` |
+| **Invalidate** | The whole note is no longer current; keep history visible | `/strata:correct` (invalidate path) |
 | **Supersede** (decisions only) | A new ADR replaces an older one with a bidirectional link | `/strata:decide --supersedes <old>` |
 | **Forget** | The note must disappear entirely (PHI, secrets, mistake) | `/strata:forget` |
 
@@ -66,10 +66,16 @@ Approve, the script writes.
 ## Invalidate
 
 Use when a whole note is no longer current but historical context
-Still matters.
+still matters. This is the invalidate path of the unified
+`/strata:correct` skill — say "stop using this", "this is no longer
+true", or "deprecate this note" and Claude routes to the invalidate
+flow with required `--reason` and optional `--replaced-by`.
 
 ```bash
-/strata:invalidate domain/old-aggregate-pattern.md \
+# The script under the hood (auto-invoked by `/strata:correct`):
+"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
+  "${CLAUDE_PLUGIN_ROOT}/scripts/invalidate-note.py" \
+  domain/old-aggregate-pattern.md \
   --reason "Aggregate split into Order + Payment in 2026-05-24 refactor" \
   --replaced-by "domain/order-aggregate.md"
 ```
