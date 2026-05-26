@@ -66,7 +66,7 @@ A separate tool that builds a graph of your code (functions, classes, who calls 
 
 ## Is this open source?
 
-Yes, under the 0BSD license, the most permissive software license. Use it, modify it, ship it commercially, fork it, no attribution required. The license file is in the repo root.
+Yes, under the Mozilla Public License 2.0. You can use Strata commercially without licensing your own code, but any modifications to Strata's source files must be shared back under the same license. The license file is in the repo root.
 
 ## How do I uninstall?
 

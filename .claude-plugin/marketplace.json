@@ -11,8 +11,8 @@
       "source": "./",
       "description": "Branch- and PR-aware shared memory plugin for Claude Code teams. Vault-outside-the-repo, read-only MCP, pluggable PHI/secret lint, no network.",
       "version": "0.12.0",
-      "license": "0BSD",
-      "homepage": "https://github.com/ceracare/strata",
+      "license": "MPL-2.0",
+      "homepage": "https://github.com/gideondk/strata",
       "keywords": [
         "memory",
         "branch-aware",

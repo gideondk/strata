@@ -45,7 +45,7 @@ Everything else (correcting notes, migrating old docs, exporting back into the r
 
 ## What you'll see when you install it
 
-1. Run `/plugin marketplace add https://github.com/ceracare/strata` then `/plugin install strata@strata` in Claude Code.
+1. Run `/plugin marketplace add https://github.com/gideondk/strata` then `/plugin install strata@strata` in Claude Code.
 2. The plugin prompts for a vault folder (just press enter for the default).
 3. Run `/strata:init` once in your repo. Five seconds, zero questions.
 4. Work normally. The first time you make a decision worth keeping, ask Claude to save it. Or wait for Strata's gentle nudge after 30 minutes of unsaved work on a branch.

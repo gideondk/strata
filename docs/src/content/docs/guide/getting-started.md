@@ -10,7 +10,7 @@ Five minutes to a working vault. We'll install Strata, initialise a project, sav
 In Claude Code:
 
 ```bash
-/plugin marketplace add https://github.com/ceracare/strata
+/plugin marketplace add https://github.com/gideondk/strata
 /plugin install strata@strata
 /plugin reload
 ```

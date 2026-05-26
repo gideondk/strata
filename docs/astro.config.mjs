@@ -8,7 +8,7 @@ import mdx from '@astrojs/mdx';
 const SITE = process.env.SITE_URL ?? 'https://strata.dev';
 
 // `base` only set if explicitly building for a sub-path (e.g.
-// ceracare.github.io/strata). GitHub Pages with the default
+// gideondk.github.io/strata). GitHub Pages with the default
 // `<org>.github.io/<repo>` URL needs base = "/<repo>/"; a custom
 // domain or root pages site uses base = "/".
 const BASE = process.env.SITE_BASE ?? undefined;
@@ -61,14 +61,14 @@ export default defineConfig({
       pagefind: true,
       lastUpdated: true,
       editLink: {
-        baseUrl: 'https://github.com/ceracare/strata/edit/main/docs/',
+        baseUrl: 'https://github.com/gideondk/strata/edit/main/docs/',
       },
       pagination: true,
       social: [
         {
           icon: 'github',
           label: 'GitHub',
-          href: 'https://github.com/ceracare/strata',
+          href: 'https://github.com/gideondk/strata',
         },
       ],
       components: {

@@ -7,16 +7,16 @@
 <p align="center"><em>Local-first memory for Claude Code.</em></p>
 
 <p align="center">
-  <a href="https://github.com/ceracare/strata/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/ceracare/strata/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/ceracare/strata/blob/main/LICENSE"><img alt="License: 0BSD" src="https://img.shields.io/badge/license-0BSD-blue"></a>
+  <a href="https://github.com/gideondk/strata/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/gideondk/strata/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/gideondk/strata/blob/main/LICENSE"><img alt="License: MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue"></a>
   <img alt="Python ≥ 3.10" src="https://img.shields.io/badge/python-3.10%2B-blue">
   <img alt="No network" src="https://img.shields.io/badge/network-zero%20calls-success">
 </p>
 
 <p align="center">
-  <a href="https://ceracare.github.io/strata/">Documentation</a> ·
-  <a href="https://ceracare.github.io/strata/guide/getting-started/">Getting started</a> ·
-  <a href="https://ceracare.github.io/strata/guide/faq/">FAQ</a>
+  <a href="https://gideondk.github.io/strata/">Documentation</a> ·
+  <a href="https://gideondk.github.io/strata/guide/getting-started/">Getting started</a> ·
+  <a href="https://gideondk.github.io/strata/guide/faq/">FAQ</a>
 </p>
 
 ---
@@ -70,7 +70,7 @@ Sync your vault however you already sync things: Obsidian Sync, Syncthing, iClou
 In any Claude Code session:
 
 ```text
-/plugin marketplace add https://github.com/ceracare/strata
+/plugin marketplace add https://github.com/gideondk/strata
 /plugin install strata@strata
 /strata:init
 ```
@@ -81,17 +81,17 @@ Full setup notes, team-config patterns, pre-push lint hook: [`INSTALL.md`](./INS
 
 ## Read the docs
 
-The site at **[ceracare.github.io/strata](https://ceracare.github.io/strata/)** covers:
+The site at **[gideondk.github.io/strata](https://gideondk.github.io/strata/)** covers:
 
-- [What is Strata](https://ceracare.github.io/strata/guide/what-is-strata/) — plain-English intro, no jargon
-- [Getting started](https://ceracare.github.io/strata/guide/getting-started/) — five-minute walkthrough
-- [Memory architecture](https://ceracare.github.io/strata/guide/memory-architecture/) — why three kinds
-- [Skills](https://ceracare.github.io/strata/guide/skills/) — every slash command
-- [MCP tools](https://ceracare.github.io/strata/guide/mcp-tools/) — every read tool exposed to Claude
-- [Bootstrap](https://ceracare.github.io/strata/guide/bootstrap/) — one-shot migration of existing planning docs
-- [Correcting the vault](https://ceracare.github.io/strata/guide/correcting/) — fix, invalidate, supersede, forget
-- [Architecture](https://ceracare.github.io/strata/guide/architecture/) — how the pieces fit
-- [FAQ](https://ceracare.github.io/strata/guide/faq/)
+- [What is Strata](https://gideondk.github.io/strata/guide/what-is-strata/) — plain-English intro, no jargon
+- [Getting started](https://gideondk.github.io/strata/guide/getting-started/) — five-minute walkthrough
+- [Memory architecture](https://gideondk.github.io/strata/guide/memory-architecture/) — why three kinds
+- [Skills](https://gideondk.github.io/strata/guide/skills/) — every slash command
+- [MCP tools](https://gideondk.github.io/strata/guide/mcp-tools/) — every read tool exposed to Claude
+- [Bootstrap](https://gideondk.github.io/strata/guide/bootstrap/) — one-shot migration of existing planning docs
+- [Correcting the vault](https://gideondk.github.io/strata/guide/correcting/) — fix, invalidate, supersede, forget
+- [Architecture](https://gideondk.github.io/strata/guide/architecture/) — how the pieces fit
+- [FAQ](https://gideondk.github.io/strata/guide/faq/)
 
 ## What's intentionally not here
 
@@ -103,7 +103,7 @@ The site at **[ceracare.github.io/strata](https://ceracare.github.io/strata/)** 
 
 ## License
 
-[0BSD](./LICENSE). Use it, modify it, ship it commercially. No attribution required.
+[MPL-2.0](./LICENSE). You can use Strata in commercial and proprietary products without licensing your own code, but any modifications you make to Strata's source files must be shared back under the same license.
 
 ## Contributing
 
