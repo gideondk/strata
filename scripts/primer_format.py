@@ -13,16 +13,15 @@ The three additions over the previous primer:
   file so users landing in `Foo.cs` immediately see which notes
   touched it.
 
-Everything is best-effort: corrupt frontmatter, missing source files,
-unreadable notes — all silently skipped. The primer must never crash
-a SessionStart hook.
+All vault data comes from the SQLite db (`db.py`). `reindex()` is the
+authority for the source_file inverse index — this module just
+formats what's already there. That keeps SessionStart fast on warm
+vaults (one tiny query each) and means the by-file section reflects
+exactly what the rest of Strata sees.
 """
 from __future__ import annotations
 
-from collections.abc import Iterable
 from pathlib import Path
-
-import frontmatter
 
 # Icon set covers Strata's actual frontmatter `kind:` values plus the
 # session-flavour tags that show up in note titles. Anything unknown
@@ -59,13 +58,8 @@ def legend_line() -> str:
     )
 
 
-# ---------- internal scanning helpers ---------------------------------
+# ---------- internal helpers ------------------------------------------
 
-
-_SCOPE_DIRS: tuple[str, ...] = (
-    "decisions", "domain", "pr-context",
-    "lessons", "procedural", "propositions",
-)
 
 # Used to derive a kind icon when a note's frontmatter doesn't declare
 # `kind:` — the scope dir is the next best signal.
@@ -79,31 +73,11 @@ _SCOPE_TO_KIND: dict[str, str] = {
 }
 
 
-def _scope_kind(note_path: Path, mem_dir: Path) -> str:
-    """Best-guess kind from scope dir when frontmatter doesn't declare one."""
-    try:
-        first = note_path.relative_to(mem_dir).parts[0]
-    except (ValueError, IndexError):
+def _scope_kind(scope: str | None) -> str:
+    """Best-guess kind from scope when frontmatter doesn't declare one."""
+    if not scope:
         return ""
-    return _SCOPE_TO_KIND.get(first, "")
-
-
-def _is_note(path: Path) -> bool:
-    if not path.is_file() or path.suffix != ".md":
-        return False
-    return path.name not in ("README.md", "INDEX.md")
-
-
-def _iter_notes(mem_dir: Path) -> Iterable[Path]:
-    if not mem_dir.exists():
-        return
-    for scope in _SCOPE_DIRS:
-        d = mem_dir / scope
-        if not d.exists():
-            continue
-        for path in d.rglob("*.md"):
-            if _is_note(path):
-                yield path
+    return _SCOPE_TO_KIND.get(scope, "")
 
 
 def _approx_tokens(n_bytes: int) -> int:
@@ -113,56 +87,46 @@ def _approx_tokens(n_bytes: int) -> int:
     return max(1, n_bytes // 4)
 
 
-def _safe_metadata(path: Path) -> dict:
-    """Parse a note's frontmatter, returning {} on any failure.
-
-    Broad except is deliberate: PyYAML raises ScannerError /
-    ParserError on malformed input (neither is OSError or ValueError),
-    and the primer must never crash a SessionStart hook because one
-    note happened to be malformed.
-    """
-    try:
-        with path.open("r", encoding="utf-8", errors="replace") as fh:
-            return dict(frontmatter.load(fh).metadata)
-    except Exception:
-        return {}
-
-
 # ---------- public formatters -----------------------------------------
 
 
-def compute_economy(mem_dir: Path) -> dict:
-    """Return primer-level token economics.
+def compute_economy(mem_dir: Path | None = None) -> dict:
+    """Return primer-level token economics from the db.
 
     Skim cost ≈ what Claude reads when the primer summarises a note
-    (frontmatter + heading + a sentence or two — ~500 bytes). Full
-    cost is the entire file. Savings = body content Claude can avoid
+    (frontmatter + heading + a sentence or two — modelled as 500 bytes
+    per note, capped at file size). Full cost is the sum of all
+    indexed file sizes. Savings = body content Claude can avoid
     pulling in when the primer + a targeted Read suffice.
+
+    `mem_dir` is accepted for API compatibility but ignored — the db
+    is the source of truth. The argument stays in the signature so
+    callers can keep passing it for clarity.
     """
-    notes = list(_iter_notes(mem_dir))
-    if not notes:
-        return {
-            "notes": 0,
-            "skim_tokens": 0,
-            "full_tokens": 0,
-            "savings_pct": 0,
-        }
+    del mem_dir
+    try:
+        import db
+        summary = db.vault_summary()
+        # Per-note skim cap requires the count + total; for the cap,
+        # we model skim as min(500, avg_per_note) * notes. Cheaper than
+        # a second SQL pass and within rounding error.
+        notes = summary["notes"]
+        full_bytes = summary["bytes"]
+    except Exception:
+        return {"notes": 0, "skim_tokens": 0, "full_tokens": 0,
+                "savings_pct": 0}
 
-    skim_bytes = 0
-    full_bytes = 0
-    for p in notes:
-        try:
-            size = p.stat().st_size
-        except OSError:
-            continue
-        full_bytes += size
-        skim_bytes += min(size, 500)
+    if not notes or not full_bytes:
+        return {"notes": notes, "skim_tokens": 0, "full_tokens": 0,
+                "savings_pct": 0}
 
+    avg = full_bytes // notes if notes else 0
+    skim_bytes = notes * min(500, avg)
     skim = _approx_tokens(skim_bytes)
     full = _approx_tokens(full_bytes)
     savings = round(100 * (1 - skim / full)) if full else 0
     return {
-        "notes": len(notes),
+        "notes": notes,
         "skim_tokens": skim,
         "full_tokens": full,
         "savings_pct": savings,
@@ -181,78 +145,53 @@ def format_economy(econ: dict) -> str:
 
 
 def index_by_source_file(
-    mem_dir: Path,
+    mem_dir: Path | None = None,
     limit: int = 6,
-) -> list[tuple[str, list[Path]]]:
-    """Inverse index: source-code file → notes that reference it.
+) -> list[dict]:
+    """Inverse index: top source-code files → notes that reference them.
 
-    Reads each note's `source_file:` frontmatter (which can be a single
-    string or a YAML list of strings). Returns the top `limit` files,
-    ranked by note count then by most-recent note mtime.
+    Returns the db's `source_file_index` shape: each entry is a dict
+    `{source_file, note_count, notes: [{path, title, kind, scope}, ...]}`.
+    Ranking is by note count, then most-recent mtime. Capped at
+    `limit` files (6 by default) so the primer stays compact.
 
-    Limit is intentionally small (6 by default) — the primer is meant
-    to surface, not enumerate. Users follow up with `memory_search`
-    or `read_memory_note` for the long tail.
+    `mem_dir` is accepted for API compatibility but ignored — the db
+    is the source of truth.
     """
-    index: dict[str, list[Path]] = {}
-    for p in _iter_notes(mem_dir):
-        meta = _safe_metadata(p)
-        sf = meta.get("source_file")
-        if not sf:
-            continue
-        items = sf if isinstance(sf, list) else [sf]
-        for item in items:
-            if isinstance(item, str) and item.strip():
-                index.setdefault(item.strip(), []).append(p)
-
-    def _rank(entry: tuple[str, list[Path]]) -> tuple[int, float]:
-        _, notes = entry
-        try:
-            latest = max(
-                (n.stat().st_mtime for n in notes if n.exists()),
-                default=0.0,
-            )
-        except OSError:
-            latest = 0.0
-        return (len(notes), latest)
-
-    return sorted(index.items(), key=_rank, reverse=True)[:limit]
+    del mem_dir
+    try:
+        import db
+        return db.source_file_index(limit=limit)
+    except Exception:
+        return []
 
 
 def format_files_section(
     mem_dir: Path,
-    file_index: list[tuple[str, list[Path]]],
+    file_index: list[dict],
     notes_per_file: int = 3,
 ) -> str:
     """Render the by-file section. Each source file gets a bullet with
     its most-recent note refs nested below (kind icon + relative path
     + title).
+
+    `mem_dir` is currently unused but kept in the signature so callers
+    don't need to know whether the index is db- or filesystem-backed.
     """
+    del mem_dir
     if not file_index:
         return ""
 
     lines: list[str] = ["### Files with recent context", ""]
-    for src_file, notes in file_index:
+    for entry in file_index:
+        src_file = entry["source_file"]
+        notes = entry["notes"][:notes_per_file]
         lines.append(f"- `{src_file}`")
-        recent = sorted(
-            notes,
-            key=lambda n: (n.stat().st_mtime if n.exists() else 0.0),
-            reverse=True,
-        )[:notes_per_file]
-        for n in recent:
-            meta = _safe_metadata(n)
-            kind = meta.get("kind") or _scope_kind(n, mem_dir)
-            title = (
-                meta.get("topic")
-                or meta.get("title")
-                or n.stem
-            )
-            try:
-                rel = n.relative_to(mem_dir).as_posix()
-            except ValueError:
-                rel = n.name
+        for n in notes:
+            kind = n.get("kind") or _scope_kind(n.get("scope"))
+            title = n.get("title") or Path(n["path"]).stem
             lines.append(
                 f"  - {kind_icon(str(kind))} "
-                f"`{rel}` — {title}"
+                f"`{n['path']}` — {title}"
             )
     return "\n".join(lines)

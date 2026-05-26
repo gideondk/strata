@@ -61,12 +61,23 @@ CREATE TABLE IF NOT EXISTS links (
     PRIMARY KEY (src, dst)
 );
 
+-- Inverse index: note → source-code file(s) it references. Read from
+-- each note's `source_file:` frontmatter (string OR YAML list). Powers
+-- the SessionStart primer's "files with recent context" section and
+-- any future "what notes touch this file?" lookups.
+CREATE TABLE IF NOT EXISTS source_files (
+    path        TEXT NOT NULL,  -- note path, vault-relative
+    source_file TEXT NOT NULL,  -- referenced source file path
+    PRIMARY KEY (path, source_file)
+);
+
 CREATE INDEX IF NOT EXISTS files_scope ON files(scope);
 CREATE INDEX IF NOT EXISTS files_branch ON files(branch);
 CREATE INDEX IF NOT EXISTS files_status ON files(status);
 CREATE INDEX IF NOT EXISTS files_relevance ON files(relevance);
 CREATE INDEX IF NOT EXISTS supersedes_predecessor ON supersedes(predecessor);
 CREATE INDEX IF NOT EXISTS links_dst ON links(dst);
+CREATE INDEX IF NOT EXISTS source_files_by_src ON source_files(source_file);
 """
 
 
@@ -104,10 +115,17 @@ def _classify(path: Path) -> tuple[str, str | None]:
 
 
 def _iter_memory_md() -> Iterator[Path]:
-    """Walk all *.md under the vault, skipping symlinks (security).
+    """Walk all *.md under the vault, skipping symlinks (security) and
+    build-output dirs (perf + signal-to-noise).
 
     Sub-symlinks could exfiltrate files outside the vault when we index +
     serve their content via the MCP, so we drop them silently.
+
+    `graphify/` is excluded: it's a per-node markdown dump regenerated
+    from `graphify-out/graph.json` (treat-as-build-output, per the
+    graphify SKILL doc). On a real codebase it produces thousands of
+    minimal notes that dwarf the actual memory ~40:1, slow cold reindex
+    proportionally, and pollute `memory_search` results.
     """
     mem = memory_dir()
     if not mem.exists():
@@ -118,7 +136,20 @@ def _iter_memory_md() -> Iterator[Path]:
         # Reject if this path or any ancestor up to `mem` is a symlink.
         if _has_symlink_ancestor(p, mem):
             continue
+        # Skip build-output dirs. `graphify/` is the only one today; the
+        # tuple is here so other generated dirs can join the list cheaply.
+        try:
+            rel_parts = p.relative_to(mem).parts
+        except ValueError:
+            continue
+        if rel_parts and rel_parts[0] in _BUILD_OUTPUT_DIRS:
+            continue
         yield p
+
+
+# Auto-regenerated dirs whose markdown is build output rather than
+# user-authored memory. Indexing them is wasteful and pollutes search.
+_BUILD_OUTPUT_DIRS: frozenset[str] = frozenset({"graphify"})
 
 
 def _has_symlink_ancestor(target: Path, root: Path) -> bool:
@@ -184,6 +215,7 @@ def reindex(force: bool = False) -> dict:
 
             title = (
                 str(meta.get("title") or "").strip()
+                or str(meta.get("topic") or "").strip()
                 or first_heading(path)
                 or path.stem
             )
@@ -195,6 +227,7 @@ def reindex(force: bool = False) -> dict:
             conn.execute("DELETE FROM fts WHERE path = ?", (rel,))
             conn.execute("DELETE FROM supersedes WHERE successor = ?", (rel,))
             conn.execute("DELETE FROM links WHERE src = ?", (rel,))
+            conn.execute("DELETE FROM source_files WHERE path = ?", (rel,))
 
             conn.execute(
                 "INSERT INTO files(path, mtime, size, title, status, kind, "
@@ -226,6 +259,18 @@ def reindex(force: bool = False) -> dict:
                     (rel, resolved or raw_target, 1 if resolved else 0),
                 )
 
+            # Inverse note→source-file index from `source_file:`
+            # frontmatter. Accepts scalar or list; trims and skips
+            # empties.
+            for sf in _as_path_list(meta.get("source_file")):
+                sf_clean = sf.strip()
+                if sf_clean:
+                    conn.execute(
+                        "INSERT OR IGNORE INTO source_files(path, source_file) "
+                        "VALUES (?, ?)",
+                        (rel, sf_clean),
+                    )
+
             indexed += 1
 
         # Remove deleted files
@@ -234,6 +279,7 @@ def reindex(force: bool = False) -> dict:
             conn.execute("DELETE FROM fts WHERE path = ?", (rel,))
             conn.execute("DELETE FROM supersedes WHERE successor = ?", (rel,))
             conn.execute("DELETE FROM links WHERE src = ?", (rel,))
+            conn.execute("DELETE FROM source_files WHERE path = ?", (rel,))
             removed += 1
 
         # Compute relevance per file from cheap heuristics:
@@ -504,6 +550,68 @@ def unresolved_links() -> list[dict]:
             "SELECT src, dst FROM links WHERE resolved = 0 ORDER BY src, dst",
         ).fetchall()
         return [dict(r) for r in rows]
+
+
+def vault_summary() -> dict:
+    """Aggregate counts + sizes across all indexed notes. Cheap to call —
+    one SQL query, no filesystem walks. Used by the SessionStart primer
+    to compute skim-vs-full-read token economics."""
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) AS notes, COALESCE(SUM(size), 0) AS bytes FROM files"
+        ).fetchone()
+        return {
+            "notes": int(row["notes"] or 0),
+            "bytes": int(row["bytes"] or 0),
+        }
+
+
+def source_file_index(limit: int = 6) -> list[dict]:
+    """Inverse index: top source-code files by note-reference count.
+
+    Returns up to `limit` entries, each `{source_file, note_count,
+    latest_mtime, notes: [{path, title, kind, scope}, ...]}`. The notes
+    list is sorted most-recent-first and capped at 5 per file (callers
+    typically render fewer; the cap protects against pathological
+    fan-out).
+    """
+    with connect() as conn:
+        ranked = conn.execute(
+            """
+            SELECT
+                sf.source_file              AS source_file,
+                COUNT(*)                    AS note_count,
+                MAX(f.mtime)                AS latest_mtime
+            FROM source_files sf
+            JOIN files f ON f.path = sf.path
+            GROUP BY sf.source_file
+            ORDER BY note_count DESC, latest_mtime DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+
+        result: list[dict] = []
+        for r in ranked:
+            notes = conn.execute(
+                """
+                SELECT f.path AS path, f.title AS title,
+                       f.kind AS kind, f.scope AS scope
+                FROM source_files sf
+                JOIN files f ON f.path = sf.path
+                WHERE sf.source_file = ?
+                ORDER BY f.mtime DESC
+                LIMIT 5
+                """,
+                (r["source_file"],),
+            ).fetchall()
+            result.append({
+                "source_file":  r["source_file"],
+                "note_count":   int(r["note_count"]),
+                "latest_mtime": float(r["latest_mtime"] or 0.0),
+                "notes":        [dict(n) for n in notes],
+            })
+        return result
 
 
 def _safe_match(terms: Iterable[str]) -> str:

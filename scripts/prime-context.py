@@ -52,6 +52,17 @@ def build_primer() -> str:
     slug = branch_slug(branch) if is_git_repo() else None
     mem = memory_dir()
 
+    # Make sure the db reflects the vault before we render. On a freshly
+    # cloned shared vault this is where the initial index gets built
+    # (no other code path has run yet); on warm vaults it's an
+    # mtime+size sweep that touches no I/O for unchanged files. Both
+    # the by-file section and the token economy below depend on this.
+    try:
+        import db as _db_warmup
+        _db_warmup.reindex(force=False)
+    except Exception:
+        pass
+
     push(f"## Strata primer — `{repo_name()}`"
          + (f" @ branch `{branch}`" if is_git_repo() else ""))
     push(f"_vault: {vault_root()}_")

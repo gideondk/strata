@@ -34,6 +34,14 @@ def _write_note(
     path.write_text("\n".join(lines))
 
 
+def _reindex():
+    """Sync the db with the on-disk vault. Tests write notes directly
+    then call this to make them visible to primer_format's db-backed
+    queries."""
+    import db
+    db.reindex(force=False)
+
+
 def test_kind_icon_falls_back_for_unknown(initialised_vault):
     import primer_format
     assert primer_format.kind_icon("session") == "🎯"
@@ -72,6 +80,7 @@ def test_compute_economy_reports_savings(initialised_vault):
         topic="big-note",
         body=body,
     )
+    _reindex()
     econ = primer_format.compute_economy(mem)
     assert econ["notes"] == 1
     assert econ["full_tokens"] > econ["skim_tokens"]
@@ -104,11 +113,12 @@ def test_index_by_source_file_scalar_value(initialised_vault):
         kind="handoff", topic="foo",
         source_file="src/foo.py",
     )
+    _reindex()
     idx = primer_format.index_by_source_file(mem)
     assert len(idx) == 1
-    file_path, notes = idx[0]
-    assert file_path == "src/foo.py"
-    assert len(notes) == 1
+    assert idx[0]["source_file"] == "src/foo.py"
+    assert idx[0]["note_count"] == 1
+    assert len(idx[0]["notes"]) == 1
 
 
 def test_index_by_source_file_list_value(initialised_vault):
@@ -120,8 +130,9 @@ def test_index_by_source_file_list_value(initialised_vault):
         kind="handoff", topic="multi",
         source_file=["src/a.py", "src/b.py"],
     )
+    _reindex()
     idx = primer_format.index_by_source_file(mem)
-    files = {f for f, _ in idx}
+    files = {e["source_file"] for e in idx}
     assert files == {"src/a.py", "src/b.py"}
 
 
@@ -140,9 +151,10 @@ def test_index_by_source_file_ranks_by_note_count(initialised_vault):
         kind="session", topic="cold",
         source_file="src/cold.py",
     )
+    _reindex()
     idx = primer_format.index_by_source_file(mem)
-    assert idx[0][0] == "src/hot.py"
-    assert len(idx[0][1]) == 3
+    assert idx[0]["source_file"] == "src/hot.py"
+    assert idx[0]["note_count"] == 3
 
 
 def test_index_by_source_file_skips_notes_without_source_file(
@@ -170,6 +182,7 @@ def test_format_files_section_emits_kind_icons(initialised_vault):
         mem / "pr-context" / "feat-test-branch" / "s.md",
         kind="session", topic="s", source_file="src/x.py",
     )
+    _reindex()
     idx = primer_format.index_by_source_file(mem)
     text = primer_format.format_files_section(mem, idx)
     assert "### Files with recent context" in text
@@ -189,6 +202,7 @@ def test_format_files_section_scope_fallback_for_missing_kind(
     note = mem / "domain" / "some-concept.md"
     note.parent.mkdir(parents=True, exist_ok=True)
     note.write_text("---\nsource_file: src/x.py\ntopic: thing\n---\n\nbody\n")
+    _reindex()
     idx = primer_format.index_by_source_file(mem)
     text = primer_format.format_files_section(mem, idx)
     assert "📚" in text, f"domain scope should give 📚 icon:\n{text}"
