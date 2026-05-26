@@ -10,7 +10,7 @@
       "name": "strata",
       "source": "./",
       "description": "Branch- and PR-aware shared memory plugin for Claude Code teams. Vault-outside-the-repo, read-only MCP, pluggable PHI/secret lint, no network.",
-      "version": "0.12.0",
+      "version": "0.12.1",
       "license": "MPL-2.0",
       "homepage": "https://github.com/gideondk/strata",
       "keywords": [
