@@ -31,6 +31,28 @@ from lib import (
 VALID_STATUS = {"open", "contested", "converging",
                 "settled-as-decision", "refuted-as-lesson"}
 
+# Stances that mean someone is actively contesting → bump open → contested.
+VALID_STANCE = ("for", "against", "alternative", "refine")
+_CONTESTING = frozenset({"against", "alternative"})
+
+_DEBATE_HEADER = "## Debate log"
+
+
+def _append_position(content: str, stance: str, author: str, date: str,
+                     prose: str) -> str:
+    """Append one attributed, dated position as an H3 entry under a
+    '## Debate log' section. Append-only — never rewrites prior positions, so
+    an earlier draft can't be silently overwritten before convergence."""
+    entry = f"### {stance} — {author}, {date}\n\n{prose.strip()}\n"
+    base = content.rstrip()
+    # Line-anchored, not substring — a '## Debate log' inside a code fence or
+    # quote in the body must not be mistaken for the real section header.
+    has_section = any(line.strip() == _DEBATE_HEADER
+                      for line in content.splitlines())
+    if has_section:
+        return f"{base}\n\n{entry}"
+    return f"{base}\n\n{_DEBATE_HEADER}\n\n{entry}"
+
 
 def _refresh_index() -> None:
     import importlib.util
@@ -60,7 +82,30 @@ def main() -> int:
     ap.add_argument("--refuted-as", default=None,
                     help="Lesson path (e.g. lessons/2026-05-25-foo.md) that "
                          "refuted this proposition.")
+    ap.add_argument("--position", action="store_true",
+                    help="Append a position to an existing proposition's "
+                         "'## Debate log' (requires --update). Prose on stdin; "
+                         "categorise with --stance. Append-only — never "
+                         "rewrites prior positions. An against/alternative "
+                         "stance bumps an open proposition to contested.")
+    ap.add_argument("--stance", default="for", choices=VALID_STANCE,
+                    help="Position stance (with --position). for | against | "
+                         "alternative | refine.")
     args = ap.parse_args()
+
+    # --position is an append-to-an-existing-note action; guard the foot-guns
+    # before any path runs (else it would silently create a new note, or drop
+    # a co-passed settle/refute).
+    if args.position:
+        if not args.update:
+            print("[strata] error: --position requires --update <path>",
+                  file=sys.stderr)
+            return 2
+        if args.settled_as or args.refuted_as:
+            print("[strata] error: --position can't be combined with "
+                  "--settled-as/--refuted-as. Add the position first, then "
+                  "promote in a separate call.", file=sys.stderr)
+            return 2
 
     mem = memory_dir()
     body = sys.stdin.read().strip() if not sys.stdin.isatty() else ""
@@ -77,6 +122,26 @@ def main() -> int:
                   file=sys.stderr)
             return 2
         post = frontmatter.load(path)
+
+        # Append-a-position mode: add to the debate log, never clobber.
+        if args.position:
+            if not body:
+                print("[strata] error: --position needs the position prose on "
+                      "stdin", file=sys.stderr)
+                return 2
+            post.content = _append_position(
+                post.content, args.stance, author_name(), today(), body)
+            cur = str(post.metadata.get("status") or "open")
+            if args.stance in _CONTESTING and cur == "open":
+                cur = "contested"
+            post.metadata["status"] = cur  # always present, even if note had none
+            post.metadata["updated"] = today()
+            write_text(path, frontmatter.dumps(post) + "\n")
+            print(f"[strata] position ({args.stance}) added to {args.update} "
+                  f"→ status={post.metadata['status']}")
+            _refresh_index()
+            return 0
+
         if args.settled_as:
             post.metadata["status"] = "settled-as-decision"
             post.metadata["settled_as"] = args.settled_as

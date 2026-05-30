@@ -48,6 +48,40 @@ EOF
 Default status is `open`. Pass `--status contested` if multiple positions
 are actively defended, or `--status converging` if one is winning.
 
+### Add a position (the debate log)
+
+When someone weighs in on an open proposition, append a position — don't
+rewrite the note. Each entry is attributed, dated, and append-only:
+
+```bash
+cat <<'EOF' | "${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
+    "${CLAUDE_PLUGIN_ROOT}/scripts/new-proposition.py" \
+    --update propositions/2026-05-25-should-we-move-to-postgres.md \
+    --position --stance against
+Postgres adds an ops burden we can't staff. Evidence: our last two
+incidents were both connection-pool exhaustion under the managed PG.
+Critique of the "Move to Postgres" position: it assumes a DBA we don't have.
+EOF
+```
+
+`--stance` is `for` | `against` | `alternative` | `refine`. An `against` or
+`alternative` stance bumps an `open` proposition to `contested` automatically.
+
+**Run a healthy debate (this matters — the research is blunt about it):**
+
+- **Draft independently first.** Form your own position before reading the
+  others, then append it. Don't anchor on the first voice.
+- **Cap it at ~2 rounds.** More rounds *degrade* quality (problem drift, and
+  agents converging on a confident-but-wrong consensus). If it's not
+  converging in two passes, it needs a human, not another round.
+- **Ground every position in evidence** — a file, a test, an incident, a
+  measurement. A position that adds no new evidence is a signal to *stop*, not
+  another turn.
+- **Disagreement is the point.** If every position agrees, you're seeing
+  sycophancy, not consensus — assign someone the critic's seat.
+- **A human settles it.** Agents surface and sharpen the question; the
+  `--settled-as` / `--refuted-as` promotion is a human call.
+
 ### Promote (when settled)
 
 ```bash
@@ -78,9 +112,10 @@ Alternatives in this proposition."
                                        └─→  refuted-as-lesson
 ```
 
-`/strata:dashboard` surfaces propositions stuck in `open` or `contested`
-for >30 days. Long-open propositions are a smell, usually means the
-Team is avoiding the decision.
+Open/contested/converging propositions older than a day surface in the
+`/strata:dashboard` "Awaiting your input" section, and (batched) on the
+commit/Stop nudge. A long-open proposition is a smell — usually it means the
+team is avoiding the decision.
 
 ## Why this scope earned its place
 
@@ -96,5 +131,5 @@ Durable form.
   options.
 - Don't propose what's stable. Use `strata:domain` for "what is X here."
 - Don't propose what's purely branch-scoped scratch. Use `strata:save`.
-- Don't leave propositions open forever — set a `target_date:` in
-  frontmatter if you want the dashboard to remind you.
+- Don't leave propositions open forever — once aged, they resurface in the
+  dashboard and on the nudge until you settle or refute them.

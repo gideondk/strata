@@ -88,3 +88,83 @@ def test_init_creates_propositions_scope(initialised_vault):
     """initialised_vault fixture runs init-memory.py which must create
     the propositions/ scope as part of the standard layout."""
     assert (initialised_vault / "propositions").is_dir()
+
+
+# --- debate log: append positions ------------------------------------------
+
+def _create(initialised_vault, title="Should we shard tenants?"):
+    r = _run("--title", title, env=os.environ.copy())
+    assert r.returncode == 0, r.stderr
+    # Resolve the exact file we created (init seeds a sample proposition, so a
+    # bare glob is ambiguous).
+    line = next(line for line in r.stdout.splitlines()
+                if "proposition created:" in line)
+    rel = line.split("proposition created:", 1)[1].strip()
+    return initialised_vault / rel
+
+
+def test_position_against_bumps_open_to_contested(initialised_vault):
+    p = _create(initialised_vault)
+    rel = str(p.relative_to(initialised_vault))
+    r = _run("--update", rel, "--position", "--stance", "against",
+             body="Sharding adds ops burden we can't staff.",
+             env=os.environ.copy())
+    assert r.returncode == 0, r.stderr
+    post = frontmatter.load(p)
+    assert post.metadata["status"] == "contested"
+    assert "## Debate log" in post.content
+    assert "against" in post.content
+    assert "ops burden" in post.content
+
+
+def test_position_for_keeps_status_open(initialised_vault):
+    p = _create(initialised_vault)
+    rel = str(p.relative_to(initialised_vault))
+    r = _run("--update", rel, "--position", "--stance", "for",
+             body="Sharding is the only way to hit the isolation SLA.",
+             env=os.environ.copy())
+    assert r.returncode == 0, r.stderr
+    post = frontmatter.load(p)
+    assert post.metadata["status"] == "open"
+
+
+def test_positions_are_append_only(initialised_vault):
+    p = _create(initialised_vault)
+    rel = str(p.relative_to(initialised_vault))
+    _run("--update", rel, "--position", "--stance", "for",
+         body="First position keep-me.", env=os.environ.copy())
+    _run("--update", rel, "--position", "--stance", "against",
+         body="Second position also-keep-me.", env=os.environ.copy())
+    post = frontmatter.load(p)
+    # Both positions survive — the second did not clobber the first.
+    assert "keep-me" in post.content
+    assert "also-keep-me" in post.content
+    assert post.content.count("## Debate log") == 1  # one section, two entries
+
+
+def test_position_requires_body(initialised_vault):
+    p = _create(initialised_vault)
+    rel = str(p.relative_to(initialised_vault))
+    r = _run("--update", rel, "--position", "--stance", "against",
+             body="", env=os.environ.copy())
+    assert r.returncode == 2
+
+
+def test_position_without_update_errors(initialised_vault):
+    """--position is append-to-existing; without --update it must NOT silently
+    create a new note."""
+    r = _run("--position", "--stance", "against", "--title", "Stray",
+             body="prose", env=os.environ.copy())
+    assert r.returncode == 2
+    # No proposition titled 'stray' was created.
+    assert not list((initialised_vault / "propositions").glob("*-stray.md"))
+
+
+def test_position_with_settled_as_errors(initialised_vault):
+    """A co-passed settle/refute must error, not be silently dropped."""
+    p = _create(initialised_vault)
+    rel = str(p.relative_to(initialised_vault))
+    r = _run("--update", rel, "--position", "--stance", "for",
+             "--settled-as", "decisions/2026-05-30-x.md",
+             body="prose", env=os.environ.copy())
+    assert r.returncode == 2
