@@ -95,8 +95,28 @@ and me-on-Monday.
 - `handoff` — explicit "next person, do X" note
 - `decision-draft` — early thinking that may graduate to an ADR
 
+## Observe (autonomous grounded capture)
+
+For a low-stakes, grounded breadcrumb you don't want to interrupt the user for,
+use `--observe` (the single autonomous-write entry point). It writes a
+`status: auto` observation, quarantined from recall until a human reviews it in
+the dashboard. Grounding is required (`--source-file` and/or `--commit`):
+
+```bash
+echo "Commit bumped the retry budget 3→5; see the client." | \
+  "${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
+  "${CLAUDE_PLUGIN_ROOT}/scripts/save-note.py" \
+  --observe --topic "retry budget bumped" \
+  --source-file "src/http/client.py" --commit "$(git rev-parse --short HEAD)"
+```
+
+Never for decisions / contested questions / domain definitions — those stay
+human-ratified.
+
 ## Safety
 
-`save-note.py` doesn't run the PHI/secret linter automatically (`/strata:lint`
-is explicit). Don't paste identifiers, NHS numbers, postcodes, or credentials.
-The vault is shared.
+`save-note.py` runs a **warn-only** secret/PII pre-step before every write — it
+advises on stderr if it spots credentials/identifiers but **never blocks** the
+save. `/strata:lint` remains the explicit blocking scan; the pre-push git hook
+is the final backstop. Still: don't paste identifiers, NHS numbers, postcodes,
+or credentials — the vault is shared.

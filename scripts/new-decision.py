@@ -316,7 +316,15 @@ def main() -> int:
         fm_meta["extracted_at"] = when
         fm_meta["extracted_by"] = author_name()
     post = frontmatter.Post(content=body.lstrip(), **fm_meta)
-    write_text(path, frontmatter.dumps(post) + "\n")
+    composed = frontmatter.dumps(post)
+    # Secret/PII pre-step (warn-only; never blocks). Scans the composed doc so a
+    # secret in the title/frontmatter is caught too, not just the body.
+    import contextlib
+    with contextlib.suppress(Exception):
+        import lint_check
+        lint_check.emit_warnings(composed, label="decision")
+
+    write_text(path, composed + "\n")
     print(f"[strata] decision created: {path}")
 
     # Bidirectional supersession: update each predecessor's frontmatter so

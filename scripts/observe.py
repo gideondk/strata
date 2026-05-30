@@ -19,6 +19,7 @@ HARD GUARDRAILS (structural, not advisory):
 from __future__ import annotations
 
 import argparse
+import contextlib
 import sys
 
 import frontmatter
@@ -37,6 +38,79 @@ from lib import (
     stamp_minute,
     write_text,
 )
+
+
+def capture(topic: str, body: str, *, source_file: list[str] | None = None,
+            commit: str | None = None) -> tuple[int, str]:
+    """Write a grounded staged observation. The single guarded code path —
+    shared by the observe CLI and `save-note.py --observe`, so the grounding +
+    quarantine guardrails can't diverge. Returns (exit_code, message).
+
+    HARD GUARDRAILS: grounding required (source_file or commit), non-empty body,
+    and observation-only (this only ever writes pr-context with status:auto;
+    no scope parameter exists, so it can never reach decisions/domain)."""
+    expanded: list[str] = []
+    for entry in (source_file or []):
+        for piece in (s.strip() for s in entry.split(",")):
+            if piece and piece not in expanded:
+                expanded.append(piece)
+
+    if not expanded and not commit:
+        return 2, ("[strata] error: an auto-observation must be grounded — pass "
+                   "--source-file <path> and/or --commit <sha>")
+    body = (body or "").strip()
+    if not body:
+        return 2, "[strata] error: empty observation on stdin"
+
+    slug = branch_slug(current_branch()) if is_git_repo() else "_no-branch"
+    init = author_initials()
+    when = stamp_minute()
+    dir_ = pr_context_dir(slug)
+    ensure_dir(dir_)
+    path = dir_ / f"{when}--{safe_slug(init)}--{safe_slug(topic)}.md"
+
+    # Build frontmatter via the YAML lib (NOT hand-built strings): this quotes
+    # scalars so a colon-bearing topic ("fix: x") can't break parsing into
+    # status=None, and a newline in topic can't inject a second `status:` key.
+    # Both would silently defeat the recall quarantine.
+    meta: dict = {
+        "kind": "observation",
+        "status": "auto",          # quarantine tier — awaits human review
+        "source": "git-derived",   # provenance: outranked by user-stated notes
+        "author": author_name(),
+        "author_initials": init,
+        "topic": topic,
+        "created": when,
+    }
+    ob = origin_branch()
+    if ob:
+        meta["branch"] = ob
+    if commit:
+        meta["grounded_in"] = commit
+    if expanded:
+        meta["source_file"] = expanded if len(expanded) > 1 else expanded[0]
+    post = frontmatter.Post(content=body, **meta)
+    composed = frontmatter.dumps(post)
+    # Secret/PII pre-step on the autonomous lane too (warn-only; the agent
+    # writes these without a human in the loop, so it's the path most likely to
+    # persist a secret unreviewed). Scans the composed doc so a secret in the
+    # topic is caught, not just the body. Best-effort; never blocks.
+    with contextlib.suppress(Exception):
+        import lint_check
+        lint_check.emit_warnings(composed, label="observation")
+    write_text(path, composed + "\n")
+
+    import importlib.util
+    import os
+    spec = importlib.util.spec_from_file_location(
+        "refresh_index",
+        os.path.join(os.path.dirname(__file__), "refresh-index.py"),
+    )
+    if spec and spec.loader:
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        mod.regenerate_index()
+    return 0, f"[strata] auto-captured observation (status: auto) → {path}"
 
 
 def main() -> int:
@@ -58,70 +132,13 @@ def main() -> int:
         import os
         os.environ["STRATA_PROJECT_DIR"] = args.project_dir
 
-    expanded: list[str] = []
-    for entry in args.source_file:
-        for piece in (s.strip() for s in entry.split(",")):
-            if piece and piece not in expanded:
-                expanded.append(piece)
-    args.source_file = expanded
-
-    # GROUNDING GUARDRAIL — an auto-write must be anchored to a real artifact.
-    if not args.source_file and not args.commit:
-        print("[strata] error: an auto-observation must be grounded — pass "
-              "--source-file <path> and/or --commit <sha>", file=sys.stderr)
-        return 2
-
-    body = sys.stdin.read().strip()
-    if not body:
-        print("[strata] error: empty observation on stdin", file=sys.stderr)
-        return 2
-
-    slug = branch_slug(current_branch()) if is_git_repo() else "_no-branch"
-    init = author_initials()
-    when = stamp_minute()
-    dir_ = pr_context_dir(slug)
-    ensure_dir(dir_)
-    path = dir_ / f"{when}--{safe_slug(init)}--{safe_slug(args.topic)}.md"
-
-    # Build frontmatter via the YAML lib (NOT hand-built strings): this quotes
-    # scalars so a colon-bearing topic ("fix: x") can't break parsing into
-    # status=None, and a newline in --topic can't inject a second `status:` key.
-    # Both would silently defeat the recall quarantine.
-    meta: dict = {
-        "kind": "observation",
-        "status": "auto",          # quarantine tier — awaits human review
-        "source": "git-derived",   # provenance: outranked by user-stated notes
-        "author": author_name(),
-        "author_initials": init,
-        "topic": args.topic,
-        "created": when,
-    }
-    ob = origin_branch()
-    if ob:
-        meta["branch"] = ob
-    if args.commit:
-        meta["grounded_in"] = args.commit
-    if args.source_file:
-        meta["source_file"] = (
-            args.source_file if len(args.source_file) > 1 else args.source_file[0]
-        )
-    post = frontmatter.Post(content=body, **meta)
-    write_text(path, frontmatter.dumps(post) + "\n")
-    print(f"[strata] auto-captured observation (status: auto) → {path}")
-    print("[strata] review it at /strata:dashboard — keep by editing, or "
-          "/strata:forget to discard")
-
-    import importlib.util
-    import os
-    spec = importlib.util.spec_from_file_location(
-        "refresh_index",
-        os.path.join(os.path.dirname(__file__), "refresh-index.py"),
-    )
-    if spec and spec.loader:
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        mod.regenerate_index()
-    return 0
+    rc, msg = capture(args.topic, sys.stdin.read(),
+                      source_file=args.source_file, commit=args.commit)
+    print(msg, file=sys.stderr if rc else sys.stdout)
+    if rc == 0:
+        print("[strata] review it at /strata:dashboard — keep by editing, or "
+              "/strata:forget to discard")
+    return rc
 
 
 if __name__ == "__main__":

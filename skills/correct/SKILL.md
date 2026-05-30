@@ -1,6 +1,6 @@
 ---
 name: strata:correct
-description: Edit or retire a vault note. Three paths, fix wrong text (default), mark invalidated (no longer current), or update a frontmatter field. Invoke autonomously when the user says "X note is wrong", "fix the part about Y", "update the status of <note>", "that's no longer true", "stop using <note>", or "deprecate <note>". For ADR retirement prefer `/strata:decide --supersedes` (bidirectional link). For full deletion (PHI / secrets) use `/strata:forget`.
+description: Edit, retire, or learn-from a vault note. Invoke autonomously when the user says "X note is wrong", "fix the part about Y", "update the status of <note>", "that's no longer true", "stop using <note>", "deprecate <note>" — OR corrects something Claude proposed ("no, X is actually Y", "that's wrong because Z", "we don't do it that way", "you got it backwards"). Finds the related note and applies the fix with conversation provenance (correction_source); if the corrected fact isn't in the vault yet, creates the right note instead. For ADR retirement prefer /strata:decide --supersedes; for deletion (PHI/secrets) use /strata:forget.
 ---
 
 # strata:correct
@@ -13,6 +13,7 @@ by intent and flags.
 | Situation | Path |
 |---|---|
 | One paragraph is wrong, note overall still useful | **edit** (default) |
+| User corrects something Claude proposed in conversation | **learn-from** (see below) |
 | Whole note no longer current, keep history visible | **invalidate** |
 | ADR replaced by new decision | use `/strata:decide --supersedes` |
 | Note must disappear (PHI, secrets) | use `/strata:forget` |
@@ -57,6 +58,27 @@ optional `--replaced-by`:
   --reason "Aggregate split into Order + Payment in 2026-05-24 refactor." \
   --replaced-by "domain/order-aggregate.md"
 ```
+
+## Correcting something Claude proposed (from a conversation)
+
+When the user corrects an idea Claude just gave ("no, X is actually Y",
+"that's wrong because Z", "we don't do it that way", "you got it backwards"),
+that's signal worth keeping. Flow:
+
+1. **Recall the topic** — `recall(query="<topic>", layer=1)`.
+2. **One match** → correct that note (above), adding
+   `--set correction_source=claude-session` so the audit trail shows the
+   correction came from a session, not a manual edit. **Several matches** → ask
+   which one. **No match** → the vault didn't know this yet; create the right
+   note instead: a chosen approach → `/strata:decide`, a vocabulary/invariant →
+   `/strata:domain`, a newly-surfaced contested point → `/strata:propose
+   --status contested`. Include in the body: "Claude proposed: <wrong>; actual:
+   <correction>" so future readers see the genesis.
+3. **Confirm in one line** with the path edited/created.
+
+Skip when the correction is about Claude's local reasoning ("run that without
+the flag") rather than durable vault knowledge; and don't fire while the user is
+still arguing the point — wait until the correction is stated definitively.
 
 ## What's recorded
 

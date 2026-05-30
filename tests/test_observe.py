@@ -49,6 +49,44 @@ def test_observe_writes_grounded_staged_note(initialised_vault):
     assert post.metadata["source_file"] == "src/http.py"
 
 
+def test_save_observe_mode_delegates_to_capture(initialised_vault):
+    """`save-note.py --observe` writes a status:auto observation via the shared
+    guarded path (the observe→save fold), grounding required."""
+    import frontmatter
+    mem = initialised_vault
+    save = PLUGIN_ROOT / "scripts" / "save-note.py"
+    r = subprocess.run(
+        [sys.executable, str(save), "--observe", "--topic", "folded obs",
+         "--source-file", "src/x.py"],
+        input="grounded via save --observe", capture_output=True, text=True,
+        check=False, env=os.environ.copy())
+    assert r.returncode == 0, r.stderr
+    notes = list((mem / "pr-context").rglob("*folded-obs.md"))
+    assert notes, "save --observe did not write an observation"
+    assert frontmatter.load(notes[0]).metadata["status"] == "auto"
+    # Grounding guardrail still enforced through the delegated path.
+    r2 = subprocess.run(
+        [sys.executable, str(save), "--observe", "--topic", "ungrounded"],
+        input="no grounding", capture_output=True, text=True, check=False,
+        env=os.environ.copy())
+    assert r2.returncode == 2
+
+
+def test_save_observe_note_quarantined_from_recall(initialised_vault):
+    """The guardrail that matters most, through the save --observe entry point:
+    a status:auto observation must stay OUT of recall."""
+    import db
+    save = PLUGIN_ROOT / "scripts" / "save-note.py"
+    subprocess.run(
+        [sys.executable, str(save), "--observe", "--topic", "via save",
+         "--source-file", "src/x.py"],
+        input="grounded marker zsaveobsquarantine", capture_output=True,
+        text=True, check=False, env=os.environ.copy())
+    db.reindex(force=True)
+    assert db.search(["zsaveobsquarantine"])[1] == 0
+    assert any("via-save" in a["path"] for a in __import__("inbox").auto_notes())
+
+
 def test_observe_refuses_without_grounding(initialised_vault):
     """An auto-write must be anchored to a verifiable artifact."""
     r = _run(["--topic", "ungrounded musing"],

@@ -14,9 +14,10 @@ Lessons:
     and bootstrap-extracted historical content that has no current
     branch context.
 
-The body is written verbatim with a YAML frontmatter prefix. We do NOT
-call the linter from here — `/strata:lint` runs explicitly, and the
-pre-push git hook (if installed) will catch anything in the commit.
+The body is written verbatim with a YAML frontmatter prefix. A warn-only
+secret/PII pre-step (lint_check) runs before the write — it advises on stderr
+but never blocks the save; `/strata:lint` remains the explicit blocking scan,
+and the pre-push git hook (if installed) is the final backstop.
 """
 from __future__ import annotations
 
@@ -71,7 +72,32 @@ def main() -> int:
                          "and writes it as a pr-context session note. Mutually "
                          "exclusive with --topic + stdin body. Drafts older than "
                          "24h are silently ignored.")
+    ap.add_argument("--observe", action="store_true",
+                    help="Auto-capture a grounded, low-stakes OBSERVATION into "
+                         "the staging lane (status:auto, quarantined from recall "
+                         "until reviewed) instead of a normal note. Requires "
+                         "--source-file and/or --commit (grounding). The single "
+                         "autonomous-write entry point.")
+    ap.add_argument("--commit", default=None,
+                    help="With --observe: the commit sha the observation is "
+                         "grounded in.")
     args = ap.parse_args()
+
+    # --observe delegates to the guarded observation path (one shared code path
+    # in observe.capture — grounding + quarantine guardrails live there).
+    if args.observe:
+        if args.project_dir:
+            import os as _os
+            _os.environ["STRATA_PROJECT_DIR"] = args.project_dir
+        if not args.topic:
+            print("[strata] error: --observe requires --topic", file=sys.stderr)
+            return 2
+        import observe
+        rc, msg = observe.capture(args.topic, sys.stdin.read(),
+                                  source_file=args.source_file,
+                                  commit=args.commit)
+        print(msg, file=sys.stderr if rc else sys.stdout)
+        return rc
 
     # --apply-draft hydrates topic + body from the stashed draft so the user
     # gets one-keystroke acceptance of the Stop-hook offer. The body still
@@ -164,6 +190,12 @@ def main() -> int:
         fm_lines.append(f"extracted_by: {author_name()}")
     fm_lines.append("---\n\n")
     frontmatter_str = "\n".join(fm_lines)
+
+    # Secret/PII pre-step (warn-only; never blocks the save). Scans the composed
+    # document so a secret in --topic/frontmatter is caught too, not just body.
+    with __import__("contextlib").suppress(Exception):
+        import lint_check
+        lint_check.emit_warnings(frontmatter_str + body, label=f"{args.scope} note")
 
     write_text(path, frontmatter_str + body + "\n")
     print(f"[strata] saved {path}")

@@ -1,6 +1,7 @@
 ---
 name: strata:observe
-description: Auto-capture a grounded, low-stakes OBSERVATION into the staging lane without interrupting the user — a breadcrumb anchored to a commit or file, written with status:auto. Use autonomously when you notice something worth a durable trace but NOT worth a decision or a confirmation prompt (e.g. "commit abc bumped the retry budget 3→5", "this module owns rate limiting"). NEVER use for decisions, contested questions, or domain definitions — those are human-ratified. The note is quarantined from recall until a human reviews it.
+disable-model-invocation: true
+description: Auto-capture a grounded, low-stakes OBSERVATION into the staging lane (status:auto, quarantined from recall until reviewed). The autonomous path is `/strata:save --observe` — that's the single autonomous-write decision point, so the model isn't choosing between save and observe on every write. This standalone command does the same capture for explicit use. NEVER for decisions / contested questions / domain definitions — those stay human-ratified.
 ---
 
 # strata:observe
