@@ -59,11 +59,29 @@ def _graph_staleness_suffix() -> str:
     return ""
 
 
+def _open_questions_suffix() -> str:
+    """Batched, default-silent reminder of lingering open questions. Rides an
+    already-firing nudge (a coarse breakpoint) instead of interrupting on its
+    own — empty string when nothing has aged into the queue."""
+    try:
+        import inbox
+        # Nudge only about open/contested questions — converging is trending
+        # to a resolution, so nagging about it is noise.
+        qs = inbox.aging_questions(statuses=("open", "contested"))
+        if not qs:
+            return ""
+        n = len(qs)
+        return (f"  📥 {n} question{'s' if n != 1 else ''} awaiting your "
+                f"input — `/strata:dashboard` to weigh in.")
+    except Exception:
+        return ""
+
+
 def build_message(snap: dict, *, drafted: bool, branch: str) -> str:
     """Compose the user-facing nudge. `drafted` toggles the apply-draft hint."""
     import session_state
     summary = session_state.stop_nudge_text(snap)
-    extra = _graph_staleness_suffix()
+    extra = _graph_staleness_suffix() + _open_questions_suffix()
     if drafted:
         return (
             "💭 Strata: " + summary +

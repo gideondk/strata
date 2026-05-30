@@ -225,6 +225,32 @@ def _suggestions(scope_counts: dict, drifted: list[str],
     return [f"- {h}" for h in hints]
 
 
+def _awaiting_input_bullets() -> list[str]:
+    """The notify/question/review queue: pending draft + lingering open
+    propositions. Stale ADRs keep their own section, so they're not repeated
+    here."""
+    out: list[str] = []
+    try:
+        import draft_store
+        d = draft_store.load_draft()
+        if d:
+            out.append(
+                f"- 📝 review: pending session draft "
+                f"**{d.get('topic', 'session draft')}** — "
+                f"`/strata:save --apply-draft`")
+    except Exception:
+        pass
+    try:
+        import inbox
+        for q in inbox.aging_questions():
+            out.append(
+                f"- ❓ decide: [{q['status']}] **{q['title']}** "
+                f"({q['age_days']}d) — `{q['path']}`")
+    except Exception:
+        pass
+    return out or ["_none — nothing awaiting input_"]
+
+
 def build_dashboard() -> str:
     """Compose the dashboard markdown. Same body for INDEX.md and skill."""
     mem = memory_dir()
@@ -271,6 +297,11 @@ def build_dashboard() -> str:
     push("## Recent activity (last 7 days)")
     push("")
     out.extend(_bullet_recent(recent))
+    push("")
+
+    push("## 📥 Awaiting your input")
+    push("")
+    out.extend(_awaiting_input_bullets())
     push("")
 
     push("## Stale-proposed ADRs (>14 days)")
