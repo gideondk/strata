@@ -194,6 +194,30 @@ def search(
     return scored[:limit]
 
 
+def warm() -> dict:
+    """Build any missing embeddings, STRICTLY offline (never downloads). Cheap
+    after the first build (incremental). Used to make semantic recall actually
+    active — without this, embeddings are only built where the MCP server or
+    dedup gate happen to run, so recall silently degrades to FTS-only. No-op if
+    fastembed is unavailable or the model isn't cached locally."""
+    if not available():
+        return {"warmed": 0, "reason": "unavailable"}
+    keys = ("HF_HUB_OFFLINE", "TRANSFORMERS_OFFLINE")
+    prev = {k: os.environ.get(k) for k in keys}
+    for k in keys:
+        os.environ[k] = "1"
+    try:
+        return reindex(force=False)
+    except Exception as e:
+        return {"warmed": 0, "reason": str(e)}
+    finally:
+        for k, v in prev.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+
 def rerank_available() -> bool:
     """Whether the cross-encoder reranker can be used. Honors the same
     disable knobs as embeddings, plus a rerank-specific one."""

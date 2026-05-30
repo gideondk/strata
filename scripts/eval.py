@@ -122,6 +122,12 @@ def main() -> int:
     import recall
     recall._RERANK_ENABLED = args.rerank
 
+    # Make sure semantic embeddings exist (offline) so we measure the real
+    # hybrid pipeline, not an accidental FTS-only run.
+    with contextlib.suppress(Exception):
+        import embeddings
+        embeddings.warm()
+
     if not memory_dir().exists():
         print("_vault not initialised — run `/strata:init` first_",
               file=sys.stderr)

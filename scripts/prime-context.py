@@ -74,6 +74,15 @@ def build_primer() -> str:
     except Exception:
         pass
 
+    # Warm semantic embeddings once per session (strictly offline — never
+    # downloads). Without this, semantic recall silently degrades to FTS-only
+    # unless something else happened to build the vectors first.
+    try:
+        import embeddings as _emb
+        _emb.warm()
+    except Exception:
+        pass
+
     push(f"## Strata primer — `{repo_name()}`"
          + (f" @ branch `{branch}`" if is_git_repo() else ""))
     push(f"_vault: {vault_root()}_")

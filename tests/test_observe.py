@@ -141,6 +141,7 @@ def test_inbox_auto_notes_surfaces_staged(initialised_vault):
     db.reindex(force=True)
     autos = inbox.auto_notes()
     assert any(a["path"].endswith("gk--obs.md") for a in autos)
+    assert all(isinstance(a.get("age_days"), int) for a in autos)  # decay signal
 
 
 def test_auto_notes_quarantined_from_recall(initialised_vault):

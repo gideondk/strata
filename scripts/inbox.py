@@ -29,6 +29,7 @@ def auto_notes(limit: int = 20) -> list[dict]:
     """Staged auto-captured notes (`status: auto`) awaiting human review — keep
     (edit) or discard (`/strata:forget`). The quarantine tier of the autonomy
     line. Hook-safe (never raises)."""
+    now = time.time()
     out: list[dict] = []
     with contextlib.suppress(Exception), db.connect() as conn:
         for r in conn.execute(
@@ -41,6 +42,7 @@ def auto_notes(limit: int = 20) -> list[dict]:
                 "path": r["path"],
                 "title": r["title"],
                 "scope": r["scope"],
+                "age_days": int((now - (r["mtime"] or now)) // 86400),
             })
     return out
 

@@ -168,23 +168,37 @@ def main() -> int:
     write_text(path, frontmatter_str + body + "\n")
     print(f"[strata] saved {path}")
 
+    # Telemetry for graduated autonomy: per-kind save + whether it came through
+    # the Stop-hook draft-accept flow (the accept-rate signal). Best-effort.
+    try:
+        import usage
+        usage.log_event("note_saved", scope=args.scope, kind=args.kind,
+                        via_draft=bool(args.apply_draft))
+    except Exception:
+        pass
+
     # Successful apply consumes the stashed draft so it can't be applied
     # twice. Failure paths above leave the draft in place for retry.
     if args.apply_draft:
         import draft_store
         draft_store.clear_draft()
 
-    # Refresh index so the new note is discoverable
+    # Refresh index so the new note is discoverable. Best-effort: the note is
+    # already written + reported as saved above, so an index-refresh failure
+    # must degrade to "saved but not yet indexed", not a traceback over an
+    # already-persisted note (the next reindex picks it up).
+    import contextlib
     import importlib.util
     import os
-    spec = importlib.util.spec_from_file_location(
-        "refresh_index",
-        os.path.join(os.path.dirname(__file__), "refresh-index.py"),
-    )
-    if spec and spec.loader:
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        mod.regenerate_index()
+    with contextlib.suppress(Exception):
+        spec = importlib.util.spec_from_file_location(
+            "refresh_index",
+            os.path.join(os.path.dirname(__file__), "refresh-index.py"),
+        )
+        if spec and spec.loader:
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            mod.regenerate_index()
 
     return 0
 

@@ -716,10 +716,11 @@ def source_file_index(limit: int = 6) -> list[dict]:
         return result
 
 
-def _safe_match(terms: Iterable[str]) -> str:
+def _safe_match(terms: Iterable[str], match_all: bool = True) -> str:
     """Build a safe FTS5 MATCH expression from user terms.
 
-    We escape quotes and AND the terms. Phrases stay phrases if quoted.
+    Escapes quotes; joins with AND (all terms required) or OR (any term) per
+    `match_all`. Phrases stay phrases if quoted.
     """
     clean: list[str] = []
     for t in terms:
@@ -727,7 +728,9 @@ def _safe_match(terms: Iterable[str]) -> str:
         if not t:
             continue
         clean.append(f'"{t}"')
-    return " AND ".join(clean) if clean else ""
+    if not clean:
+        return ""
+    return (" AND " if match_all else " OR ").join(clean)
 
 
 def search(
@@ -737,6 +740,7 @@ def search(
     limit: int = 20,
     offset: int = 0,
     include_invalidated: bool = False,
+    match_all: bool = True,
 ) -> tuple[list[dict], int]:
     """Run an FTS query and return (page_of_rows, total_count).
 
@@ -753,7 +757,7 @@ def search(
     as canonical truth until a human promotes them (removes the flag). They
     surface only in the review queue (`/strata:dashboard`).
     """
-    match = _safe_match(terms)
+    match = _safe_match(terms, match_all=match_all)
     if not match:
         return [], 0
 

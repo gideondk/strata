@@ -265,9 +265,11 @@ def _awaiting_input_bullets() -> list[str]:
         # Auto-captured observations (status: auto) — surfaced, not asserted;
         # the human keeps (edit) or discards (/strata:forget).
         for a in inbox.auto_notes()[:8]:
+            age = a.get("age_days", 0)
+            stale = "  ⏳ stale — review or discard" if age >= 14 else ""
             out.append(
-                f"- 🤖 auto-captured (review): **{a['title']}** — "
-                f"`{a['path']}`")
+                f"- 🤖 auto-captured ({age}d, review): **{a['title']}** — "
+                f"`{a['path']}`{stale}")
     except Exception:
         pass
     return out or ["_none — nothing awaiting input_"]

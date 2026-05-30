@@ -112,6 +112,34 @@ def test_paths_search_surfaces_governing_note(initialised_vault, monkeypatch):
     assert any("token-bucket" in r["path"] for r in rows)
 
 
+def test_hybrid_or_fallback_when_and_misses(initialised_vault, monkeypatch):
+    """A multi-term query where no note contains EVERY term must still surface
+    a strong partial match via the OR-fallback (the eval-dogfood finding)."""
+    monkeypatch.setenv("STRATA_DISABLE_EMBEDDINGS", "1")  # FTS-only, deterministic
+    import db
+    import recall
+    mem = initialised_vault
+    _write(mem, "decisions/2026-05-01-dedupe.md",
+           "---\ntitle: Recall before write to dedupe ADRs\n---\n"
+           "Prevent duplicate ADRs by recalling first.\n")
+    db.reindex(force=True)
+    # "conflicting" + "writing" aren't in the note → AND yields nothing.
+    rows, _ = recall._hybrid_search(
+        "prevent duplicate conflicting ADRs before writing", "decisions", 5)
+    assert any("dedupe" in r["path"] for r in rows), "OR-fallback should surface it"
+
+
+def test_db_search_match_all_false_is_or(initialised_vault):
+    import db
+    mem = initialised_vault
+    _write(mem, "decisions/2026-05-01-alpha.md", "---\ntitle: Alpha\n---\nalpha only.\n")
+    db.reindex(force=True)
+    # AND of two terms where only one is present → no match.
+    assert db.search(["alpha", "zzmissing"], match_all=True)[1] == 0
+    # OR → matches on 'alpha'.
+    assert db.search(["alpha", "zzmissing"], match_all=False)[1] == 1
+
+
 def test_paths_search_or_not_and(initialised_vault, monkeypatch):
     """Two changed files in different areas: a note governing ONE must still
     surface (AND semantics would drop it)."""

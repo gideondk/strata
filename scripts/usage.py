@@ -71,6 +71,14 @@ def summary(since_days: float = 30, top: int = 8) -> dict:
             if e.get("event") == "recall_hit" and e.get("path")]
     counts = Counter(e["path"] for e in hits)
     nudges = sum(1 for e in events if e.get("event") == "nudge_shown")
+    saves = [e for e in events if e.get("event") == "note_saved"]
+    via_draft = sum(1 for e in saves if e.get("via_draft"))
+    # RAW counts only — do NOT divide saves_via_draft by nudges_shown for an
+    # "accept rate": the denominators don't match (a nudge fires without a
+    # stashed draft, and a draft can be saved without a nudge). A true
+    # accept-rate needs paired draft-offered/draft-accepted events, which the
+    # deferred graduation policy will add. Per-kind counts seed that policy.
+    by_kind = Counter(str(e.get("kind") or "?") for e in saves)
     return {
         "since_days": since_days,
         "events": len(events),
@@ -79,4 +87,7 @@ def summary(since_days: float = 30, top: int = 8) -> dict:
         "top_recalled": [{"path": p, "hits": n}
                          for p, n in counts.most_common(top)],
         "nudges_shown": nudges,
+        "notes_saved": len(saves),
+        "saves_via_draft": via_draft,
+        "saves_by_kind": dict(by_kind),
     }

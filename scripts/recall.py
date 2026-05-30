@@ -114,6 +114,13 @@ def _hybrid_search(query: str, scope: str | None,
     terms = query.strip().split()
     fts_rows, total = db.search(terms, scope=scope, limit=limit * 2)
 
+    # AND is precise but brittle on multi-term queries (a note rarely contains
+    # EVERY term). If it found nothing, relax to OR so a strong partial match
+    # still surfaces — semantic + rerank below re-establish precision.
+    if not fts_rows and len(terms) > 1:
+        fts_rows, total = db.search(terms, scope=scope, limit=limit * 2,
+                                    match_all=False)
+
     # Attempt semantic; gracefully degrade
     sem_rows: list[dict] = []
     try:
