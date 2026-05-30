@@ -1,6 +1,7 @@
 ---
 name: strata:consolidate
-description: Walk aging pr-context branch dirs, promote durable notes (handoff / decision-draft / review kinds) into the branch-agnostic lessons/ scope. Rule-based, no LLM. Run periodically, monthly or after a wave of merged PRs, to keep pr-context from accumulating stale branch-scoped content that should have graduated to lessons. Dry-run by default; pass `--apply` to perform.
+disable-model-invocation: true
+description: Promote durable notes out of aging per-branch pr-context dirs into the branch-agnostic lessons/ scope (rule-based, no LLM). Use when the user says "clean up old branch notes", "graduate these to lessons", "tidy pr-context", or after a wave of merged PRs. Dry-run by default; --apply to perform. Command-only — run it explicitly as /strata:consolidate.
 ---
 
 # strata:consolidate

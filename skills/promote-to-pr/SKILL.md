@@ -1,5 +1,6 @@
 ---
 name: strata:promote-to-pr
+disable-model-invocation: true
 description: Post a session summary as a comment on the open PR for the current branch. Use when the user asks to "share this on the PR", "post a summary", "let reviewers know", "update the PR with what we did", or at the end of substantial work that reviewers should see. Requires `gh` CLI authenticated. Always two-step with --dry-run first. PR comments are visible to the whole team and shouldn't be sent on a single prompt's say-so. NEVER auto-invoke; always confirm with user before posting.
 ---
 

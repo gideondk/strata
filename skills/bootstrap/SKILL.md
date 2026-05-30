@@ -1,5 +1,6 @@
 ---
 name: strata:bootstrap
+disable-model-invocation: true
 description: One-time onboarding pass to seed the Strata vault from an existing codebase's docs. Scans CLAUDE.md, docs/, .planning/, and similar for candidates, then dispatches each one to a `strata:bootstrap-worker` subagent in parallel batches, the worker reads its file, classifies, writes the right kind of vault note, and returns one line. Idempotent, tracks processed files by SHA256. Use this once when first installing Strata on a repo with substantial existing documentation.
 ---
 

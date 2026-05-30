@@ -1,5 +1,6 @@
 ---
 name: strata:forget
+disable-model-invocation: true
 description: Move a vault file to .trash/ + JSONL audit-log entry (who/when/why/SHA256). Recoverable, not destructive. Use when the user asks to "forget", "delete", "remove", "retract", "erase", "GDPR delete", "redact" a memory file, or when PHI/secrets accidentally landed in a note. Mandatory --reason argument captured in audit log. NEVER auto-invoke, always require explicit user request; the audit trail must reflect the user's intent.
 ---
 

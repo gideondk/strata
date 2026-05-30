@@ -1,6 +1,7 @@
 ---
 name: strata:eval
-description: Measure recall quality offline against a committed golden set (query → expected note paths). Reports recall@k + MRR through the real hybrid pipeline (incl. the cross-encoder rerank). Use to prove a retrieval change helped, guard against regressions, or compare with/without rerank. No LLM judge — pure ranking metrics, fully local.
+disable-model-invocation: true
+description: Measure whether a retrieval/search change actually improved results, using a committed golden set (recall@k + MRR, fully local, no LLM judge). Use when the user says "did search get better or worse", "prove the ranking improved", "check for retrieval regressions", or "compare with and without rerank". Command-only — run it explicitly as /strata:eval.
 ---
 
 # strata:eval

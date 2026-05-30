@@ -1,5 +1,6 @@
 ---
 name: strata:export-to-repo
+disable-model-invocation: true
 description: Promote a vault file (typically an ADR) into the host repo for git-blameable audit history. Use when the user asks to "make this ADR part of the codebase", "commit this decision to the repo", "promote to docs/adr/", "make this auditable", or for regulatory/compliance work that needs PR review. Lints with --strict before copy; never auto-commits, user runs git add / git commit themselves. Two-step with mandatory --dry-run for visibility.
 ---
 

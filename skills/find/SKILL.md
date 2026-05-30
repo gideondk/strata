@@ -1,6 +1,6 @@
 ---
 name: strata:find
-description: Plain-text grep across the Strata vault for terms. Use when the user asks to "find", "search for", "look up", "do we have notes about", or wants to locate decisions/lessons/domain notes by literal text. For ranked / paginated results prefer the `memory_search` MCP tool; this skill is the human-friendly fallback when you want grep-style line-numbered hits.
+description: Grep-style line-numbered text search across the vault — the human-friendly fallback to the `memory_search` MCP tool. Prefer `memory_search` for ranked/semantic recall; use /strata:find when the user explicitly wants literal grep hits with line numbers, or asks to "grep the vault" / "find the exact line that mentions X".
 ---
 
 # strata:find

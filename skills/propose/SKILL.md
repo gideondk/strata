@@ -1,6 +1,6 @@
 ---
 name: strata:propose
-description: Capture an OPEN question or contested position before it settles. Different from `decide` (which is for chosen options) and `domain` (which is for stable definitions). Propositions track the reasoning lifecycle, open → contested → converging → settled-as-decision (linked forward to an ADR) OR refuted-as-lesson. Invoke autonomously when the user says "we don't know yet whether X", "open question is Y", "we're split on Z", "I'm proposing X but not sure", "let's track this debate". When the question resolves, promote with `--settled-as` or `--refuted-as`.
+description: Capture an OPEN question or contested position that hasn't settled, tracking it open → contested → converging → settled. Invoke autonomously when the user says "we don't know yet whether X", "open question is Y", "we're split on Z", "I'm proposing X but not sure", "let's track this debate". Skip once a choice is locked in — for a decided option use /strata:decide; for a stable definition use /strata:domain. When it resolves, promote with --settled-as or --refuted-as.
 ---
 
 # strata:propose

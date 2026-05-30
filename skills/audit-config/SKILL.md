@@ -1,6 +1,7 @@
 ---
 name: strata:audit-config
-description: Audit the project's Claude Code config (CLAUDE.md, .claude/settings.json, .claude/skills/, .claude/agents/, .claudeignore) for staleness per Anthropic's 3-6 month review cadence. Read-only. Invoke autonomously when the user asks about config drift, performance plateaus after a new model release, or when onboarding a new team to the codebase.
+disable-model-invocation: true
+description: Check the project's Claude Code config (CLAUDE.md, .claude/settings.json, skills, agents) for staleness. Read-only. Use when the user says "review our Claude config", "is our CLAUDE.md stale", "audit the setup", or after upgrading to a new model. Command-only — run it explicitly as /strata:audit-config.
 ---
 
 # strata:audit-config

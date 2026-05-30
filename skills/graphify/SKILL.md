@@ -1,6 +1,7 @@
 ---
 name: strata:graphify
-description: Run Graphify (incremental update by default) to rebuild the code-structure graph and write per-node markdown into the Strata vault so code nodes appear in Obsidian's graph view alongside decisions and domain notes. Use when /strata:review reports the graph is stale, after major refactors, or to bootstrap the graph for the first time.
+disable-model-invocation: true
+description: Rebuild the code map so functions/classes show up in Obsidian's graph alongside decisions and domain notes. Use when the user says "rebuild the code graph", "the graph is stale", "update the code map after the refactor", or when /strata:review flags the graph as stale. Command-only — run it explicitly as /strata:graphify.
 ---
 
 # strata:graphify

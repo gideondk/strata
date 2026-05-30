@@ -1,5 +1,6 @@
 ---
 name: strata:init
+disable-model-invocation: true
 description: One-time setup. Creates the vault namespace, then guides the user through the two optional add-ons that unlock the differentiated features. Installing Graphify (for code-graph awareness) and running bootstrap (to migrate existing planning docs). Interactive. Invoke when the user says "set up strata", "initialise the vault", "first install", or when a session starts in a repo where `<vault>/<repo>/` is empty.
 ---
 

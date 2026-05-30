@@ -1,5 +1,6 @@
 ---
 name: strata:archive-planning
+disable-model-invocation: true
 description: Retire a `.planning/<initiative>/` subdir after its content has been migrated to the vault via `/strata:bootstrap`. Runs `git mv .planning/<initiative> .attic/<initiative>` and commits. Refuses to archive subdirs that aren't fully bootstrap-processed (to avoid losing knowledge). NEVER auto-invokes, always require explicit user request, since the operation rewrites the working tree.
 ---
 
