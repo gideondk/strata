@@ -111,7 +111,7 @@ def reindex(force: bool = False) -> dict:
 
     import time
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    with connect() as conn:
+    with connect(write=True) as conn:
         for row, vec in zip(to_embed, vectors, strict=True):
             try:
                 conn.execute(

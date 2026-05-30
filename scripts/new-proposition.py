@@ -21,6 +21,7 @@ from lib import (
     author_name,
     ensure_dir,
     memory_dir,
+    origin_branch,
     safe_resolve,
     safe_slug,
     today,
@@ -125,6 +126,9 @@ def main() -> int:
         "author": author_name(),
         "created": today(),
     }
+    ob = origin_branch()
+    if ob:
+        fm_meta["branch"] = ob
     post = frontmatter.Post(content=body.lstrip(), **fm_meta)
     write_text(path, frontmatter.dumps(post) + "\n")
     print(f"[strata] proposition created: {path.relative_to(mem)}")

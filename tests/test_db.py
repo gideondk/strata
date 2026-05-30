@@ -1,7 +1,12 @@
 """Tests for FTS5 indexing, supersession edges, and wikilink graph."""
 from __future__ import annotations
 
+import os
+import sqlite3
 import textwrap
+from pathlib import Path
+
+import pytest
 
 
 def _write(mem, rel, content):
@@ -196,3 +201,133 @@ def test_vault_summary_counts_indexed_notes(initialised_vault):
     s = db.vault_summary()
     assert s["notes"] == 2
     assert s["bytes"] > 0
+
+
+def test_wal_mode_enabled(initialised_vault):
+    """connect() must put the index in WAL so concurrent hook writers don't
+    hit SQLITE_BUSY."""
+    import db
+    with db.connect() as conn:
+        mode = conn.execute("PRAGMA journal_mode").fetchone()[0]
+        assert mode.lower() == "wal"
+
+
+def test_branch_stamped_in_frontmatter_is_indexed(initialised_vault):
+    """A decision authored on a feature branch carries `branch:` provenance;
+    reindex must slugify it into the branch column so it's attributable even
+    though it lives outside pr-context/."""
+    import db
+    mem = initialised_vault
+    _write(mem, "decisions/2026-05-28-rotate.md", textwrap.dedent("""\
+        ---
+        title: Rotate tokens
+        branch: feat/auth-rewrite
+        ---
+        Decided to rotate refresh tokens.
+        """))
+    db.reindex(force=True)
+    rows, total = db.search(["rotate"], branch="feat-auth-rewrite")
+    assert total == 1
+    assert rows[0]["branch"] == "feat-auth-rewrite"
+    # A non-matching branch filter excludes it.
+    _, other = db.search(["rotate"], branch="some-other-branch")
+    assert other == 0
+
+
+def test_pr_context_branch_comes_from_path(initialised_vault):
+    """pr-context notes still derive branch from their folder slug, even
+    without a `branch:` field — the path stays canonical for that scope."""
+    import db
+    mem = initialised_vault
+    _write(mem, "pr-context/feat-login/2026-05-28-1030--gk--note.md",
+           "---\nkind: session\n---\nWorking on login.\n")
+    db.reindex(force=True)
+    notes = db.list_branch_notes("feat-login")
+    assert [n["path"] for n in notes] == [
+        "pr-context/feat-login/2026-05-28-1030--gk--note.md"
+    ]
+
+
+def test_schema_version_mismatch_rebuilds(initialised_vault):
+    """A stale schema version drops every table; the next reindex repopulates
+    from disk (the index is disposable)."""
+    import db
+    mem = initialised_vault
+    _write(mem, "decisions/2026-05-28-a.md",
+           "---\ntitle: A\n---\nUnique body marker zalgon.\n")
+    db.reindex(force=True)
+    assert db.search(["zalgon"])[1] == 1
+
+    # Simulate an older index: roll user_version back and clobber a table.
+    with db.connect() as conn:
+        conn.execute("PRAGMA user_version = 1")
+    # Next connect sees the mismatch and wipes; reindex rebuilds.
+    db.reindex(force=False)
+    assert db.search(["zalgon"])[1] == 1
+    with db.connect() as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == db.SCHEMA_VERSION
+
+
+def test_unreadable_file_purges_stale_entry(initialised_vault, monkeypatch):
+    """If a previously-indexed note becomes unreadable, reindex drops its row
+    instead of leaving stale content cached as current."""
+    import db
+    mem = initialised_vault
+    p = _write(mem, "lessons/2026-05-28-x.md",
+               "---\nkind: handoff\n---\nbody marker quixotic.\n")
+    db.reindex(force=True)
+    assert db.search(["quixotic"])[1] == 1
+
+    real_read = Path.read_text
+
+    def boom(self, *a, **k):
+        if self.name == "2026-05-28-x.md":
+            raise OSError("simulated unreadable")
+        return real_read(self, *a, **k)
+
+    monkeypatch.setattr(Path, "read_text", boom)
+    os.utime(p, None)  # bump mtime so the incremental pass re-reads it
+    db.reindex(force=False)
+    assert db.search(["quixotic"])[1] == 0
+
+
+def test_write_connection_opens_immediate_transaction(initialised_vault):
+    """connect(write=True) holds an explicit transaction (BEGIN IMMEDIATE) so
+    busy_timeout is honoured under contention; read connects stay autocommit."""
+    import db
+    with db.connect(write=True) as conn:
+        assert conn.in_transaction is True
+    with db.connect() as conn:
+        assert conn.in_transaction is False
+
+
+def test_reindex_recovers_from_corrupt_index(initialised_vault):
+    """A corrupt index.db is a disposable cache: reindex discards it and
+    rebuilds from disk rather than raising a SQLite error."""
+    import db
+    mem = initialised_vault
+    _write(mem, "decisions/2026-05-29-a.md",
+           "---\ntitle: A\n---\nUnique body marker frobnitz.\n")
+    db.reindex(force=True)
+    assert db.search(["frobnitz"])[1] == 1
+
+    # Clobber the DB file (and drop any WAL/SHM sidecars) with garbage.
+    base = str(db.db_path())
+    for suffix in ("-wal", "-shm"):
+        sidecar = Path(base + suffix)
+        if sidecar.exists():
+            sidecar.unlink()
+    Path(base).write_bytes(b"this is definitely not a sqlite database\x00\xff")
+
+    # A raw connect proves it's corrupt...
+    with pytest.raises(sqlite3.DatabaseError):
+        raw = sqlite3.connect(base)
+        try:
+            raw.execute("SELECT count(*) FROM files").fetchone()
+        finally:
+            raw.close()
+
+    # ...but reindex self-heals (no raise) and the content comes back.
+    counts = db.reindex(force=False)
+    assert counts["indexed"] >= 1
+    assert db.search(["frobnitz"])[1] == 1

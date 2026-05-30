@@ -10,6 +10,7 @@ from lib import (
     author_name,
     ensure_dir,
     memory_dir,
+    origin_branch,
     safe_slug,
     today,
     write_text,
@@ -44,6 +45,9 @@ def main() -> int:
           "status: stable",
           f"author: {author_name()}",
           f"created: {today()}"]
+    ob = origin_branch()
+    if ob:
+        fm.append(f"branch: {ob}")
     if args.source_file:
         fm.append(f"source_file: {args.source_file}")
     fm.append("---\n\n")

@@ -28,6 +28,7 @@ from lib import (
     author_name,
     ensure_dir,
     memory_dir,
+    origin_branch,
     plugin_root,
     safe_slug,
     today,
@@ -212,6 +213,9 @@ def main() -> int:
         "supersedes": list(args.supersedes),
         "superseded_by": [],
     }
+    ob = origin_branch()
+    if ob:
+        fm_meta["branch"] = ob
     if args.source_file:
         # Store as a list when there are multiple sources so multi-file
         # consolidation keeps complete provenance in the frontmatter.

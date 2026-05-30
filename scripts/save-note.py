@@ -32,6 +32,7 @@ from lib import (
     ensure_dir,
     is_git_repo,
     lessons_dir,
+    origin_branch,
     pr_context_dir,
     safe_slug,
     stamp_minute,
@@ -139,8 +140,12 @@ def main() -> int:
         path = dir_ / fname
 
     fm_lines = ["---"]
+    # pr-context notes are branch-scoped; lessons are deliberately
+    # branch-agnostic retrospectives, so they keep no branch.
     if args.scope == "pr-context":
-        fm_lines.append(f"branch: {branch}")
+        ob = origin_branch()
+        if ob:
+            fm_lines.append(f"branch: {ob}")
     fm_lines.extend([
         f"kind: {args.kind}",
         f"author: {author_name()}",

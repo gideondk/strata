@@ -227,6 +227,18 @@ def is_git_repo() -> bool:
     return _git("rev-parse", "--is-inside-work-tree") == "true"
 
 
+def origin_branch() -> str | None:
+    """The branch a note is authored on, for provenance. Returns None when
+    there's no usable branch (not a repo, detached HEAD, or fresh repo) so
+    callers can simply skip the `branch:` frontmatter field."""
+    if not is_git_repo():
+        return None
+    b = current_branch()
+    if b in ("unknown", "HEAD") or b.startswith("detached@"):
+        return None
+    return b
+
+
 def branch_slug(branch: str) -> str:
     """Stable filesystem slug for a branch name.
 

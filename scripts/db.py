@@ -14,6 +14,7 @@ import frontmatter
 import lib_loader  # noqa: F401
 from lib import (
     UnsafePathError,
+    branch_slug,
     ensure_dir,
     first_heading,
     memory_dir,
@@ -80,6 +81,13 @@ CREATE INDEX IF NOT EXISTS links_dst ON links(dst);
 CREATE INDEX IF NOT EXISTS source_files_by_src ON source_files(source_file);
 """
 
+# Bump when the table layout changes. The index is disposable (rebuilt from
+# disk by reindex), so a mismatch drops every table and lets the next reindex
+# repopulate — no hand-written migrations needed.
+SCHEMA_VERSION = 2
+
+_TABLES = ("files", "fts", "supersedes", "links", "source_files")
+
 
 def db_path() -> Path:
     d = plugin_data_dir()
@@ -87,14 +95,54 @@ def db_path() -> Path:
     return d / "index.db"
 
 
+def _ensure_schema(conn: sqlite3.Connection) -> None:
+    """Create tables if absent; on a schema-version mismatch, drop every table
+    and recreate. The index is disposable (rebuilt from disk by reindex), so a
+    version bump needs no hand-written migration. Runs in autocommit, before any
+    explicit write transaction. On a healthy DB this is a no-op `CREATE ... IF
+    NOT EXISTS` and takes no write lock."""
+    mismatch = conn.execute("PRAGMA user_version").fetchone()[0] != SCHEMA_VERSION
+    if mismatch:
+        for table in _TABLES:
+            conn.execute(f"DROP TABLE IF EXISTS {table}")
+    conn.executescript(SCHEMA)
+    if mismatch:
+        conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+
+
 @contextlib.contextmanager
-def connect() -> Iterator[sqlite3.Connection]:
-    conn = sqlite3.connect(db_path())
+def connect(write: bool = False) -> Iterator[sqlite3.Connection]:
+    """Open the index. Pass `write=True` for any path that mutates rows.
+
+    We run in autocommit (`isolation_level=None`) and grab the write lock up
+    front with `BEGIN IMMEDIATE` on write paths. Python's default DEFERRED
+    transaction only takes the write lock on the first write statement — so a
+    read-then-write that loses a race to another writer returns SQLITE_BUSY
+    *immediately*, ignoring busy_timeout. IMMEDIATE makes busy_timeout actually
+    do its job. Read paths stay in autocommit and never block a writer.
+
+    index.db is plugin-data-local (never synced), so WAL's shared-memory file
+    is safe."""
+    conn = sqlite3.connect(db_path(), isolation_level=None)
     conn.row_factory = sqlite3.Row
     try:
-        conn.executescript(SCHEMA)
-        yield conn
-        conn.commit()
+        conn.executescript(
+            "PRAGMA journal_mode=WAL;"
+            "PRAGMA synchronous=NORMAL;"
+            "PRAGMA busy_timeout=5000;"
+        )
+        _ensure_schema(conn)
+        if write:
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                yield conn
+                conn.execute("COMMIT")
+            except BaseException:
+                with contextlib.suppress(sqlite3.Error):
+                    conn.execute("ROLLBACK")
+                raise
+        else:
+            yield conn
     finally:
         conn.close()
 
@@ -168,7 +216,60 @@ def _has_symlink_ancestor(target: Path, root: Path) -> bool:
     return False
 
 
+def _purge(conn: sqlite3.Connection, rel: str) -> None:
+    """Drop every index row for one note path."""
+    conn.execute("DELETE FROM files WHERE path = ?", (rel,))
+    conn.execute("DELETE FROM fts WHERE path = ?", (rel,))
+    conn.execute("DELETE FROM supersedes WHERE successor = ?", (rel,))
+    conn.execute("DELETE FROM links WHERE src = ?", (rel,))
+    conn.execute("DELETE FROM source_files WHERE path = ?", (rel,))
+
+
+def _resolve_branch(meta: dict, path_branch: str | None) -> str | None:
+    """Branch a note belongs to. pr-context trusts its folder slug; other
+    scopes fall back to the `branch:` provenance frontmatter (slugified to
+    match), so a decision authored on a branch is still attributable."""
+    if path_branch:
+        return path_branch
+    fm = str(meta.get("branch") or "").strip()
+    if fm and fm not in ("(no-repo)", "unknown", "HEAD") and not fm.startswith("detached@"):
+        return branch_slug(fm)
+    return None
+
+
+_CORRUPTION_MARKERS = (
+    "malformed", "not a database", "file is encrypted",
+    "disk image is malformed", "database corruption",
+)
+
+
+def _is_corruption(exc: Exception) -> bool:
+    return any(m in str(exc).lower() for m in _CORRUPTION_MARKERS)
+
+
+def _discard_index() -> None:
+    """Delete index.db (+ its WAL/SHM sidecars). Safe: the vault on disk is the
+    source of truth, so the next reindex rebuilds everything from scratch."""
+    base = str(db_path())
+    for suffix in ("", "-wal", "-shm"):
+        with contextlib.suppress(OSError):
+            Path(base + suffix).unlink()
+
+
 def reindex(force: bool = False) -> dict:
+    """Incremental reindex, self-healing. The index is a disposable cache, so a
+    corrupt/unreadable DB is recoverable: discard it and rebuild from disk
+    rather than surfacing a SQLite error to the user."""
+    try:
+        return _reindex(force)
+    except sqlite3.DatabaseError as e:
+        if not _is_corruption(e):
+            raise
+        _discard_index()
+        return _reindex(True)
+
+
+def _reindex(force: bool = False) -> dict:
     """Incremental reindex. Returns counts."""
     mem = memory_dir()
     if not mem.exists():
@@ -176,7 +277,7 @@ def reindex(force: bool = False) -> dict:
 
     indexed = removed = unchanged = errors = 0
 
-    with connect() as conn:
+    with connect(write=True) as conn:
         # Build a quick lookup of what's in the DB
         existing: dict[str, tuple[float, int]] = {
             row["path"]: (row["mtime"], row["size"])
@@ -201,7 +302,10 @@ def reindex(force: bool = False) -> dict:
             try:
                 raw = path.read_text(encoding="utf-8", errors="replace")
             except OSError:
+                # Unreadable now — purge any stale row rather than leaving the
+                # old content cached as if it were still current.
                 errors += 1
+                _purge(conn, rel)
                 continue
 
             try:
@@ -221,13 +325,10 @@ def reindex(force: bool = False) -> dict:
             )
             status = str(meta.get("status") or "").strip() or None
             kind = str(meta.get("kind") or "").strip() or None
-            scope, branch = _classify(path)
+            scope, path_branch = _classify(path)
+            branch = _resolve_branch(meta, path_branch)
 
-            conn.execute("DELETE FROM files WHERE path = ?", (rel,))
-            conn.execute("DELETE FROM fts WHERE path = ?", (rel,))
-            conn.execute("DELETE FROM supersedes WHERE successor = ?", (rel,))
-            conn.execute("DELETE FROM links WHERE src = ?", (rel,))
-            conn.execute("DELETE FROM source_files WHERE path = ?", (rel,))
+            _purge(conn, rel)
 
             conn.execute(
                 "INSERT INTO files(path, mtime, size, title, status, kind, "
@@ -275,11 +376,7 @@ def reindex(force: bool = False) -> dict:
 
         # Remove deleted files
         for rel in set(existing) - on_disk:
-            conn.execute("DELETE FROM files WHERE path = ?", (rel,))
-            conn.execute("DELETE FROM fts WHERE path = ?", (rel,))
-            conn.execute("DELETE FROM supersedes WHERE successor = ?", (rel,))
-            conn.execute("DELETE FROM links WHERE src = ?", (rel,))
-            conn.execute("DELETE FROM source_files WHERE path = ?", (rel,))
+            _purge(conn, rel)
             removed += 1
 
         # Compute relevance per file from cheap heuristics:
@@ -288,31 +385,34 @@ def reindex(force: bool = False) -> dict:
         # - +0.1 per incoming link, capped at +0.5
         # - -0.8 if status in (invalidated, superseded, deprecated)
         # SQLite-only — no Python pass over the tree.
+        # Discrete statements (not executescript) so they run inside this
+        # write transaction — executescript would implicitly COMMIT mid-reindex.
         import time as _t
         now_ts = _t.time()
         d30 = now_ts - 30 * 86400
         d90 = now_ts - 90 * 86400
-        conn.executescript(f"""
-            UPDATE files SET relevance = 1.0;
-            UPDATE files
-              SET relevance = relevance + 0.4
-              WHERE mtime >= {d30};
-            UPDATE files
-              SET relevance = relevance + 0.2
-              WHERE mtime >= {d90} AND mtime < {d30};
-            UPDATE files
-              SET relevance = relevance - 0.8
-              WHERE status IN ('invalidated', 'superseded', 'deprecated');
-            UPDATE files
-              SET relevance = relevance + (
-                SELECT MIN(0.5, 0.1 * COUNT(*)) FROM links
-                WHERE links.dst = files.path AND links.resolved = 1
-              )
-              WHERE EXISTS (
-                SELECT 1 FROM links
-                WHERE links.dst = files.path AND links.resolved = 1
-              );
-        """)
+        conn.execute("UPDATE files SET relevance = 1.0")
+        conn.execute(
+            "UPDATE files SET relevance = relevance + 0.4 WHERE mtime >= ?",
+            (d30,),
+        )
+        conn.execute(
+            "UPDATE files SET relevance = relevance + 0.2 "
+            "WHERE mtime >= ? AND mtime < ?",
+            (d90, d30),
+        )
+        conn.execute(
+            "UPDATE files SET relevance = relevance - 0.8 "
+            "WHERE status IN ('invalidated', 'superseded', 'deprecated')"
+        )
+        conn.execute(
+            "UPDATE files SET relevance = relevance + ("
+            "  SELECT MIN(0.5, 0.1 * COUNT(*)) FROM links "
+            "  WHERE links.dst = files.path AND links.resolved = 1) "
+            "WHERE EXISTS ("
+            "  SELECT 1 FROM links "
+            "  WHERE links.dst = files.path AND links.resolved = 1)"
+        )
 
     return {"indexed": indexed, "removed": removed,
             "unchanged": unchanged, "errors": errors}
