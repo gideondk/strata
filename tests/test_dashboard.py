@@ -43,9 +43,29 @@ def test_dashboard_has_required_sections(initialised_vault):
         "# Strata dashboard",
         "## Scope counts",
         "## Recent activity",
+        "## 📥 Awaiting your input",
+        "## Memory usage",
         "## Suggested actions",
     ):
         assert heading in out, f"missing section: {heading}"
+
+
+def test_memory_usage_section_empty_ledger(initialised_vault):
+    _reload()
+    import dashboard
+    bullets = dashboard._memory_usage_bullets()
+    assert any("no recalls logged" in b for b in bullets)
+
+
+def test_memory_usage_section_reflects_recall_hits(initialised_vault):
+    import usage
+    usage.log_recall_hits([("decisions/2026-05-25-foo.md", "decisions", 0)])
+    _reload()
+    import dashboard
+    bullets = dashboard._memory_usage_bullets()
+    joined = "\n".join(bullets)
+    assert "recall hit" in joined
+    assert "decisions/2026-05-25-foo.md" in joined
 
 
 def test_dashboard_uses_episodic_semantic_procedural_framing(initialised_vault):

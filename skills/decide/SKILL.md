@@ -52,6 +52,11 @@ STRATA_ADR
      - **ADD** — genuinely distinct despite the overlap → write with `--ack-new`
        (a `block` refuses to write without it).
 
+   **Use the candidates to ground the draft.** Even on `clear`, the precheck
+   returns the nearest existing notes. Before writing, skim the top 2-3: match
+   their section structure, reuse house terminology, and `[[wikilink]]` the
+   genuinely related ones in your body. A well-linked draft beats an orphan.
+
 4. Write it (ADD):
 
 ```bash

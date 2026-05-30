@@ -79,6 +79,11 @@ def _open_questions_suffix() -> str:
 
 def build_message(snap: dict, *, drafted: bool, branch: str) -> str:
     """Compose the user-facing nudge. `drafted` toggles the apply-draft hint."""
+    try:
+        import usage
+        usage.log_event("nudge_shown", branch=branch, drafted=drafted)
+    except Exception:
+        pass
     import session_state
     summary = session_state.stop_nudge_text(snap)
     extra = _graph_staleness_suffix() + _open_questions_suffix()

@@ -9,11 +9,17 @@ returns False and callers should fall back to FTS5-only search."""
 from __future__ import annotations
 
 import contextlib
+import os
 import sqlite3
 
 import lib_loader  # noqa: F401
 from db import _safe_match, connect, db_path  # noqa: F401
 from lib import info
+
+# Cross-encoder reranker — small CPU ONNX model shipped by fastembed. Used as
+# an optional final rerank pass after hybrid retrieval.
+DEFAULT_RERANK_MODEL = "Xenova/ms-marco-MiniLM-L-6-v2"
+_RERANK_CACHE: object | None = None
 
 # Default model: small, fast, CPU-only, ~30MB. fastembed downloads on first
 # use to ~/.cache/fastembed (network call on first install only).
@@ -183,6 +189,53 @@ def search(
         })
     scored.sort(key=lambda x: -x["score"])
     return scored[:limit]
+
+
+def rerank_available() -> bool:
+    """Whether the cross-encoder reranker can be used. Honors the same
+    disable knobs as embeddings, plus a rerank-specific one."""
+    if os.environ.get("STRATA_DISABLE_EMBEDDINGS") or \
+            os.environ.get("STRATA_DISABLE_RERANK"):
+        return False
+    try:
+        import numpy  # noqa: F401
+        from fastembed.rerank.cross_encoder import TextCrossEncoder  # noqa: F401
+        return True
+    except Exception:
+        return False
+
+
+def _get_reranker():
+    global _RERANK_CACHE
+    if _RERANK_CACHE is not None:
+        return _RERANK_CACHE
+    from fastembed.rerank.cross_encoder import TextCrossEncoder
+    _RERANK_CACHE = TextCrossEncoder(model_name=DEFAULT_RERANK_MODEL)
+    return _RERANK_CACHE
+
+
+def rerank_scores(query: str, documents: list[str]) -> list[float] | None:
+    """Cross-encoder relevance scores for each (query, document) pair, higher =
+    more relevant. STRICTLY OFFLINE — a not-yet-cached model degrades to None
+    (the caller keeps the prior ordering) rather than downloading on the recall
+    path. Returns None on any failure or when unavailable."""
+    if not rerank_available() or not documents:
+        return None
+    keys = ("HF_HUB_OFFLINE", "TRANSFORMERS_OFFLINE")
+    prev = {k: os.environ.get(k) for k in keys}
+    for k in keys:
+        os.environ[k] = "1"
+    try:
+        model = _get_reranker()
+        return [float(s) for s in model.rerank(query, documents)]
+    except Exception:
+        return None
+    finally:
+        for k, v in prev.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
 
 
 def status() -> dict:

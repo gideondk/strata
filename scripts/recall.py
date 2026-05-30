@@ -12,12 +12,48 @@ Honours --since, --scope filters. Excludes invalidated by default.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
+import re
 import sys
+from pathlib import Path
 
 import db
 import lib_loader  # noqa: F401
 from lib import memory_dir
+
+# Set True only by the CLI entry (main) so importing recall (e.g. from eval.py)
+# never pollutes the usage ledger with non-user recalls.
+_LOG_HITS = False
+
+
+_CAMEL_RE = re.compile(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|[0-9]+")
+_PATH_STOPWORDS = frozenset({
+    "src", "lib", "test", "tests", "index", "main", "init", "app", "py",
+    "ts", "js", "go", "rs", "java", "md", "the", "and",
+})
+
+
+def query_from_paths(paths: list[str]) -> str:
+    """Derive a recall query from changed file paths: split stems + parent dir
+    names on camelCase / snake / kebab / separators, drop short + boilerplate
+    tokens, dedupe preserving order. Used by the --paths mode (pre-push hook)."""
+    terms: list[str] = []
+    seen: set[str] = set()
+    for p in paths:
+        pp = Path(p)
+        chunks = [pp.stem, pp.parent.name]
+        for chunk in chunks:
+            for w in re.split(r"[^A-Za-z0-9]+", chunk):
+                for part in (_CAMEL_RE.findall(w) or [w]):
+                    t = part.lower()
+                    if len(t) >= 3 and t not in _PATH_STOPWORDS and t not in seen:
+                        seen.add(t)
+                        terms.append(t)
+    # No usable terms (every stem was boilerplate/too short) → empty, so the
+    # caller short-circuits to "no notes govern…" rather than matching the
+    # commonest filenames (main/index/app) across the whole corpus.
+    return " ".join(terms)
 
 
 def _budget_truncate(text: str, char_budget: int) -> str:
@@ -28,6 +64,42 @@ def _budget_truncate(text: str, char_budget: int) -> str:
 
 
 _RRF_K = 60  # standard RRF constant from the original paper
+
+# Cross-encoder rerank seams. Off by default — it costs a per-process model
+# load and the lift is unproven on any given vault, so it's opt-in (--rerank,
+# or eval --rerank to measure first). _RERANK_SCORER lets tests inject a
+# deterministic scorer (no model download).
+_RERANK_ENABLED = False
+_RERANK_SCORER = None  # fn(query, list[str]) -> list[float] | None
+
+
+def _maybe_rerank(query: str, rows: list[dict]) -> list[dict]:
+    """Reorder candidates by a cross-encoder when available; identity otherwise.
+    Production scorer is embeddings.rerank_scores (offline-gated, degrades to a
+    no-op when the model isn't cached). Never raises."""
+    if not _RERANK_ENABLED or len(rows) < 2:
+        return rows
+    scorer = _RERANK_SCORER
+    if scorer is None:
+        try:
+            import embeddings
+            if not embeddings.rerank_available():
+                return rows
+            scorer = embeddings.rerank_scores
+        except Exception:
+            return rows
+    docs = [
+        (f"{r.get('title') or ''} {r.get('excerpt') or ''}".strip() or r["path"])
+        for r in rows
+    ]
+    try:
+        scores = scorer(query, docs)
+    except Exception:
+        return rows
+    if not scores or len(scores) != len(rows):
+        return rows
+    order = sorted(range(len(rows)), key=lambda i: -scores[i])
+    return [rows[i] for i in order]
 
 
 def _hybrid_search(query: str, scope: str | None,
@@ -53,42 +125,41 @@ def _hybrid_search(query: str, scope: str | None,
         sem_rows = []
 
     if not sem_rows:
-        return fts_rows[:limit], total
+        candidates = fts_rows
+    else:
+        # RRF merge — same path can appear in both lists; their inverse ranks add
+        scores: dict[str, float] = {}
+        payload: dict[str, dict] = {}
+        for rank, row in enumerate(fts_rows):
+            path = row["path"]
+            scores[path] = scores.get(path, 0.0) + 1.0 / (_RRF_K + rank)
+            payload[path] = row
+        for rank, row in enumerate(sem_rows):
+            path = row.get("path")
+            if not path:
+                continue
+            scores[path] = scores.get(path, 0.0) + 1.0 / (_RRF_K + rank)
+            # Don't overwrite FTS payload (has excerpt + bm25 rank)
+            payload.setdefault(path, row)
+        ranked = sorted(scores.keys(), key=lambda p: -scores[p])
+        candidates = [payload[p] for p in ranked]
 
-    # RRF merge — same path can appear in both lists; their inverse ranks add
-    scores: dict[str, float] = {}
-    payload: dict[str, dict] = {}
-    for rank, row in enumerate(fts_rows):
-        path = row["path"]
-        scores[path] = scores.get(path, 0.0) + 1.0 / (_RRF_K + rank)
-        payload[path] = row
-    for rank, row in enumerate(sem_rows):
-        path = row.get("path")
-        if not path:
-            continue
-        scores[path] = scores.get(path, 0.0) + 1.0 / (_RRF_K + rank)
-        # Don't overwrite FTS payload (has excerpt + bm25 rank)
-        payload.setdefault(path, row)
-
-    ranked = sorted(scores.keys(), key=lambda p: -scores[p])
-    merged = [payload[p] for p in ranked[:limit]]
-    # `total` stays as the FTS total — semantic adds re-ranking, not new candidates
+    # Optional cross-encoder rerank over the fused pool, then truncate to limit.
+    candidates = _maybe_rerank(query, candidates)
+    merged = candidates[:limit]
+    if _LOG_HITS:
+        with contextlib.suppress(Exception):
+            import usage
+            usage.log_recall_hits(
+                (r.get("path"), r.get("scope"), i)
+                for i, r in enumerate(merged)
+            )
+    # `total` stays the FTS total — rerank/semantic reorder, don't add candidates
     return merged, max(total, len(merged))
 
 
-def _layer1(query: str, scope: str | None, since: str | None,
-            limit: int, budget: int) -> str:
-    """Compact ranked index. bm25 * relevance * semantic blended via
-    Reciprocal Rank Fusion when fastembed is available; FTS-only fallback."""
-    rows, total = _hybrid_search(query, scope, limit)
-
-    if since:
-        rows = [r for r in rows if r.get("indexed_at", "") >= since
-                or r.get("mtime_iso", "") >= since]
-
-    if not rows:
-        return f"no relevant notes found for: {query!r}"
-
+def _format_index(rows: list[dict], total: int, budget: int) -> str:
+    """Render rows as a compact ranked index, honoring the char budget."""
     out: list[str] = []
     char_budget = budget * 4
     used = 0
@@ -106,6 +177,53 @@ def _layer1(query: str, scope: str | None, since: str | None,
     return "\n".join(out)
 
 
+def _paths_search(paths: list[str], scope: str | None,
+                  limit: int) -> list[dict]:
+    """Notes governing a set of changed file paths. OR semantics over the
+    path-derived terms (a note rarely contains *every* token from *every*
+    changed file), ranked by bm25, optionally scoped. Pure FTS — deterministic
+    and offline; terms are alnum-only and quoted so an FTS operator can't leak."""
+    terms = query_from_paths(paths).split()
+    if not terms:
+        return []
+    db.reindex(force=False)
+    match = " OR ".join(f'"{t}"' for t in terms)
+    where = "fts MATCH ?"
+    params: list = [match]
+    if scope and scope != "all":
+        where += " AND scope = ?"
+        params.append(scope)
+    # Don't surface invalidated/stale decisions as "governing" (db.search
+    # filters these for --query mode; mirror it here).
+    where += (" AND path NOT IN "
+              "(SELECT path FROM files WHERE status = 'invalidated')")
+    rows: list[dict] = []
+    with contextlib.suppress(Exception), db.connect() as conn:
+        for r in conn.execute(
+            "SELECT path, title, scope, "
+            "snippet(fts, 2, '[', ']', '…', 12) AS excerpt, bm25(fts) AS rank "
+            f"FROM fts WHERE {where} ORDER BY rank LIMIT ?",
+            (*params, limit),
+        ):
+            rows.append(dict(r))
+    return rows
+
+
+def _layer1(query: str, scope: str | None, since: str | None,
+            limit: int, budget: int) -> str:
+    """Compact ranked index. bm25 * relevance * semantic blended via
+    Reciprocal Rank Fusion when fastembed is available; FTS-only fallback."""
+    rows, total = _hybrid_search(query, scope, limit)
+
+    if since:
+        rows = [r for r in rows if r.get("indexed_at", "") >= since
+                or r.get("mtime_iso", "") >= since]
+
+    if not rows:
+        return f"no relevant notes found for: {query!r}"
+    return _format_index(rows, total, budget)
+
+
 def _layer2(query: str, scope: str | None, since: str | None,
             limit: int, budget: int) -> str:
     """Layer 1 + chronological context: for each top hit, list neighbours
@@ -114,9 +232,9 @@ def _layer2(query: str, scope: str | None, since: str | None,
     if base.startswith("no relevant"):
         return base
 
-    db.reindex(force=False)
-    terms = query.strip().split()
-    rows, _ = db.search(terms, scope=scope, limit=3)
+    # Seed neighbours from the SAME fused/reranked ranking as layer 1, not a
+    # separate bm25 query, so the "Connected" hits match what was shown above.
+    rows, _ = _hybrid_search(query, scope, 3)
     if not rows:
         return base
 
@@ -143,9 +261,9 @@ def _layer2(query: str, scope: str | None, since: str | None,
 def _layer3(query: str, scope: str | None, since: str | None,
             budget: int) -> str:
     """Full body of the top hit. Used sparingly (large token cost)."""
-    db.reindex(force=False)
-    terms = query.strip().split()
-    rows, _ = db.search(terms, scope=scope, limit=1)
+    # Use the fused/reranked top hit so layer 3 returns the body of the SAME
+    # note layer 1 ranked first (not a divergent bm25-only pick).
+    rows, _ = _hybrid_search(query, scope, 1)
     if not rows:
         return f"no relevant notes found for: {query!r}"
     top = rows[0]
@@ -159,7 +277,12 @@ def _layer3(query: str, scope: str | None, since: str | None,
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--query", required=True)
+    ap.add_argument("--query", default=None,
+                    help="Free-text query. Provide this OR --paths.")
+    ap.add_argument("--paths", nargs="+", default=None,
+                    help="Changed file paths — derive the query from them and "
+                         "surface the notes that govern them. Advisory; pair "
+                         "with a pre-push git hook (exit 0 always).")
     ap.add_argument("--layer", type=int, default=1, choices=[1, 2, 3])
     ap.add_argument("--budget", type=int, default=600,
                     help="Target token budget; ~4 chars/token soft cap.")
@@ -171,24 +294,52 @@ def main() -> int:
                     help="Max hits considered before budget truncation.")
     ap.add_argument("--json", action="store_true",
                     help="Machine-readable JSON output.")
+    ap.add_argument("--rerank", action="store_true",
+                    help="Enable the cross-encoder rerank pass (off by default; "
+                         "measure the lift with /strata:eval before relying on "
+                         "it — it costs a per-call model load).")
     args = ap.parse_args()
+
+    if args.rerank:
+        global _RERANK_ENABLED
+        _RERANK_ENABLED = True
+
+    global _LOG_HITS
+    _LOG_HITS = True  # this is a real user-facing recall — log what it surfaces
+
+    if not (args.query or args.paths):
+        print("[strata] error: provide --query or --paths", file=sys.stderr)
+        return 2
 
     if not memory_dir().exists():
         print("_vault not initialised — run `/strata:init` first_",
               file=sys.stderr)
         return 2
 
-    if args.layer == 3:
-        out = _layer3(args.query, args.scope, args.since, args.budget)
-    elif args.layer == 2:
-        out = _layer2(args.query, args.scope, args.since,
-                      args.limit, args.budget)
+    if args.paths:
+        query = query_from_paths(args.paths)
+        rows = _paths_search(args.paths, args.scope, args.limit)
+        if _LOG_HITS:
+            with contextlib.suppress(Exception):
+                import usage
+                usage.log_recall_hits(
+                    (r.get("path"), r.get("scope"), i)
+                    for i, r in enumerate(rows))
+        out = (_format_index(rows, len(rows), args.budget) if rows
+               else f"no notes govern the changed paths: {args.paths}")
     else:
-        out = _layer1(args.query, args.scope, args.since,
-                      args.limit, args.budget)
+        query = args.query
+        if args.layer == 3:
+            out = _layer3(query, args.scope, args.since, args.budget)
+        elif args.layer == 2:
+            out = _layer2(query, args.scope, args.since,
+                          args.limit, args.budget)
+        else:
+            out = _layer1(query, args.scope, args.since,
+                          args.limit, args.budget)
 
     if args.json:
-        print(json.dumps({"layer": args.layer, "query": args.query,
+        print(json.dumps({"layer": args.layer, "query": query,
                           "result": out}))
     else:
         print(out)

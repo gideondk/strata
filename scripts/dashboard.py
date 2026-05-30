@@ -251,6 +251,48 @@ def _awaiting_input_bullets() -> list[str]:
     return out or ["_none — nothing awaiting input_"]
 
 
+def _memory_usage_bullets() -> list[str]:
+    """Recall-usage signals: is the vault used, which notes are dead weight.
+    Reads the local usage ledger (best-effort) + the index."""
+    try:
+        import usage
+        s = usage.summary()
+    except Exception:
+        return ["_usage telemetry unavailable_"]
+    if s["recall_hits"] == 0:
+        return ["_no recalls logged in the last "
+                f"{int(s['since_days'])}d yet_"]
+    out = [
+        f"- {s['recall_hits']} recall hit(s) over {s['distinct_recalled']} "
+        f"note(s) in {int(s['since_days'])}d"
+        + (f"; {s['nudges_shown']} nudge(s) shown" if s["nudges_shown"] else ""),
+    ]
+    for e in s["top_recalled"][:5]:
+        out.append(f"  - 🔁 `{e['path']}` — {e['hits']} hit(s)")
+    # Dead-memory candidates: durable notes never recalled in the window.
+    try:
+        import time as _t
+
+        import db
+        import usage as _u
+        recalled = _u.recalled_paths()
+        cutoff = _t.time() - 30 * 86400
+        with db.connect() as conn:
+            rows = conn.execute(
+                "SELECT path FROM files WHERE scope IN "
+                "('decisions', 'domain', 'lessons') AND mtime < ? "
+                "ORDER BY mtime LIMIT 200",
+                (cutoff,),
+            ).fetchall()
+        dead = [r["path"] for r in rows if r["path"] not in recalled]
+        if dead:
+            out.append(f"- {len(dead)} durable note(s) not recalled in 30d "
+                       f"(dead-memory candidates) — e.g. `{dead[0]}`")
+    except Exception:
+        pass
+    return out
+
+
 def build_dashboard() -> str:
     """Compose the dashboard markdown. Same body for INDEX.md and skill."""
     mem = memory_dir()
@@ -302,6 +344,11 @@ def build_dashboard() -> str:
     push("## 📥 Awaiting your input")
     push("")
     out.extend(_awaiting_input_bullets())
+    push("")
+
+    push("## Memory usage")
+    push("")
+    out.extend(_memory_usage_bullets())
     push("")
 
     push("## Stale-proposed ADRs (>14 days)")
