@@ -28,8 +28,18 @@ We assume:
    - Absolute paths (`/etc/passwd`)
    - Traversal (`../`, `..\\`)
    - Anything resolving outside the configured vault root
-3. **No network.** The plugin imports no networking modules. `grep -RE
-   "^import (urllib|socket|http|requests|httpx|aiohttp)" .` is empty.
+3. **No network.** The plugin's own Python imports no networking modules —
+   it never opens a socket, serves HTTP, or makes a request. Verify (catches
+   both `import x` and `from x import …`, including `socketserver` /
+   `http.server`):
+
+   ```
+   grep -REn "^[[:space:]]*(import|from)[[:space:]]+(urllib|socket|socketserver|http|https|requests|httpx|aiohttp|ftplib|smtplib|telnetlib|ssl)([. ]|$)" scripts/ mcp/
+   ```
+
+   is empty. (The dashboard is a static `index.html` opened via `file://` with a
+   `connect-src 'none'` CSP — there is no server. The optional `fastembed`
+   embedding dep is loaded strictly offline; it is not a networking module.)
 4. **Subprocesses are restricted to `git`** and read-only invocations
    (`config`, `rev-parse`, `diff --cached --name-only`). No `commit`,
    `push`, `checkout`.
