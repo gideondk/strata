@@ -41,13 +41,13 @@ Compare the pipeline with and without the cross-encoder rerank:
 
 ```bash
 "${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/eval.py" -k 5 --no-rerank   # baseline
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/eval.py" -k 5               # + rerank
+  "${CLAUDE_PLUGIN_ROOT}/scripts/eval.py" -k 5 --sweep
 ```
 
-If rerank doesn't move recall@k / MRR up on your set, leave it off
-(`STRATA_DISABLE_RERANK=1`) — don't pay the latency for no gain.
+`--sweep` runs the golden set rerank-OFF then rerank-ON and prints both rows +
+the lift, so the decision is a number. If the lift is zero (or negative) on your
+set, leave rerank off (it's off by default) — don't pay the per-call model load
+for no gain.
 
 ## When to run
 

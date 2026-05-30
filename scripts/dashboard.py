@@ -283,16 +283,27 @@ def _memory_usage_bullets() -> list[str]:
         s = usage.summary()
     except Exception:
         return ["_usage telemetry unavailable_"]
-    if s["recall_hits"] == 0:
-        return ["_no recalls logged in the last "
+
+    out: list[str] = []
+    if s["recall_hits"]:
+        out.append(
+            f"- {s['recall_hits']} recall hit(s) over {s['distinct_recalled']} "
+            f"note(s) in {int(s['since_days'])}d"
+            + (f"; {s['nudges_shown']} nudge(s) shown"
+               if s["nudges_shown"] else ""))
+        for e in s["top_recalled"][:5]:
+            out.append(f"  - 🔁 `{e['path']}` — {e['hits']} hit(s)")
+    # Saves by kind — the seed signal for the (deferred) per-kind autonomy
+    # graduation policy: which note-kinds the team actually accepts.
+    if s.get("notes_saved"):
+        by_kind = ", ".join(f"{k}:{n}" for k, n
+                            in sorted(s["saves_by_kind"].items()))
+        out.append(f"- {s['notes_saved']} note(s) saved in "
+                   f"{int(s['since_days'])}d ({s['saves_via_draft']} via draft)"
+                   + (f" — {by_kind}" if by_kind else ""))
+    if not out:
+        return [f"_no recalls or saves logged in the last "
                 f"{int(s['since_days'])}d yet_"]
-    out = [
-        f"- {s['recall_hits']} recall hit(s) over {s['distinct_recalled']} "
-        f"note(s) in {int(s['since_days'])}d"
-        + (f"; {s['nudges_shown']} nudge(s) shown" if s["nudges_shown"] else ""),
-    ]
-    for e in s["top_recalled"][:5]:
-        out.append(f"  - 🔁 `{e['path']}` — {e['hits']} hit(s)")
     # Dead-memory candidates: durable notes never recalled in the window.
     try:
         import time as _t

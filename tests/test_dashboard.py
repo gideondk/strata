@@ -54,7 +54,7 @@ def test_memory_usage_section_empty_ledger(initialised_vault):
     _reload()
     import dashboard
     bullets = dashboard._memory_usage_bullets()
-    assert any("no recalls logged" in b for b in bullets)
+    assert any("no recalls or saves logged" in b for b in bullets)
 
 
 def test_memory_usage_section_reflects_recall_hits(initialised_vault):

@@ -164,6 +164,67 @@ def test_source_files_table_populated_from_list_frontmatter(
     assert sources == {"src/a.py", "src/b.py"}
 
 
+def test_source_file_discovered_from_body_when_absent(initialised_vault, env):
+    """#110: with no source_file frontmatter, reindex discovers path-like
+    tokens from the body that ACTUALLY exist in the repo, marked inferred."""
+    import db
+    mem = initialised_vault
+    repo = env["repo"]
+    (repo / "src").mkdir(parents=True, exist_ok=True)
+    (repo / "src" / "rate_limiter.py").write_text("# real file\n")
+
+    _write(mem, "decisions/2026-05-28-rl.md", textwrap.dedent("""\
+        ---
+        title: Rate limiting
+        ---
+        We changed the bucket logic in `src/rate_limiter.py` this week.
+        """))
+    db.reindex(force=True)
+    idx = db.source_file_index()
+    hit = next((e for e in idx if e["source_file"] == "src/rate_limiter.py"), None)
+    assert hit is not None, "real referenced path should be discovered"
+    assert hit["all_inferred"] is True  # discovered, not declared
+
+
+def test_discovery_ignores_nonexistent_and_prose(initialised_vault, env):
+    """Precision guard: a path-shaped token that doesn't resolve to a real repo
+    file is NOT indexed (no pollution)."""
+    import db
+    mem = initialised_vault
+    _write(mem, "decisions/2026-05-28-ghost.md", textwrap.dedent("""\
+        ---
+        title: Ghost
+        ---
+        Touches `src/does_not_exist.py` and mentions read/write tradeoffs.
+        """))
+    db.reindex(force=True)
+    sources = {e["source_file"] for e in db.source_file_index()}
+    assert "src/does_not_exist.py" not in sources
+    assert "read/write" not in sources  # prose with a slash, no real file
+
+
+def test_declared_source_file_wins_over_discovery(initialised_vault, env):
+    """If frontmatter declares source_file, discovery does NOT run (declared
+    is authoritative; inferred=0)."""
+    import db
+    mem = initialised_vault
+    repo = env["repo"]
+    (repo / "src").mkdir(parents=True, exist_ok=True)
+    (repo / "src" / "other.py").write_text("# real\n")
+    _write(mem, "decisions/2026-05-28-declared.md", textwrap.dedent("""\
+        ---
+        title: Declared
+        source_file: src/declared.py
+        ---
+        Body also mentions `src/other.py` but declaration wins.
+        """))
+    db.reindex(force=True)
+    idx = {e["source_file"]: e for e in db.source_file_index()}
+    assert "src/declared.py" in idx
+    assert idx["src/declared.py"]["all_inferred"] is False
+    assert "src/other.py" not in idx  # discovery skipped when declared present
+
+
 def test_source_files_table_cleaned_up_on_delete(initialised_vault):
     """When a note is removed from disk and reindex runs, its source_files
     rows must be cleaned up too (otherwise the by-file index keeps

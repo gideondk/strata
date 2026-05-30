@@ -19,6 +19,7 @@ from lib import (
     first_heading,
     memory_dir,
     plugin_data_dir,
+    project_dir,
     safe_resolve,
 )
 
@@ -62,13 +63,15 @@ CREATE TABLE IF NOT EXISTS links (
     PRIMARY KEY (src, dst)
 );
 
--- Inverse index: note → source-code file(s) it references. Read from
--- each note's `source_file:` frontmatter (string OR YAML list). Powers
--- the SessionStart primer's "files with recent context" section and
--- any future "what notes touch this file?" lookups.
+-- Inverse index: note → source-code file(s) it references. Primary source is
+-- each note's `source_file:` frontmatter (string OR YAML list). When that's
+-- absent, reindex auto-discovers path-like tokens from the body that actually
+-- exist in the repo (inferred=1). Powers the SessionStart primer's "files with
+-- recent context" section and "what notes touch this file?" lookups.
 CREATE TABLE IF NOT EXISTS source_files (
     path        TEXT NOT NULL,  -- note path, vault-relative
     source_file TEXT NOT NULL,  -- referenced source file path
+    inferred    INTEGER NOT NULL DEFAULT 0,  -- 1 = auto-discovered from body
     PRIMARY KEY (path, source_file)
 );
 
@@ -84,7 +87,7 @@ CREATE INDEX IF NOT EXISTS source_files_by_src ON source_files(source_file);
 # Bump when the table layout changes. The index is disposable (rebuilt from
 # disk by reindex), so a mismatch drops every table and lets the next reindex
 # repopulate — no hand-written migrations needed.
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 _TABLES = ("files", "fts", "supersedes", "links", "source_files")
 
@@ -276,6 +279,9 @@ def _reindex(force: bool = False) -> dict:
         return {"indexed": 0, "removed": 0, "unchanged": 0, "errors": 0}
 
     indexed = removed = unchanged = errors = 0
+    # Resolved once: the repo root used to validate auto-discovered source
+    # files (None when there's no resolvable project, which disables discovery).
+    proj = project_dir()
 
     with connect(write=True) as conn:
         # Build a quick lookup of what's in the DB
@@ -363,12 +369,22 @@ def _reindex(force: bool = False) -> dict:
             # Inverse note→source-file index from `source_file:`
             # frontmatter. Accepts scalar or list; trims and skips
             # empties.
-            for sf in _as_path_list(meta.get("source_file")):
-                sf_clean = sf.strip()
-                if sf_clean:
+            declared = [sf.strip() for sf in _as_path_list(meta.get("source_file"))
+                        if sf.strip()]
+            for sf_clean in declared:
+                conn.execute(
+                    "INSERT OR IGNORE INTO source_files(path, source_file, "
+                    "inferred) VALUES (?, ?, 0)",
+                    (rel, sf_clean),
+                )
+            # No declared source_file → auto-discover from the body (high
+            # precision: only paths that actually exist in the repo), marked
+            # inferred=1 so callers can distinguish declared vs guessed.
+            if not declared:
+                for sf_clean in _discover_source_files(body_only, proj):
                     conn.execute(
-                        "INSERT OR IGNORE INTO source_files(path, source_file) "
-                        "VALUES (?, ?)",
+                        "INSERT OR IGNORE INTO source_files(path, source_file, "
+                        "inferred) VALUES (?, ?, 1)",
                         (rel, sf_clean),
                     )
 
@@ -428,6 +444,45 @@ import re as _re  # noqa: E402  -- intentional bottom-of-file utility import
 _WIKILINK_RE = _re.compile(r"\[\[([^\]\|#]+)(?:\|[^\]]+)?\]\]")
 _FENCED_CODE_RE = _re.compile(r"```[\s\S]*?```|~~~[\s\S]*?~~~", _re.MULTILINE)
 _INLINE_CODE_RE = _re.compile(r"`[^`\n]+`")
+
+# Path-like tokens: at least one slash + a file extension (1-5 alnum chars).
+# Matches src/foo/bar.py, scripts/db.py, a/b.ts — bounded so prose like
+# "and/or" or "TODO." won't match (needs a dotted extension after a slash).
+_PATHLIKE_RE = _re.compile(r"(?<![\w./-])([\w.-]+/[\w./-]+\.[A-Za-z0-9]{1,5})(?![\w])")
+_DISCOVERY_CAP = 10  # don't let one note claim an unbounded set of files
+
+
+def _discover_source_files(body: str, proj) -> list[str]:
+    """Best-effort: source files a note REFERENCES, derived from its body when
+    no `source_file:` frontmatter is present. High precision by construction —
+    a candidate is kept ONLY if it resolves to a real file under the project
+    root, so prose that merely looks path-shaped never pollutes the index.
+
+    Returns project-relative POSIX paths (deduped, order-preserved, capped).
+    Empty when there's no project root (we don't guess without ground truth).
+    """
+    if proj is None:
+        return []
+    from pathlib import Path as _P
+    proj = _P(proj).resolve()
+    out: list[str] = []
+    seen: set[str] = set()
+    for m in _PATHLIKE_RE.finditer(body):
+        cand = m.group(1).strip().lstrip("./")
+        if not cand or cand in seen:
+            continue
+        # Must resolve to a real file INSIDE the project (no traversal escape).
+        try:
+            full = (proj / cand).resolve()
+            full.relative_to(proj)
+        except (ValueError, OSError):
+            continue
+        if full.is_file():
+            seen.add(cand)
+            out.append(cand)
+            if len(out) >= _DISCOVERY_CAP:
+                break
+    return out
 
 
 def _extract_wikilinks(text: str) -> list[str]:
@@ -670,10 +725,10 @@ def source_file_index(limit: int = 6) -> list[dict]:
     """Inverse index: top source-code files by note-reference count.
 
     Returns up to `limit` entries, each `{source_file, note_count,
-    latest_mtime, notes: [{path, title, kind, scope}, ...]}`. The notes
-    list is sorted most-recent-first and capped at 5 per file (callers
-    typically render fewer; the cap protects against pathological
-    fan-out).
+    latest_mtime, all_inferred, notes: [{path, title, kind, scope,
+    inferred}, ...]}`. `all_inferred` is True when every edge to this file was
+    auto-discovered (none declared) — callers can mark it as a guess. The notes
+    list is sorted most-recent-first and capped at 5 per file.
     """
     with connect() as conn:
         ranked = conn.execute(
@@ -681,7 +736,8 @@ def source_file_index(limit: int = 6) -> list[dict]:
             SELECT
                 sf.source_file              AS source_file,
                 COUNT(*)                    AS note_count,
-                MAX(f.mtime)                AS latest_mtime
+                MAX(f.mtime)                AS latest_mtime,
+                MIN(sf.inferred)            AS all_inferred
             FROM source_files sf
             JOIN files f ON f.path = sf.path
             WHERE COALESCE(f.status, '') NOT IN ('auto', 'invalidated')
@@ -697,7 +753,7 @@ def source_file_index(limit: int = 6) -> list[dict]:
             notes = conn.execute(
                 """
                 SELECT f.path AS path, f.title AS title,
-                       f.kind AS kind, f.scope AS scope
+                       f.kind AS kind, f.scope AS scope, sf.inferred AS inferred
                 FROM source_files sf
                 JOIN files f ON f.path = sf.path
                 WHERE sf.source_file = ?
@@ -711,6 +767,7 @@ def source_file_index(limit: int = 6) -> list[dict]:
                 "source_file":  r["source_file"],
                 "note_count":   int(r["note_count"]),
                 "latest_mtime": float(r["latest_mtime"] or 0.0),
+                "all_inferred": bool(r["all_inferred"]),
                 "notes":        [dict(n) for n in notes],
             })
         return result

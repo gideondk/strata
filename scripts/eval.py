@@ -116,6 +116,10 @@ def main() -> int:
     ap.add_argument("--rerank", action="store_true",
                     help="Measure WITH the cross-encoder rerank (off by "
                          "default) — compare against a plain run to see the lift.")
+    ap.add_argument("--sweep", action="store_true",
+                    help="Run the golden set with rerank OFF then ON and print "
+                         "the comparison, so the rerank lift is a number you can "
+                         "decide on (calibration).")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
@@ -150,6 +154,33 @@ def main() -> int:
         print(f"_golden set at `{gp}` has no cases — add some to measure "
               f"recall quality._", file=sys.stderr)
         return 2
+
+    if args.sweep:
+        import recall
+        recall._RERANK_ENABLED = False
+        base = evaluate(cases, k=args.k)
+        recall._RERANK_ENABLED = True
+        reranked = evaluate(cases, k=args.k)
+        sweep = {"k": args.k, "cases": base["cases"],
+                 "off": {"recall_at_k": base["recall_at_k"], "mrr": base["mrr"]},
+                 "on": {"recall_at_k": reranked["recall_at_k"],
+                        "mrr": reranked["mrr"]}}
+        if args.json:
+            print(json.dumps(sweep))
+        else:
+            d_r = sweep["on"]["recall_at_k"] - sweep["off"]["recall_at_k"]
+            d_m = sweep["on"]["mrr"] - sweep["off"]["mrr"]
+            print(f"# Strata eval sweep — {sweep['cases']} case(s), k={args.k}\n")
+            print(f"| pipeline | recall@{args.k} | MRR |")
+            print("|---|---|---|")
+            print(f"| rerank OFF | {sweep['off']['recall_at_k']:.3f} | "
+                  f"{sweep['off']['mrr']:.3f} |")
+            print(f"| rerank ON  | {sweep['on']['recall_at_k']:.3f} | "
+                  f"{sweep['on']['mrr']:.3f} |")
+            print(f"\n**rerank lift**: recall {d_r:+.3f}, MRR {d_m:+.3f} — "
+                  + ("worth enabling." if (d_r > 0 or d_m > 0)
+                     else "no lift on this set; leave rerank off."))
+        return 0
 
     report = evaluate(cases, k=args.k)
     if args.json:
