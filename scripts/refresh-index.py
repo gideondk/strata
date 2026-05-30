@@ -88,6 +88,21 @@ def regenerate_index() -> None:
     (mem / "INDEX.md").write_text(body + "\n", encoding="utf-8")
     info(f"regenerated {memory_display()}INDEX.md")
 
+    # index.html — the richer, glanceable team surface (open it via file://).
+    # Written atomically (tmp + os.replace) so a browser reload never catches a
+    # half-written file. Best-effort: a render failure must not break the write.
+    try:
+        import os
+
+        import dashboard as _dash
+        html_body = _dash.build_dashboard_html()
+        tmp = mem / "index.html.tmp"
+        tmp.write_text(html_body, encoding="utf-8")
+        os.replace(tmp, mem / "index.html")
+        info(f"regenerated {memory_display()}index.html")
+    except Exception as e:
+        info(f"index.html generation skipped: {e}")
+
 
 def main() -> int:
     regenerate_index()
