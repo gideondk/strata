@@ -684,6 +684,7 @@ def source_file_index(limit: int = 6) -> list[dict]:
                 MAX(f.mtime)                AS latest_mtime
             FROM source_files sf
             JOIN files f ON f.path = sf.path
+            WHERE COALESCE(f.status, '') NOT IN ('auto', 'invalidated')
             GROUP BY sf.source_file
             ORDER BY note_count DESC, latest_mtime DESC
             LIMIT ?
@@ -700,6 +701,7 @@ def source_file_index(limit: int = 6) -> list[dict]:
                 FROM source_files sf
                 JOIN files f ON f.path = sf.path
                 WHERE sf.source_file = ?
+                  AND COALESCE(f.status, '') NOT IN ('auto', 'invalidated')
                 ORDER BY f.mtime DESC
                 LIMIT 5
                 """,
@@ -745,6 +747,11 @@ def search(
     `status = 'invalidated'` notes are filtered out by default — they
     stay readable + indexable but don't pollute search. Opt in with
     `include_invalidated=True` to see them (e.g. for audit / review).
+
+    `status = 'auto'` notes (the staged auto-capture lane) are ALWAYS excluded
+    from recall — they're quarantined unreviewed content and must not be served
+    as canonical truth until a human promotes them (removes the flag). They
+    surface only in the review queue (`/strata:dashboard`).
     """
     match = _safe_match(terms)
     if not match:
@@ -758,12 +765,14 @@ def search(
     if branch:
         where.append("branch = ?")
         base_params.append(branch)
+    # Quarantine unreviewed auto-notes always; hide invalidated unless opted in.
+    excluded = ["'auto'"]
     if not include_invalidated:
-        # JOIN files on path to honour the invalidated filter
-        where.append(
-            "fts.path NOT IN (SELECT path FROM files "
-            "WHERE status = 'invalidated')"
-        )
+        excluded.append("'invalidated'")
+    where.append(
+        "fts.path NOT IN (SELECT path FROM files "
+        f"WHERE status IN ({', '.join(excluded)}))"
+    )
 
     where_sql = " AND ".join(where)
 

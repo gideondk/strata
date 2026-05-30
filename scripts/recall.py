@@ -193,10 +193,10 @@ def _paths_search(paths: list[str], scope: str | None,
     if scope and scope != "all":
         where += " AND scope = ?"
         params.append(scope)
-    # Don't surface invalidated/stale decisions as "governing" (db.search
-    # filters these for --query mode; mirror it here).
+    # Don't surface invalidated/stale decisions or staged (auto) notes as
+    # "governing" (mirror db.search's recall quarantine).
     where += (" AND path NOT IN "
-              "(SELECT path FROM files WHERE status = 'invalidated')")
+              "(SELECT path FROM files WHERE status IN ('invalidated', 'auto'))")
     rows: list[dict] = []
     with contextlib.suppress(Exception), db.connect() as conn:
         for r in conn.execute(

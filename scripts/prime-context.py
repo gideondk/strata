@@ -30,6 +30,17 @@ PR_NOTES_TAIL = 3
 FILES_WITH_CONTEXT_LIMIT = 6
 
 
+def _is_auto(path) -> bool:
+    """True if a note is staged auto-capture (status: auto) — quarantined from
+    the primer so unreviewed content isn't rendered as canonical context."""
+    try:
+        import frontmatter
+        return str(frontmatter.load(path).metadata.get("status", "")).strip() \
+            == "auto"
+    except Exception:
+        return False
+
+
 def _excerpt(path, max_lines: int = 12) -> str:
     try:
         with path.open("r", encoding="utf-8", errors="replace") as fh:
@@ -129,7 +140,7 @@ def build_primer() -> str:
     # Active PR context for this branch (only if we have a branch)
     prdir = pr_context_dir(slug) if slug else None
     if prdir and prdir.exists():
-        notes = sorted(prdir.glob("*.md"))
+        notes = [n for n in sorted(prdir.glob("*.md")) if not _is_auto(n)]
         if notes:
             push(f"### PR context — `{slug}` ({len(notes)} note(s))")
             push("")

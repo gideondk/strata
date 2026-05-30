@@ -162,7 +162,10 @@ def search(
     sql = (
         "SELECT e.path, e.vec, f.title, f.scope, f.branch "
         "FROM embeddings e JOIN files f ON e.path = f.path "
-        "WHERE e.model = ?"
+        "WHERE e.model = ? "
+        # Quarantine: semantic recall must honor the same exclusions as FTS —
+        # never surface staged (auto) or invalidated notes as canonical truth.
+        "AND COALESCE(f.status, '') NOT IN ('auto', 'invalidated')"
     )
     params: list = [DEFAULT_MODEL]
     if scope and scope != "all":

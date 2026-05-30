@@ -25,6 +25,26 @@ QUESTION_AGE_DAYS = 1
 QUESTION_STATUSES = ("open", "contested", "converging")
 
 
+def auto_notes(limit: int = 20) -> list[dict]:
+    """Staged auto-captured notes (`status: auto`) awaiting human review — keep
+    (edit) or discard (`/strata:forget`). The quarantine tier of the autonomy
+    line. Hook-safe (never raises)."""
+    out: list[dict] = []
+    with contextlib.suppress(Exception), db.connect() as conn:
+        for r in conn.execute(
+            "SELECT path, title, scope, mtime FROM files "
+            "WHERE status = 'auto' ORDER BY mtime DESC LIMIT ?",
+            (limit,),
+        ):
+            out.append({
+                "kind": "auto",
+                "path": r["path"],
+                "title": r["title"],
+                "scope": r["scope"],
+            })
+    return out
+
+
 def aging_questions(min_age_days: int = QUESTION_AGE_DAYS,
                     statuses: tuple[str, ...] = QUESTION_STATUSES) -> list[dict]:
     """Propositions in one of `statuses` older than `min_age_days`, oldest

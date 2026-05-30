@@ -46,6 +46,18 @@ def _scope_counts() -> dict[str, int]:
     return out
 
 
+def _is_auto(path) -> bool:
+    """True if a note is staged auto-capture (status: auto). Such notes belong
+    only in the review queue, not in canonical 'recent activity' / 'latest'
+    surfaces."""
+    try:
+        import frontmatter
+        return str(frontmatter.load(path).metadata.get("status", "")).strip() \
+            == "auto"
+    except Exception:
+        return False
+
+
 def _recent_activity(days: int = 7, limit: int = 8) -> list[dict]:
     """Notes written or modified in the last `days`. Returns
     [{path, title, scope, mtime}] descending by mtime."""
@@ -59,6 +71,10 @@ def _recent_activity(days: int = 7, limit: int = 8) -> list[dict]:
             continue
         for p in d.rglob("*.md"):
             if p.name in ("README.md", "INDEX.md"):
+                continue
+            # Auto-notes (only in pr-context) belong in the review queue, not
+            # in 'recent activity'. Only pay the frontmatter read where they live.
+            if scope == "pr-context" and _is_auto(p):
                 continue
             try:
                 mtime = p.stat().st_mtime
@@ -192,7 +208,7 @@ def _pr_contexts() -> list[str]:
         return []
     out = []
     for sub in sorted(p for p in d.iterdir() if p.is_dir()):
-        notes = sorted(sub.glob("*.md"))
+        notes = [n for n in sorted(sub.glob("*.md")) if not _is_auto(n)]
         if not notes:
             continue
         latest = notes[-1]
@@ -246,6 +262,12 @@ def _awaiting_input_bullets() -> list[str]:
             out.append(
                 f"- ❓ decide: [{q['status']}] **{q['title']}** "
                 f"({q['age_days']}d) — `{q['path']}`")
+        # Auto-captured observations (status: auto) — surfaced, not asserted;
+        # the human keeps (edit) or discards (/strata:forget).
+        for a in inbox.auto_notes()[:8]:
+            out.append(
+                f"- 🤖 auto-captured (review): **{a['title']}** — "
+                f"`{a['path']}`")
     except Exception:
         pass
     return out or ["_none — nothing awaiting input_"]
