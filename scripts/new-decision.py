@@ -16,6 +16,8 @@ re-indexing on any machine.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import json
 import os
 import re
 import sys
@@ -140,6 +142,72 @@ def _verify_symbols(body: str, strict: bool) -> int:
     return 0
 
 
+def _slim(c: dict) -> dict:
+    """JSON-safe candidate subset for --check-only output."""
+    return {
+        "path": c["path"],
+        "title": c["title"],
+        "status": c["status"],
+        "semantic": c["semantic"],
+        "exact_title": c["exact_title"],
+        "fts": c["fts"],
+    }
+
+
+def _dedup_gate(title: str, body: str, *, check_only: bool, ack_new: bool,
+                no_dedup: bool, supersedes: list[str]) -> tuple[int, bool]:
+    """Recall-before-write gate. Returns (exit_code, should_return).
+
+    should_return True means main() must return exit_code immediately
+    (a block, or a --check-only run that already emitted its JSON).
+    """
+    # Superseding IS the resolution to a collision, and --no-dedup is the
+    # explicit escape hatch (batch flows like bootstrap pass it).
+    skip = no_dedup or bool(supersedes)
+
+    if skip:
+        if check_only:
+            print(json.dumps({"recommendation": "clear", "candidates": []}))
+            return 0, True
+        return 0, False
+
+    import dedup
+    # Keep stdout pristine for --check-only: retrieval may load an ONNX model
+    # or reindex, so route any incidental chatter to stderr — only the final
+    # json.dumps below writes to real stdout.
+    with contextlib.redirect_stdout(sys.stderr):
+        candidates = dedup.find_similar_decisions(title, body)
+        verdict, top = dedup.classify(candidates)
+
+    if check_only:
+        print(json.dumps({
+            "recommendation": verdict,
+            "candidates": [_slim(c) for c in candidates[:5]],
+        }))
+        return 0, True
+
+    if verdict == "block" and not ack_new:
+        slug = Path(top["path"]).stem if top else "<slug>"
+        print("[strata] dedup: this looks like an EXISTING decision —",
+              file=sys.stderr)
+        print(f"    {top['path']}  ({dedup.reason(top)})", file=sys.stderr)
+        print("  Pick one:", file=sys.stderr)
+        print(f"    • supersede it:      re-run with --supersedes {slug}",
+              file=sys.stderr)
+        print("    • update it instead: edit that note (don't fork a parallel ADR)",
+              file=sys.stderr)
+        print("    • genuinely new:     re-run with --ack-new", file=sys.stderr)
+        print("  Refusing to write a likely duplicate (--no-dedup bypasses).",
+              file=sys.stderr)
+        return 3, True
+
+    if verdict == "warn" and top:
+        print(f"[strata] dedup: similar existing decision — {top['path']} "
+              f"({dedup.reason(top)}). Proceeding; supersede or merge if it's "
+              f"the same choice.", file=sys.stderr)
+    return 0, False
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--title", required=True)
@@ -147,6 +215,18 @@ def main() -> int:
     ap.add_argument("--supersedes", action="append", default=[],
                     help="Predecessor ADR (slug, filename, or relative path). "
                          "Repeatable.")
+    ap.add_argument("--check-only", action="store_true",
+                    help="Run the recall-before-write dedup check and print a "
+                         "JSON report ({recommendation, candidates}) WITHOUT "
+                         "writing. Used by /strata:decide to adjudicate "
+                         "ADD/UPDATE/SUPERSEDE/NO-OP before creating an ADR.")
+    ap.add_argument("--ack-new", action="store_true",
+                    help="Acknowledge that this decision is genuinely distinct "
+                         "from any near-duplicate the dedup gate found, and "
+                         "write it anyway.")
+    ap.add_argument("--no-dedup", action="store_true",
+                    help="Skip the recall-before-write dedup gate entirely "
+                         "(batch/non-interactive flows like bootstrap).")
     ap.add_argument("--strict-symbols", action="store_true",
                     help="If graph.json is present, refuse to write the ADR "
                          "when backtick-quoted identifiers in the body don't "
@@ -180,9 +260,20 @@ def main() -> int:
               file=sys.stderr)
         return 2
 
-    body = sys.stdin.read().strip()
-    if not body:
-        body = _template_body(args.title)
+    raw_body = sys.stdin.read().strip()
+
+    # Recall-before-write: surface near-duplicate decisions before one lands.
+    # Runs on the human-authored body (not the template), so the semantic
+    # signal isn't skewed by boilerplate.
+    code, should_return = _dedup_gate(
+        args.title, raw_body,
+        check_only=args.check_only, ack_new=args.ack_new,
+        no_dedup=args.no_dedup, supersedes=args.supersedes,
+    )
+    if should_return:
+        return code
+
+    body = raw_body or _template_body(args.title)
 
     # Symbol cross-check against Graphify (no-op if graph.json absent)
     rc = _verify_symbols(body, strict=args.strict_symbols)

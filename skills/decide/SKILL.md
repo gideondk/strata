@@ -25,7 +25,34 @@ User runs `/strata:decide <title>`. You:
    **Consequences**, **Alternatives considered**. Be concrete. No fluff.
 2. Pick the status: `proposed` (default, opens a discussion), `accepted`
    (the team has agreed), or `superseded`/`rejected`/`deprecated`.
-3. Run:
+3. **Recall before you write — check for an existing decision first.** Run the
+   dedup precheck so you don't fork a parallel ADR for a choice that's already
+   recorded (the "agents battling on ADRs" failure):
+
+```bash
+"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
+  "${CLAUDE_PLUGIN_ROOT}/scripts/new-decision.py" \
+  --title "<title>" --check-only <<'STRATA_ADR'
+<the body you drafted>
+STRATA_ADR
+```
+
+   It prints JSON `{recommendation, candidates}` and writes nothing to the
+   vault (it may refresh the disposable index cache). Run it on its own —
+   `--check-only` is a no-op alongside `--supersedes`/`--no-dedup`. Adjudicate:
+
+   - **`clear`** → no overlap; proceed to step 4 (ADD).
+   - **`warn` / `block`** → read the candidate(s) and decide, surfacing it to
+     the user:
+     - **UPDATE** — same decision, just refined → *edit that note*, don't create
+       a new one.
+     - **SUPERSEDE** — this replaces an earlier decision → write with
+       `--supersedes <slug>` (see below).
+     - **NO-OP** — already captured → write nothing; tell the user.
+     - **ADD** — genuinely distinct despite the overlap → write with `--ack-new`
+       (a `block` refuses to write without it).
+
+4. Write it (ADD):
 
 ```bash
 "${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
@@ -36,7 +63,9 @@ STRATA_ADR
 ```
 
 If no body is provided on stdin, the script writes the template from
-`templates/decision.md` so the user can fill it in.
+`templates/decision.md` so the user can fill it in. If the dedup gate refuses
+(`block`), its message names the flag that resolves it — never blindly bypass
+with `--no-dedup`; that escape hatch is for batch flows, not interactive use.
 
 ## Superseding a prior decision
 

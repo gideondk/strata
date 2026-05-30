@@ -183,14 +183,18 @@ After Write, refresh the index so the note is searchable:
 #### decide
 
 Call `new-decision.py` with the body on stdin. Pass `--source-file`
-ONCE PER source file in the group (repeatable flag), and ALWAYS
-Pass `--project-dir` so the namespace can't fall back to the cwd:
+ONCE PER source file in the group (repeatable flag), ALWAYS
+pass `--project-dir` so the namespace can't fall back to the cwd, and pass
+`--no-dedup` (bootstrap is a non-interactive batch migration — the
+recall-before-write gate would block on legitimately related historical
+decisions with no human there to adjudicate):
 
 ```bash
 cat <<'EOF' | "${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
     "${CLAUDE_PLUGIN_ROOT}/scripts/new-decision.py" \
     --title "<short imperative — e.g. Use Postgres for tenant data>" \
     --status accepted \
+    --no-dedup \
     --project-dir "<absolute-path-to-project-root>" \
     --source-file ".planning/auth-rewrite/PLAN.md" \
     --source-file ".planning/auth-rewrite/SPEC.md"
