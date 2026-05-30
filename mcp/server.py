@@ -19,7 +19,15 @@ if str(_SCRIPTS) not in sys.path:
 
 from mcp.server import Server  # noqa: E402
 from mcp.server.stdio import stdio_server  # noqa: E402
-from mcp.types import Resource, TextContent, Tool  # noqa: E402
+from mcp.types import (  # noqa: E402
+    GetPromptResult,
+    Prompt,
+    PromptArgument,
+    PromptMessage,
+    Resource,
+    TextContent,
+    Tool,
+)
 from pydantic import AnyUrl  # noqa: E402
 
 import db  # noqa: E402
@@ -226,34 +234,52 @@ def _ensure_indexed() -> None:
         print(f"[strata.mcp] reindex error: {e}", file=sys.stderr)
 
 
+def _run_recall(query: str, *, layer: int = 1, budget: int = 600,
+                limit: int = 10, scope: str | None = None,
+                since: str | None = None) -> str:
+    """Run scripts/recall.py and return its stdout (or an error string).
+    Shared by the `recall` tool and the prompts below — same retrieval path."""
+    import subprocess as _sp
+    query = (query or "").strip()
+    if not query:
+        return "error: empty query"
+    argv = [sys.executable, str(_SCRIPTS / "recall.py"),
+            "--query", query,
+            "--layer", str(int(layer)),
+            "--budget", str(int(budget)),
+            "--limit", str(int(limit))]
+    if scope and scope != "all":
+        argv += ["--scope", str(scope)]
+    if since:
+        argv += ["--since", str(since)]
+    try:
+        proc = _sp.run(argv, capture_output=True, text=True,
+                       check=False, timeout=30)
+    except (_sp.SubprocessError, OSError) as e:
+        # OSError covers interpreter-launch failures (not a SubprocessError
+        # subclass) — honor the "returns an error string" contract.
+        return f"recall failed: {e}"
+    if proc.returncode != 0:
+        return f"recall error: {proc.stderr.strip() or 'unknown'}"
+    return proc.stdout
+
+
 @server.call_tool()
 async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
     args = arguments or {}
 
     if name == "recall":
-        import subprocess as _sp
         query = (args.get("query") or "").strip()
         if not query:
             return _text("error: empty query")
-        argv = [sys.executable, str(_SCRIPTS / "recall.py"),
-                "--query", query,
-                "--layer", str(int(args.get("layer") or 1)),
-                "--budget", str(int(args.get("budget") or 600)),
-                "--limit", str(int(args.get("limit") or 10))]
-        if args.get("scope") and args["scope"] != "all":
-            argv += ["--scope", str(args["scope"])]
-        if args.get("since"):
-            argv += ["--since", str(args["since"])]
-        try:
-            proc = _sp.run(argv, capture_output=True, text=True,
-                           check=False, timeout=30)
-        except _sp.SubprocessError as e:
-            return _text(f"recall failed: {e}")
-        if proc.returncode != 0:
-            return _text(
-                f"recall error: {proc.stderr.strip() or 'unknown'}"
-            )
-        return _text(proc.stdout)
+        return _text(_run_recall(
+            query,
+            layer=int(args.get("layer") or 1),
+            budget=int(args.get("budget") or 600),
+            limit=int(args.get("limit") or 10),
+            scope=args.get("scope"),
+            since=args.get("since"),
+        ))
 
     if name == "memory_search":
         _ensure_indexed()
@@ -780,6 +806,88 @@ async def read_resource(uri: AnyUrl) -> str:
     # Resource bodies are plain content — no extra metadata header so the
     # markdown renders cleanly in resource viewers.
     return data["body"]
+
+
+# ---------------------------------------------------------------------------
+# Prompts — user-controlled slash commands that PRELOAD curated vault context
+# before the model reasons (read-only; they just call the recall path).
+# ---------------------------------------------------------------------------
+
+_PROMPTS: list[Prompt] = [
+    Prompt(
+        name="recall-pack",
+        description="Preload the most relevant Strata memory for a topic "
+                    "(ranked across all scopes) before you start work.",
+        arguments=[PromptArgument(
+            name="topic", required=True,
+            description="What you're about to work on.")],
+    ),
+    Prompt(
+        name="decision-brief",
+        description="Preload the decisions (ADRs) governing a topic, so new "
+                    "work doesn't contradict or duplicate them.",
+        arguments=[PromptArgument(
+            name="topic", required=True,
+            description="The area / feature / component.")],
+    ),
+    Prompt(
+        name="pr-onboard",
+        description="Preload the current branch's context — the pr-context "
+                    "notes and the decisions/lessons most relevant to it.",
+        arguments=[],
+    ),
+]
+
+
+def _prompt_result(description: str, text: str) -> GetPromptResult:
+    return GetPromptResult(
+        description=description,
+        messages=[PromptMessage(
+            role="user", content=TextContent(type="text", text=text))],
+    )
+
+
+@server.list_prompts()
+async def list_prompts() -> list[Prompt]:
+    return _PROMPTS
+
+
+@server.get_prompt()
+async def get_prompt(name: str,
+                     arguments: dict[str, str] | None) -> GetPromptResult:
+    args = arguments or {}
+    if name == "recall-pack":
+        topic = (args.get("topic") or "").strip()
+        if not topic:
+            raise ValueError("recall-pack requires a 'topic' argument")
+        body = _run_recall(topic, layer=1)
+        return _prompt_result(
+            f"Strata recall pack — {topic}",
+            f"Relevant Strata memory for **{topic}** — use it to ground your "
+            f"work; don't re-derive what's already decided:\n\n{body}")
+    if name == "decision-brief":
+        topic = (args.get("topic") or "").strip()
+        if not topic:
+            raise ValueError("decision-brief requires a 'topic' argument")
+        body = _run_recall(topic, layer=2, scope="decisions")
+        return _prompt_result(
+            f"Strata decision brief — {topic}",
+            f"Decisions (ADRs) governing **{topic}** — honor or explicitly "
+            f"supersede them, don't silently contradict:\n\n{body}")
+    if name == "pr-onboard":
+        branch = current_branch()
+        if branch in ("unknown", "HEAD") or branch.startswith("detached@"):
+            return _prompt_result(
+                "Strata PR onboard — no branch context",
+                "No usable branch context (not on a named branch). Use the "
+                "`recall-pack` prompt with an explicit topic instead.")
+        topic = branch_slug(branch).replace("-", " ").strip() or branch
+        body = _run_recall(topic, layer=1)
+        return _prompt_result(
+            f"Strata PR onboard — {branch}",
+            f"Context for branch `{branch}` — the pr-context notes and the "
+            f"decisions/lessons most relevant to it:\n\n{body}")
+    raise ValueError(f"unknown prompt: {name}")
 
 
 async def main() -> None:
