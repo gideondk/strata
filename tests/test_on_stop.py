@@ -21,14 +21,17 @@ def _run(env=None):
     )
 
 
-def test_skips_on_trunk_branch(env):
-    """No nudge when on main."""
+def test_nudges_on_trunk_branch(initialised_vault, env):
+    """Trunk is no longer hard-suppressed: people commit straight to `main`,
+    and that work deserves a note just as much as a feature branch. With the
+    vault initialised and commit signal in the window, `main` should nudge."""
     import subprocess as sp
     sp.run(["git", "-C", str(env["repo"]), "checkout", "-q", "-b", "main"],
            check=True)
     r = _run(env=os.environ.copy())
     assert r.returncode == 0
-    assert r.stdout == ""  # silent
+    assert r.stdout, "main should nudge when there's unsaved commit signal"
+    assert "strata:save" in json.loads(r.stdout)["systemMessage"]
 
 
 def test_no_nudge_when_vault_missing(env):
@@ -54,13 +57,29 @@ def test_nudges_on_feature_branch_with_empty_vault(initialised_vault):
     assert "feat/test-branch" in msg
 
 
-def test_cooldown_silences_second_call(initialised_vault):
-    """A second call within 30 minutes should be silent."""
+def test_sha_dedup_silences_second_call(initialised_vault):
+    """We nudge once per HEAD sha. A second Stop at the same commit (no new
+    work) stays silent."""
     r1 = _run(env=os.environ.copy())
     assert r1.stdout, "first call should nudge"
     r2 = _run(env=os.environ.copy())
     assert r2.returncode == 0
-    assert r2.stdout == "", "second call within cooldown should be silent"
+    assert r2.stdout == "", "second call at the same HEAD should be silent"
+
+
+def test_new_commit_reenables_nudge(initialised_vault, env):
+    """A fresh commit advances HEAD, so the sha-dedup releases and the next
+    Stop nudges again."""
+    r1 = _run(env=os.environ.copy())
+    assert r1.stdout, "first call should nudge"
+
+    repo = env["repo"]
+    (repo / "after.py").write_text("# new\n")
+    _git_in(repo, "add", "after.py")
+    _git_in(repo, "commit", "-qm", "feat: more work")
+
+    r2 = _run(env=os.environ.copy())
+    assert r2.stdout, "a new commit should re-enable the nudge"
 
 
 def test_no_nudge_when_recent_save_exists(initialised_vault):

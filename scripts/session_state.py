@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from lib import author_name, current_branch, plugin_data_dir, project_dir
+from lib import author_name, current_branch, project_dir
 
 # Hard floor on the session window — even if cooldown has never fired,
 # we'd rather show 2h of work than guess.
@@ -18,13 +18,16 @@ _FALLBACK_WINDOW_SECONDS = 2 * 60 * 60
 
 
 def _session_window_start() -> float:
-    """Estimate when the current session started — last cooldown stamp
-    or 2 hours ago, whichever is more recent."""
-    cooldown = plugin_data_dir() / ".stop-last"
+    """Estimate when the current session started — the last nudge timestamp
+    or 2 hours ago, whichever is more recent. Anchoring on the last nudge
+    keeps the window from re-counting work that an earlier nudge already
+    covered."""
     candidates: list[float] = [time.time() - _FALLBACK_WINDOW_SECONDS]
-    if cooldown.exists():
-        with contextlib.suppress(OSError, ValueError):
-            candidates.append(float(cooldown.read_text().strip()))
+    with contextlib.suppress(Exception):
+        import nudge_state
+        at = nudge_state.last_at()
+        if at:
+            candidates.append(at)
     return max(candidates)
 
 
@@ -124,12 +127,14 @@ def snapshot() -> dict[str, Any]:
     uncommitted = _uncommitted_files(pd)
     hot = _hot_paths(commits, pd)
     topic = _suggested_topic(branch, commits)
+    head_sha = _git(pd, "rev-parse", "--short", "HEAD").strip() or None
 
     return {
         "available": True,
         "branch": branch,
         "author": author,
         "window_started_at": window_start,
+        "head_sha": head_sha,
         "commits": commits,
         "uncommitted": uncommitted,
         "hot_paths": hot,
