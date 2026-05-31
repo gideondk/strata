@@ -1,7 +1,7 @@
 ---
 name: strata:lint
 disable-model-invocation: true
-description: Scan vault or staged files for credentials, PII, and (opt-in) PHI via pluggable JSON presets. Use when the user says "check for secrets", "scan for credentials", "is this safe to save", or mentions an API key/token/password/patient data. Runs automatically as a pre-step inside /strata:save and /strata:decide, so secret-scanning never depends on a probabilistic skill pick.
+description: Scan vault or staged files for credentials, PII, and (opt-in) PHI via pluggable JSON presets. Use when the user says "check for secrets", "scan for credentials", "is this safe to save", or mentions an API key/token/password/patient data. Runs automatically as a pre-step inside /strata:save, /strata:decide, and /strata:correct, so secret-scanning never depends on a probabilistic skill pick.
 ---
 
 # strata:lint

@@ -4,6 +4,7 @@ Logs each correction to a `corrections:` frontmatter list."""
 from __future__ import annotations
 
 import argparse
+import contextlib
 import sys
 
 import frontmatter
@@ -93,7 +94,16 @@ def main() -> int:
         return 2
 
     _record_correction(post.metadata, args.reason)
-    write_text(path, frontmatter.dumps(post) + "\n")
+
+    # Secret/PII pre-step (warn-only; never blocks). A correction can introduce
+    # a credential via --set or a pasted body, so scan the composed document —
+    # same guarantee /strata:save and /strata:decide already give.
+    composed = frontmatter.dumps(post)
+    with contextlib.suppress(Exception):
+        import lint_check
+        lint_check.emit_warnings(composed, label="correction")
+
+    write_text(path, composed + "\n")
     print(f"[strata] corrected: {args.note}")
     if args.reason:
         print(f"[strata] reason logged: {args.reason}")
