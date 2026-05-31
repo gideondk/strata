@@ -6,8 +6,9 @@ Three layers of progressive disclosure:
   Layer 2 (~200 tokens/hit): + adjacent notes (timeline) + nearby links
   Layer 3 (full body): top hit only, capped at 4KB
 
-Ranks by FTS bm25 + relevance score (recency, links, supersession).
-Honours --since, --scope filters. Excludes invalidated by default.
+Ranks by FTS bm25 + on-device semantic similarity (RRF), then demotes
+superseded/deprecated notes below current ones. Honours --since, --scope
+filters. Excludes invalidated by default.
 """
 from __future__ import annotations
 
@@ -72,6 +73,12 @@ _RRF_K = 60  # standard RRF constant from the original paper
 _RERANK_ENABLED = False
 _RERANK_SCORER = None  # fn(query, list[str]) -> list[float] | None
 
+# Supersession demotion: superseded/deprecated notes sink below current ones in
+# recall (findable as history, never outranking the current note). The live
+# supersession signal. Toggleable so the temporal benchmark can measure the
+# ON-vs-OFF delta this produces.
+_DEMOTE_SUPERSEDED = True
+
 
 def _maybe_rerank(query: str, rows: list[dict]) -> list[dict]:
     """Reorder candidates by a cross-encoder when available; identity otherwise.
@@ -102,13 +109,32 @@ def _maybe_rerank(query: str, rows: list[dict]) -> list[dict]:
     return [rows[i] for i in order]
 
 
+def _demote_superseded(rows: list[dict]) -> list[dict]:
+    """Stable-partition recall candidates so superseded/deprecated notes sink
+    below current ones — findable as history, but a current note always wins.
+
+    `invalidated` notes are already excluded upstream in db.search; this is the
+    'replaced but historical' demotion. Best-effort: if the lookup fails or
+    nothing is demoted, returns rows unchanged."""
+    try:
+        demoted = db.demoted_paths()
+    except Exception:
+        return rows
+    if not demoted:
+        return rows
+    current = [r for r in rows if r.get("path") not in demoted]
+    retired = [r for r in rows if r.get("path") in demoted]
+    return current + retired
+
+
 def _hybrid_search(query: str, scope: str | None,
                    limit: int) -> tuple[list[dict], int]:
-    """FTS5 BM25 + fastembed semantic, merged via Reciprocal Rank Fusion.
+    """FTS5 BM25 + on-device semantic similarity, merged via Reciprocal Rank
+    Fusion (k=60), with superseded/deprecated notes demoted below current ones.
 
-    RRF: score(d) = sum over each ranker of 1 / (k + rank_d). k=60.
-    Falls back to FTS-only if semantic layer is unavailable
-    (fastembed not installed, no model downloaded, etc.).
+    Falls back to FTS-only if the semantic layer is unavailable (fastembed not
+    installed, no model downloaded, etc.). Recency/link weighting is NOT applied
+    here — the `relevance` column db.reindex computes is not read by this ranker.
     """
     db.reindex(force=False)
     terms = query.strip().split()
@@ -151,8 +177,12 @@ def _hybrid_search(query: str, scope: str | None,
         ranked = sorted(scores.keys(), key=lambda p: -scores[p])
         candidates = [payload[p] for p in ranked]
 
-    # Optional cross-encoder rerank over the fused pool, then truncate to limit.
+    # Optional cross-encoder rerank over the fused pool.
     candidates = _maybe_rerank(query, candidates)
+    # Supersession signal: sink superseded/deprecated notes below current ones
+    # before truncating, so a current note always wins its query.
+    if _DEMOTE_SUPERSEDED:
+        candidates = _demote_superseded(candidates)
     merged = candidates[:limit]
     if _LOG_HITS:
         with contextlib.suppress(Exception):
@@ -220,8 +250,9 @@ def _paths_search(paths: list[str], scope: str | None,
 
 def _layer1(query: str, scope: str | None, since: str | None,
             limit: int, budget: int) -> str:
-    """Compact ranked index. bm25 * relevance * semantic blended via
-    Reciprocal Rank Fusion when fastembed is available; FTS-only fallback."""
+    """Compact ranked index. bm25 + semantic fused via Reciprocal Rank Fusion
+    when fastembed is available (FTS-only fallback), with superseded/deprecated
+    notes demoted below current ones."""
     rows, total = _hybrid_search(query, scope, limit)
 
     if since:

@@ -153,3 +153,43 @@ def test_paths_search_or_not_and(initialised_vault, monkeypatch):
     rows = recall._paths_search(
         ["src/auth/token.py", "src/billing/invoice.py"], None, 5)
     assert any("auth" in r["path"] for r in rows)
+
+
+# --- supersession demotion (the retrieval "moat", seq-1) -------------------
+
+def test_superseded_note_demoted_below_current(initialised_vault):
+    """A superseded note stays findable but must rank BELOW the current note.
+    The old note is deliberately MORE term-dense, so without demotion it would
+    win on bm25 — proving the demotion, not lexical luck, puts current on top."""
+    import recall
+    mem = initialised_vault
+    _write(mem, "decisions/2026-01-01-old.md",
+           "---\ntitle: Token rotation policy\nstatus: superseded\n---\n"
+           "Token rotation token rotation token rotation policy rotation.\n")
+    _write(mem, "decisions/2026-05-01-new.md",
+           "---\ntitle: Token rotation policy\nstatus: accepted\n---\n"
+           "Token rotation policy.\n")
+    rows, _ = recall._hybrid_search("token rotation policy", "decisions", 5)
+    paths = [r["path"] for r in rows]
+    assert "decisions/2026-05-01-new.md" in paths
+    assert "decisions/2026-01-01-old.md" in paths, "superseded must stay findable"
+    assert paths.index("decisions/2026-05-01-new.md") < \
+        paths.index("decisions/2026-01-01-old.md"), "current must outrank superseded"
+
+
+def test_demotion_toggle_off_restores_lexical_order(initialised_vault, monkeypatch):
+    """With the demotion flag OFF (the benchmark's OFF arm), the term-dense
+    superseded note ranks first again — confirming demotion is the only lever."""
+    import recall
+    mem = initialised_vault
+    _write(mem, "decisions/2026-01-01-old.md",
+           "---\ntitle: Token rotation policy\nstatus: superseded\n---\n"
+           "Token rotation token rotation token rotation policy rotation.\n")
+    _write(mem, "decisions/2026-05-01-new.md",
+           "---\ntitle: Token rotation policy\nstatus: accepted\n---\n"
+           "Token rotation policy.\n")
+    monkeypatch.setattr(recall, "_DEMOTE_SUPERSEDED", False)
+    rows, _ = recall._hybrid_search("token rotation policy", "decisions", 5)
+    paths = [r["path"] for r in rows]
+    assert paths.index("decisions/2026-01-01-old.md") < \
+        paths.index("decisions/2026-05-01-new.md"), "OFF arm: lexical winner is the old note"

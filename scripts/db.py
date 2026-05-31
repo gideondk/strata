@@ -594,6 +594,18 @@ def superseded_paths() -> set[str]:
                 for row in conn.execute("SELECT predecessor FROM supersedes")}
 
 
+def demoted_paths() -> set[str]:
+    """Paths whose status marks them replaced/retired — `superseded` or
+    `deprecated`. Distinct from `invalidated` (excluded from recall entirely):
+    these stay recallable as history, but recall demotes them below current
+    notes so a current note always wins. Status-based, so it catches notes
+    marked directly as well as those retired via `--supersedes`."""
+    with connect() as conn:
+        return {row["path"] for row in conn.execute(
+            "SELECT path FROM files "
+            "WHERE status IN ('superseded', 'deprecated')")}
+
+
 def decision_chain(rel_path: str) -> dict:
     """Return the predecessor / successor chains for a decision.
 
