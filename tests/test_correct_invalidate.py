@@ -115,6 +115,32 @@ def test_invalidate_marks_status_and_records_reason(initialised_vault):
     assert post.metadata["replaced_by"] == "domain/new-pattern.md"
 
 
+def test_invalidate_records_bitemporal_valid_time(initialised_vault):
+    """--invalid-since captures when the fact stopped being TRUE, distinct from
+    invalidated_at (when we recorded it)."""
+    mem = initialised_vault
+    p = _seed_note(mem, "domain/stale-fact.md")
+    r = _run(INVALIDATE, "domain/stale-fact.md",
+             "--reason", "Was wrong since the schema change.",
+             "--invalid-since", "2026-01-15",
+             env=os.environ.copy())
+    assert r.returncode == 0
+    post = frontmatter.load(p)
+    assert post.metadata["invalid_since"] == "2026-01-15"
+    # Transaction time and valid time are independent fields.
+    assert post.metadata["invalidated_at"] != "2026-01-15"
+
+
+def test_invalidate_omits_valid_time_when_not_given(initialised_vault):
+    mem = initialised_vault
+    _seed_note(mem, "domain/y.md")
+    r = _run(INVALIDATE, "domain/y.md", "--reason", "obsolete",
+             env=os.environ.copy())
+    assert r.returncode == 0
+    post = frontmatter.load(mem / "domain/y.md")
+    assert "invalid_since" not in post.metadata
+
+
 def test_invalidate_requires_reason(initialised_vault):
     mem = initialised_vault
     _seed_note(mem, "domain/x.md")

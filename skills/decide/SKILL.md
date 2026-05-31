@@ -93,6 +93,28 @@ Predecessor refs accept any of: slug (`2026-05-15-use-core-data`), bare
 Filename (`2026-05-15-use-core-data.md`), or vault-relative path
 (`decisions/2026-05-15-use-core-data.md`).
 
+### Expire-and-rewrite, don't delete
+
+Strata never deletes a superseded decision — supersession flips status and
+hides it from the live list, but the note stays as history. Two refinements
+borrowed from temporal knowledge-graph systems (Graphiti/Zep):
+
+- **Rewrite the predecessor's lead to past tense** when you supersede it, so a
+  future reader who lands on the old ADR isn't misled into thinking it's
+  current. One line is enough: prepend *"Superseded by [new] on <date> — we
+  used to ... ."* via `/strata:correct <old> --reason "superseded"`. Don't
+  rewrite the whole body; the original reasoning is the point of keeping it.
+- **Capture when a fact stopped being TRUE, not just when you recorded it.**
+  For an `/strata:invalidate`, pass `--invalid-since YYYY-MM-DD` if the
+  decision was actually wrong from an earlier date — bi-temporal validity
+  answers "how long were we operating on a false assumption?", which a single
+  `invalidated_at` (the bookkeeping timestamp) can't.
+
+Do NOT add a write-time consistency gate that *rejects* a contradicting
+decision — contested/contradictory decisions are allowed to coexist (that's
+what the proposition debate substrate is for); resolve them by superseding,
+not by blocking the write.
+
 ## Promoting to the repo (optional)
 
 For decisions that should be reviewable in code (regulatory, clinical, or any

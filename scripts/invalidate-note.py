@@ -34,6 +34,11 @@ def main() -> int:
                          "the audit trail is the point of invalidation.")
     ap.add_argument("--replaced-by", default=None,
                     help="Optional vault-relative path of the successor note.")
+    ap.add_argument("--invalid-since", default=None, metavar="YYYY-MM-DD",
+                    help="Optional bi-temporal validity boundary: when the "
+                         "fact actually stopped being true in the real world, "
+                         "as opposed to `invalidated_at` (when we recorded it). "
+                         "Lets the audit trail answer 'how long were we wrong?'")
     args = ap.parse_args()
 
     mem = memory_dir()
@@ -48,17 +53,21 @@ def main() -> int:
 
     post = frontmatter.load(path)
     post.metadata["status"] = "invalidated"
-    post.metadata["invalidated_at"] = today()
+    post.metadata["invalidated_at"] = today()  # transaction time (recorded)
     post.metadata["invalidated_by"] = author_name()
     post.metadata["invalidation_reason"] = args.reason
     if args.replaced_by:
         post.metadata["replaced_by"] = args.replaced_by
+    if args.invalid_since:  # valid time (when it stopped being true)
+        post.metadata["invalid_since"] = args.invalid_since
 
     write_text(path, frontmatter.dumps(post) + "\n")
     print(f"[strata] invalidated: {args.note}")
     print(f"[strata] reason: {args.reason}")
     if args.replaced_by:
         print(f"[strata] replaced by: {args.replaced_by}")
+    if args.invalid_since:
+        print(f"[strata] invalid since: {args.invalid_since}")
     _refresh_index()
     return 0
 
