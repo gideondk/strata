@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
-"""PreCompact hook — drop a breadcrumb file before context compaction.
+"""PreCompact hook — drop an actionable recovery breadcrumb before compaction.
 
-We don't try to summarise the conversation here (that's Claude's job via
-`/strata:save`). We just write a timestamped marker so the engineer knows
-that compaction happened mid-session and can ask Claude to write a real save
-note afterwards.
+We don't summarise the conversation (no LLM in a hook, no chat content in a
+synced vault) — that's `/strata:save`'s job. We fold in the content-free git
+snapshot (branch, session commits, uncommitted edits, hot paths, suggested
+topic) so the post-compaction session can reconstruct what was in flight.
+
+Why a breadcrumb and not auto re-priming: neither PreCompact nor PostCompact
+can inject context (verified), so the marker is the only recovery path.
 """
 from __future__ import annotations
 
+import contextlib
+import json
 import sys
 
 import lib_loader  # noqa: F401
@@ -23,10 +28,60 @@ from lib import (
 )
 
 
+def _trigger() -> str:
+    """PreCompact stdin carries a `trigger` of "manual" or "auto". Best-effort
+    — absent or malformed input just yields "unknown"."""
+    with contextlib.suppress(Exception):
+        data = json.load(sys.stdin)
+        if isinstance(data, dict):
+            return str(data.get("trigger") or "unknown")
+    return "unknown"
+
+
+def _state_section() -> str:
+    """Render the content-free session snapshot as markdown bullets. Empty
+    string if nothing useful is available (not a git repo, no activity)."""
+    try:
+        import session_state
+        snap = session_state.snapshot()
+    except Exception:
+        return ""
+    if not snap.get("available"):
+        return ""
+
+    lines: list[str] = []
+    commits = snap.get("commits") or []
+    uncommitted = snap.get("uncommitted") or []
+    hot = snap.get("hot_paths") or []
+    topic = snap.get("suggested_topic") or ""
+
+    if commits:
+        lines.append(f"- **{len(commits)} commit(s) this session:**")
+        for c in commits[:5]:
+            subj = (c.get("subject") or c.get("message") or "").strip()
+            sha = (c.get("sha") or c.get("hash") or "").strip()
+            lines.append(f"  - `{sha}` {subj}" if sha else f"  - {subj}")
+    if uncommitted:
+        lines.append(f"- **{len(uncommitted)} uncommitted edit(s):** "
+                     + ", ".join(f"`{f.get('path', '?')}`"
+                                 for f in uncommitted[:6]))
+    if hot:
+        lines.append("- **Hot paths:** "
+                     + ", ".join(f"`{p}`" for p in hot[:5]))
+    if not lines:
+        return ""
+
+    recover = (f"\n## Recover\n\nAsk Claude to `/strata:save --topic {topic}`"
+               if topic else
+               "\n## Recover\n\nAsk Claude to `/strata:save` the in-flight work")
+    return "\n## In flight at compaction\n\n" + "\n".join(lines) + "\n" + recover
+
+
 def main() -> int:
     if not is_git_repo():
         return 0
 
+    trigger = _trigger()
     slug = branch_slug(current_branch())
     dir_ = pr_context_dir(slug)
     ensure_dir(dir_)
@@ -39,11 +94,13 @@ def main() -> int:
         "kind: compaction-marker\n"
         f"author: {author_initials()}\n"
         f"created: {stamp_minute()}\n"
+        f"trigger: {trigger}\n"
         "---\n\n"
         "# Compaction marker\n\n"
-        "Claude Code compacted the session here. The conversation up to this\n"
-        "point is no longer in working context. If anything important was\n"
-        "discussed, ask the model to summarise it via `/strata:save`.\n"
+        f"Claude Code compacted the session here ({trigger}). The conversation\n"
+        "up to this point is no longer in working context. The session state\n"
+        "below is reconstructed from git — use it to save what mattered.\n"
+        + _state_section()
     )
     write_text(path, body)
     return 0
