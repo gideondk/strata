@@ -157,10 +157,12 @@ def _hybrid_search(query: str, scope: str | None,
     if _LOG_HITS:
         with contextlib.suppress(Exception):
             import usage
-            usage.log_recall_hits(
-                (r.get("path"), r.get("scope"), i)
-                for i, r in enumerate(merged)
-            )
+            hits = [(r.get("path"), r.get("scope"), i)
+                    for i, r in enumerate(merged)]
+            mechanism = ("rrf" if sem_rows else "fts") + (
+                "+rerank" if _RERANK_ENABLED else "")
+            usage.log_recall_hits(hits)
+            usage.log_recall(query, scope, hits, mechanism)
     # `total` stays the FTS total — rerank/semantic reorder, don't add candidates
     return merged, max(total, len(merged))
 
@@ -329,9 +331,10 @@ def main() -> int:
         if _LOG_HITS:
             with contextlib.suppress(Exception):
                 import usage
-                usage.log_recall_hits(
-                    (r.get("path"), r.get("scope"), i)
-                    for i, r in enumerate(rows))
+                hits = [(r.get("path"), r.get("scope"), i)
+                        for i, r in enumerate(rows)]
+                usage.log_recall_hits(hits)
+                usage.log_recall(query, args.scope, hits, "paths")
         out = (_format_index(rows, len(rows), args.budget) if rows
                else f"no notes govern the changed paths: {args.paths}")
     else:

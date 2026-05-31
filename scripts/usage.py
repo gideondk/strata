@@ -1,9 +1,11 @@
 """Local, content-free usage telemetry for the Strata vault.
 
 Answers the questions the system implies but otherwise can't see: *is the vault
-actually used? which notes are dead weight?* Logs paths / scopes / events only
-— never note content — to an append-only JSONL in plugin-data (disposable, like
-the index). No network, stdlib only. Never raises into a caller.
+actually used? which notes are dead weight? what got recalled, when, and why?*
+Logs paths / scopes / events — and the recall *query* itself, since the query
+is the "why" behind a recall and the audit trail is useless without it — but
+never note *content*. Append-only JSONL in plugin-data (disposable, like the
+index). No network, stdlib only. Never raises into a caller.
 """
 from __future__ import annotations
 
@@ -34,10 +36,23 @@ def log_event(event: str, **fields: Any) -> None:
 
 def log_recall_hits(hits) -> None:
     """Record the notes a recall surfaced. `hits` is an iterable of
-    (path, scope, rank)."""
+    (path, scope, rank). Feeds dead-weight detection (recalled_paths)."""
     for path, scope, rank in hits:
         if path:
             log_event("recall_hit", path=path, scope=scope, rank=rank)
+
+
+def log_recall(query: str, scope: str | None, hits, mechanism: str) -> None:
+    """Record one recall as a single grouped audit event: the query that ran,
+    how it was answered (`mechanism`, e.g. "fts", "rrf", "rrf+rerank"), and the
+    ranked paths it returned. This is the *what/when/why* audit trail — distinct
+    from the per-path recall_hit events that drive dead-weight detection.
+    `hits` is an iterable of (path, scope, rank)."""
+    returned = [{"path": p, "scope": s, "rank": r}
+                for p, s, r in hits if p]
+    log_event("recall", query=(query or "").strip()[:300],
+              scope=scope or "all", mechanism=mechanism, n=len(returned),
+              hits=returned)
 
 
 def _read(since_days: float | None = None) -> list[dict]:
@@ -63,6 +78,32 @@ def recalled_paths(since_days: float = 30) -> set[str]:
     """Paths surfaced by any recall in the window — used to find dead notes."""
     return {e["path"] for e in _read(since_days)
             if e.get("event") == "recall_hit" and e.get("path")}
+
+
+def recall_stats(since_days: float = 365) -> dict[str, dict]:
+    """Per-path recall signal for staleness scoring: hit count and the most
+    recent recall timestamp, over a wide window. {path: {hits, last_ts}}."""
+    out: dict[str, dict] = {}
+    for e in _read(since_days):
+        if e.get("event") != "recall_hit":
+            continue
+        path = e.get("path")
+        if not path:
+            continue
+        rec = out.setdefault(path, {"hits": 0, "last_ts": 0.0})
+        rec["hits"] += 1
+        ts = float(e.get("ts", 0.0))
+        if ts > rec["last_ts"]:
+            rec["last_ts"] = ts
+    return out
+
+
+def recent_recalls(since_days: float = 7, limit: int = 10) -> list[dict]:
+    """The most recent grouped recall events, newest first — the observability
+    audit trail. Each is {ts, query, scope, mechanism, n, hits:[{path,...}]}."""
+    recalls = [e for e in _read(since_days) if e.get("event") == "recall"]
+    recalls.sort(key=lambda e: e.get("ts", 0), reverse=True)
+    return recalls[:limit]
 
 
 def summary(since_days: float = 30, top: int = 8) -> dict:
