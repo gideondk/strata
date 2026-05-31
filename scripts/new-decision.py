@@ -188,9 +188,11 @@ def _dedup_gate(title: str, body: str, *, check_only: bool, ack_new: bool,
 
     if verdict == "block" and not ack_new:
         slug = Path(top["path"]).stem if top else "<slug>"
+        detail = (f"    {top['path']}  ({dedup.reason(top)})" if top
+                  else "    (an existing decision)")
         print("[strata] dedup: this looks like an EXISTING decision —",
               file=sys.stderr)
-        print(f"    {top['path']}  ({dedup.reason(top)})", file=sys.stderr)
+        print(detail, file=sys.stderr)
         print("  Pick one:", file=sys.stderr)
         print(f"    • supersede it:      re-run with --supersedes {slug}",
               file=sys.stderr)
