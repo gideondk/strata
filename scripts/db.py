@@ -75,6 +75,18 @@ CREATE TABLE IF NOT EXISTS source_files (
     PRIMARY KEY (path, source_file)
 );
 
+-- Semantic-search vectors, one row per note for the current embedding model.
+-- Populated by the optional embeddings module (fastembed). It lives here, in
+-- the versioned schema, on purpose: a schema bump drops it with everything
+-- else (so an upgrade recomputes vectors), and _purge clears a changed note's
+-- vector with its other rows (so edits re-embed instead of going stale).
+CREATE TABLE IF NOT EXISTS embeddings (
+    path        TEXT PRIMARY KEY,
+    model       TEXT NOT NULL,
+    vec         BLOB NOT NULL,
+    indexed_at  TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS files_scope ON files(scope);
 CREATE INDEX IF NOT EXISTS files_branch ON files(branch);
 CREATE INDEX IF NOT EXISTS files_status ON files(status);
@@ -87,9 +99,9 @@ CREATE INDEX IF NOT EXISTS source_files_by_src ON source_files(source_file);
 # Bump when the table layout changes. The index is disposable (rebuilt from
 # disk by reindex), so a mismatch drops every table and lets the next reindex
 # repopulate — no hand-written migrations needed.
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
-_TABLES = ("files", "fts", "supersedes", "links", "source_files")
+_TABLES = ("files", "fts", "supersedes", "links", "source_files", "embeddings")
 
 
 def db_path() -> Path:
@@ -226,6 +238,9 @@ def _purge(conn: sqlite3.Connection, rel: str) -> None:
     conn.execute("DELETE FROM supersedes WHERE successor = ?", (rel,))
     conn.execute("DELETE FROM links WHERE src = ?", (rel,))
     conn.execute("DELETE FROM source_files WHERE path = ?", (rel,))
+    # Clear the note's embedding too, so a changed note re-embeds on the next
+    # embeddings.reindex() instead of matching on stale content.
+    conn.execute("DELETE FROM embeddings WHERE path = ?", (rel,))
 
 
 def _resolve_branch(meta: dict, path_branch: str | None) -> str | None:

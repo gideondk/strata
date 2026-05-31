@@ -36,6 +36,46 @@ def test_reindex_picks_up_titles_from_frontmatter(initialised_vault):
     assert rows[0]["title"] == "Foo Decision"
 
 
+def test_schema_version_bump_rebuilds_index(initialised_vault):
+    """Upgrade safety: a new SCHEMA_VERSION must drop every table (incl.
+    embeddings) and rebuild from disk — never run against a stale-schema DB."""
+    import db
+    db.reindex(force=True)
+    # Simulate a pre-upgrade index: an old version stamp + a stale embedding.
+    with db.connect(write=True) as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO embeddings(path, model, vec, indexed_at) "
+            "VALUES ('decisions/gone.md', 'old-model', X'00', 'then')")
+        conn.execute("PRAGMA user_version = 1")
+    # Next open detects the mismatch and rebuilds.
+    with db.connect() as conn:
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        stale = conn.execute("SELECT COUNT(*) FROM embeddings").fetchone()[0]
+    assert version == db.SCHEMA_VERSION
+    assert stale == 0, "schema bump must drop the stale embeddings table"
+
+
+def test_changed_note_purges_its_embedding(initialised_vault):
+    """A note whose content changed must lose its old vector, so the next
+    embeddings pass recomputes it instead of matching on stale content."""
+    import db
+    mem = initialised_vault
+    rel = "decisions/2026-05-20-x.md"
+    p = _write(mem, rel, "---\ntitle: X\ndate: 2026-05-20\n---\nbody one\n")
+    db.reindex(force=True)
+    with db.connect(write=True) as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO embeddings(path, model, vec, indexed_at) "
+            "VALUES (?, 'm', X'00', 'then')", (rel,))
+    # Change the body (size differs → reindex detects it) and re-index.
+    p.write_text("---\ntitle: X\ndate: 2026-05-20\n---\nbody two, now different\n")
+    db.reindex(force=False)
+    with db.connect() as conn:
+        n = conn.execute("SELECT COUNT(*) FROM embeddings WHERE path = ?",
+                         (rel,)).fetchone()[0]
+    assert n == 0, "_purge must clear a changed note's embedding"
+
+
 def test_supersedes_edge_recorded(initialised_vault):
     import db
     mem = initialised_vault
