@@ -10,6 +10,10 @@ __pycache__/
 venv/
 env/
 
+# uv lockfile — the project is requirements.txt-managed, not uv-managed; a
+# stray uv.lock is an incidental stub (and misreports requires-python).
+uv.lock
+
 # Test + lint caches
 .pytest_cache/
 .mypy_cache/
