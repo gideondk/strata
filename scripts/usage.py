@@ -6,6 +6,13 @@ Logs paths / scopes / events — and the recall *query* itself, since the query
 is the "why" behind a recall and the audit trail is useless without it — but
 never note *content*. Append-only JSONL in plugin-data (disposable, like the
 index). No network, stdlib only. Never raises into a caller.
+
+This is best-effort ANALYTICS, not a compliance audit trail. Writes are wrapped
+in contextlib.suppress, so a dropped event is silent — fine for "is the vault
+used?" telemetry, wrong for anything an auditor must rely on. The durable,
+tamper-evident record is the vault itself: git history + per-note frontmatter
+provenance (author, timestamps, corrections, supersession). Don't route a
+compliance requirement here.
 """
 from __future__ import annotations
 

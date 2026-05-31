@@ -192,3 +192,24 @@ def test_get_prompt_missing_required_arg_errors(initialised_vault):
         else:
             flat.append(str(e))
     assert any("topic" in m for m in flat)
+
+
+def test_mcp_exposes_no_write_tools(initialised_vault):
+    """Structural moat (SECURITY.md Guarantee #1): the MCP server exposes only
+    READ tools. A write tool over MCP would let a prompt injection mutate shared
+    memory silently. Locked here so 'no silent writes' can't regress as tools
+    are added — a new read tool passes; anything write-shaped fails CI."""
+    import re
+
+    async def run(session):
+        return await session.list_tools()
+
+    result = asyncio.run(_mcp_call({}, run))
+    names = [t.name for t in result.tools]
+    assert names, "server should expose tools"
+    write_verb = re.compile(
+        r"(save|write|create|update|delete|remove|put|^set|_set|add|edit|"
+        r"decide|forget|invalidat|supersed|promote|export|ingest|commit|store)",
+        re.I)
+    offenders = [n for n in names if write_verb.search(n)]
+    assert not offenders, f"MCP must expose no write tools; found: {offenders}"

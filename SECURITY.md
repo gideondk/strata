@@ -40,9 +40,12 @@ We assume:
    is empty. (The dashboard is a static `index.html` opened via `file://` with a
    `connect-src 'none'` CSP — there is no server. The optional `fastembed`
    embedding dep is loaded strictly offline; it is not a networking module.)
-4. **Subprocesses are restricted to `git`** and read-only invocations
-   (`config`, `rev-parse`, `diff --cached --name-only`). No `commit`,
-   `push`, `checkout`.
+4. **Subprocesses are limited to read-only `git` and Strata's own bundled
+   scripts.** Git is invoked read-only (`config`, `rev-parse`,
+   `diff --cached --name-only`) — never `commit`, `push`, `checkout`. The MCP
+   server also runs Strata's vendored Python scripts (e.g. `recall.py`,
+   `bootstrap-scan.py`) via the bundled interpreter (`sys.executable`); it never
+   shells out to arbitrary or user-supplied commands.
 5. **No environment leakage.** Tool responses contain only memory content
    and configured paths. They never include `os.environ`, secrets, the user's
    home directory listing, or git remote URLs unless they're part of a
