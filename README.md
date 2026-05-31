@@ -4,7 +4,7 @@
 
 <h1 align="center">Strata</h1>
 
-<p align="center"><em>Local-first memory for Claude Code.</em></p>
+<p align="center"><em>Typed, local-first memory for Claude Code.</em></p>
 
 <p align="center">
   <a href="https://github.com/gideondk/strata/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/gideondk/strata/actions/workflows/ci.yml/badge.svg"></a>
@@ -21,33 +21,19 @@
 
 ---
 
-Every Claude Code session starts cold.
+Strata gives Claude Code structured memory: the decisions you've made, the domain rules you follow, the runbooks you reach for — kept as plain markdown on your disk, each on its own retrieval path. Claude reads them on its own through the MCP layer, so you stop pasting context dumps and you stop hand-maintaining a giant prompt file.
 
-You sit down on Monday, open a branch, and find yourself explaining the same things you explained on Friday. The decision your team made about Postgres last quarter. The reason `OrderPriced` fires before `OrderConfirmed`. The convention that domain events are named in the past tense. The bug you almost shipped two weeks ago and how you caught it.
+The usual alternatives make recall worse. One big context file blows the window and answers in the wrong shape: you ask how to add a service and get a paragraph defining what a service is. A vector database returns whatever pattern-matches most recently, which is often a stale note that's since been corrected — handed back with full confidence. Strata writes only what you confirm and retires old notes explicitly, so what comes back is current.
 
-If you're lucky, you remember to copy-paste a context dump. If you're not, Claude guesses, and sometimes the guess is wrong in a way that looks confidently right. By Wednesday, you've re-explained the same constraints three times across three different sessions.
+## Three kinds of memory, three retrieval paths
 
-We built Strata because the loss compounds. The decisions, the domain vocabulary, the post-incident lessons, they're all sitting in your head, in old Slack threads, in PR descriptions nobody re-reads. None of it reaches Claude unless you carry it there by hand.
+Recall works because memory isn't one thing. A decision you make once ages differently from a runbook you follow every week, so Strata keeps them apart:
 
-## Why one big context file doesn't work
-
-The obvious fix is a single context file you prepend to every prompt. It breaks down fast. It grows until it eats the context window, and it answers in the wrong shape: you ask how to add a new service and get a paragraph defining what a service is.
-
-A vector database doesn't really fix that. Semantic search ranks by embedding distance, so it tends to return whatever pattern-matches most recently — often a stale note that's since been corrected, handed back with complete confidence.
-
-The deeper issue is that memory isn't one kind of thing. A decision you make once and a recipe you follow every week age at different rates and need to be looked up in different ways. Put them in the same bucket and recall gets worse, not better.
-
-## What Strata does
-
-Strata splits memory into three kinds and keeps them on separate retrieval paths, all in plain markdown on your disk:
-
-- **Episodic** — what happened on this branch. Per-PR working notes. Archives when the PR merges.
+- **Episodic** — what happened on this branch. Per-PR working notes, archived when the PR merges.
 - **Semantic** — what things mean and what you've chosen. Vocabulary, invariants, ADRs. Long-lived; superseded explicitly when it changes.
-- **Procedural** — how you do things here. Recipes, runbooks. Stable until the recipe changes.
+- **Procedural** — how you do things here. Recipes and runbooks. Stable until the recipe changes.
 
-When you ask Claude something, the read path that matches the *shape* of your question runs. Ask "what's our token rotation approach?" and you get the ADR, not a Slack screenshot from April. Ask "how do I add a new service?" and you get the recipe, not the definition.
-
-You don't have to remember any of this. You write notes when something deserves to survive the conversation, and Claude finds them on its own through the MCP layer. The mechanism is invisible until you want to look at it; then the citations are right there in the answer.
+The path that matches the *shape* of your question runs. Ask "what's our token-rotation approach?" and you get the ADR, not a Slack screenshot from April. Ask "how do I add a service?" and you get the runbook, not the definition. You write a note when something deserves to outlive the conversation; Claude finds it later, file path right there in the answer.
 
 ## How it feels in practice
 
@@ -75,7 +61,7 @@ In any Claude Code session:
 /strata:init
 ```
 
-Requirements: Python 3.10 or newer on `PATH`. A `.venv/` is created inside the plugin directory on first run with two pinned dependencies (`mcp`, `python-frontmatter`). Nothing global, nothing system-wide.
+Requirements: Python 3.10 or newer on `PATH`. A `.venv/` is created inside the plugin directory on first run with its pinned runtime dependencies (`mcp`, `python-frontmatter`, `pathspec`; `fastembed` is optional and only adds semantic search). Nothing global, nothing system-wide.
 
 Full setup notes, team-config patterns, pre-push lint hook: [`INSTALL.md`](./INSTALL.md).
 
