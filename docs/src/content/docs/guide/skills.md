@@ -14,7 +14,8 @@ Every slash command Strata ships. Some are auto-invokable: when you describe a s
 | `/strata:domain <concept>` | A domain term is defined or refined ("an Order always belongs to one Customer") | `domain/<slug>.md` |
 | `/strata:correct <note>` | "Fix the part about X", "Stop using <note>", "Y is no longer true" — handles edit, invalidate, and field-update paths | Updates note + audit log |
 | `/strata:lint` | Before commit, automatic via pre-push hook | Scans for secrets / PII |
-| `/strata:review` | Asked to audit vault health | Surfaces stale notes, orphans, drift |
+| `/strata:review` | Asked to audit vault health | Surfaces stale-proposed ADRs, decayed durable notes (rarely recalled), orphans, drift |
+| `/strata:doctor` | "Is Strata working?", "did the install work?", after `/strata:init` | Health check: runtime deps, vault, index, semantic search, MCP server, git |
 | `/strata:audit-config` | Asked about plugin config | Reports active settings |
 
 ## Reads (auto-invokable)

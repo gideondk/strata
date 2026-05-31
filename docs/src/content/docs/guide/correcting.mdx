@@ -87,6 +87,10 @@ Audit reviews. But:
 - `invalidated_at`, `invalidated_by`, `invalidation_reason` are
   recorded.
 - Optional `replaced_by:` link points to the successor.
+- Optional `--invalid-since YYYY-MM-DD` records *when the fact stopped
+  being true* — separate from `invalidated_at`, which is just when you
+  recorded it. Keeping both answers "how long were we acting on a wrong
+  assumption?", which a single timestamp can't.
 - Default search filters it out. `memory_search`, `find`, and
   `domain_lookup` skip invalidated notes.
 - Opt back in with `include_invalidated=true` when you need history.
@@ -119,6 +123,14 @@ through the new ADR's body. The whole point of an ADR is the
 Reasoning, so the successor carries that load. A one-line `--reason`
 on invalidate can't.
 
+Strata never deletes a superseded decision — it expires and rewrites.
+The old file stays as history; supersession just flips its status and
+drops it from the live list. One refinement worth the keystrokes: when
+you supersede, prepend a past-tense line to the old ADR ("Superseded by
+`<new>` — we used to do X") via `/strata:correct`, so a reader who lands
+on it directly isn't misled into thinking it's current. Leave the rest
+of the body alone; the original reasoning is exactly what you're keeping.
+
 ## Forget
 
 The hard delete. Use only when the note shouldn't exist at all.
@@ -137,7 +149,7 @@ Explicit user request. The audit trail must reflect intent.
 
 ## Auto-detection of drift
 
-Two signals flag notes for likely correction.
+Three signals flag notes for likely correction.
 
 `code_refs` that no longer resolve. When a note's frontmatter lists
 `code_refs: [Foo, Bar]` and one of those symbols doesn't exist in
@@ -147,7 +159,13 @@ Path claims that broke. For ADRs and lessons extracted via bootstrap,
 `plan_correlate` re-runs to detect when previously-resolved paths no
 Longer exist.
 
-Neither auto-corrects. Both surface in review for you to decide
+Staleness by usage. `/strata:review` also scores durable notes on an
+importance-weighted decay curve: a decision that's old (by its own
+frontmatter date) and rarely recalled surfaces as a candidate to
+refresh, supersede, or invalidate. Recalling a note resets its clock,
+so notes the team actually uses don't get flagged.
+
+None of these auto-correct. All surface in review for you to decide
 between correct, invalidate, supersede, or forget.
 
 ---
