@@ -446,8 +446,13 @@ the event store.
     word-break: break-word;
   }
 
-  /* ---- Receipt ---- */
+  /* ---- Receipt ----
+     The claude message is a 60px|1fr grid with three children (label, body,
+     receipt). Without this, grid auto-placement drops the receipt into the
+     60px label column and every line wraps to one character. Pin it to the
+     content column, under the body. */
   .msg-receipt {
+    grid-column: 2;
     margin-top: 1.5rem;
     border-top: 1px dashed var(--sl-color-hairline-shade);
     padding-top: 1rem;
