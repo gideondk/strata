@@ -38,6 +38,24 @@ def test_stale_decisions_picks_up_old_proposed(initialised_vault):
     assert "decisions/2026-04-01-accepted.md" not in paths  # not proposed
 
 
+def test_review_flags_stale_durable_note_by_usage(initialised_vault):
+    """An *accepted* decision that's old (by frontmatter date) and never
+    recalled is flagged by staleness — the usage-driven complement to the
+    status-driven stale-proposed check."""
+    import db
+    import staleness
+    mem = initialised_vault
+    _write(mem, "decisions/2024-01-01-cold.md",
+           "---\ntitle: Cold\nstatus: accepted\ndate: '2024-01-01'\n---\nbody\n")
+    _write(mem, "decisions/2026-05-30-fresh.md",
+           "---\ntitle: Fresh\nstatus: accepted\ndate: '2026-05-30'\n---\nbody\n")
+    db.reindex(force=True)
+
+    decayed = {d["path"] for d in staleness.rank_stale(limit=10)}
+    assert "decisions/2024-01-01-cold.md" in decayed       # old + unrecalled
+    assert "decisions/2026-05-30-fresh.md" not in decayed   # recent
+
+
 def test_orphan_notes_finds_unlinked_domain(initialised_vault):
     import db
     mem = initialised_vault

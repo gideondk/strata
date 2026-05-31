@@ -304,28 +304,35 @@ def _memory_usage_bullets() -> list[str]:
         out.append(f"- {s['notes_saved']} note(s) saved in "
                    f"{int(s['since_days'])}d ({s['saves_via_draft']} via draft)"
                    + (f" — {by_kind}" if by_kind else ""))
+    # Recall audit trail — the observability surface: what was searched, how it
+    # was answered, and what came back. Answers "why did the agent see that?"
+    try:
+        recents = usage.recent_recalls(since_days=7, limit=5)
+    except Exception:
+        recents = []
+    if recents:
+        out.append(f"- recent recalls (last {len(recents)}):")
+        for e in recents:
+            q = (e.get("query") or "").strip() or "·"
+            top = e["hits"][0]["path"] if e.get("hits") else "no hits"
+            out.append(f"  - 🔎 “{q}” → {e.get('n', 0)} hit(s) "
+                       f"via {e.get('mechanism', '?')} → `{top}`")
     if not out:
         return [f"_no recalls or saves logged in the last "
                 f"{int(s['since_days'])}d yet_"]
-    # Dead-memory candidates: durable notes never recalled in the window.
+    # Staleness ranking — principled replacement for the old "30d old + never
+    # recalled" heuristic: importance-weighted exponential decay (age measured
+    # from last modify-or-recall, decaying slower the more a note is recalled).
     try:
-        import time as _t
-
-        import db
-        import usage as _u
-        recalled = _u.recalled_paths()
-        cutoff = _t.time() - 30 * 86400
-        with db.connect() as conn:
-            rows = conn.execute(
-                "SELECT path FROM files WHERE scope IN "
-                "('decisions', 'domain', 'lessons') AND mtime < ? "
-                "ORDER BY mtime LIMIT 200",
-                (cutoff,),
-            ).fetchall()
-        dead = [r["path"] for r in rows if r["path"] not in recalled]
-        if dead:
-            out.append(f"- {len(dead)} durable note(s) not recalled in 30d "
-                       f"(dead-memory candidates) — e.g. `{dead[0]}`")
+        import staleness
+        stale = staleness.rank_stale(limit=5)
+        if stale:
+            out.append(f"- {len(stale)} stale durable note(s) "
+                       "(decayed, rarely recalled — review or archive):")
+            for s in stale:
+                out.append(f"  - 🥀 `{s['path']}` — staleness "
+                           f"{s['staleness']:.2f} ({s['age_days']:.0f}d, "
+                           f"{s['hits']} hit(s))")
     except Exception:
         pass
     return out

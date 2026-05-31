@@ -46,6 +46,24 @@ def main() -> int:
                  f"_({row['age_days']} days)_")
     push("")
 
+    # 1b. Stale durable notes (by usage, not status). Stale-proposed ADRs above
+    # is status-driven; this catches *accepted* decisions / domain / lessons /
+    # procedures that have quietly decayed — old and rarely recalled — using the
+    # importance-weighted staleness score. Best-effort: needs the usage ledger.
+    try:
+        import staleness
+        decayed = staleness.rank_stale(limit=10)
+    except Exception:
+        decayed = []
+    if decayed:
+        push("## Stale durable notes (decayed, rarely recalled)")
+        for d in decayed:
+            push(f"- `{d['path']}` — staleness {d['staleness']:.2f} "
+                 f"_({d['age_days']:.0f}d old, {d['hits']} recall(s))_")
+        push("_Review each: refresh it, `/strata:decide --supersedes` it, or "
+             "`/strata:invalidate` it. Recall resets the clock._")
+        push("")
+
     # 2. Orphan domain notes
     orphans = db.orphan_notes("domain")
     push("## Orphan domain notes (no wikilinks in or out)")

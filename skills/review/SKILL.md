@@ -1,6 +1,6 @@
 ---
 name: strata:review
-description: Vault health report, stale-proposed ADRs, orphan domain notes, missing frontmatter, unresolved wikilinks, stale PR-context dirs, stale Graphify code-graph. Read-only. Invoke autonomously when the user asks about vault hygiene, after a period of inactivity, or when starting a planning/cleanup session.
+description: Vault health report, stale-proposed ADRs, stale durable notes (decayed + rarely recalled), orphan domain notes, missing frontmatter, unresolved wikilinks, stale PR-context dirs, stale Graphify code-graph. Read-only. Invoke autonomously when the user asks about vault hygiene, after a period of inactivity, or when starting a planning/cleanup session.
 ---
 
 # strata:review
