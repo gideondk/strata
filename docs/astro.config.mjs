@@ -20,8 +20,8 @@ export default defineConfig({
     starlight({
       title: 'Strata',
       description:
-        'Layered memory for Claude Code — episodic, semantic, procedural. ' +
-        'Local-first. Code-graph aware.',
+        'Typed, local-first memory for Claude Code: decisions, domain ' +
+        'rules, and runbooks, kept as plain markdown Claude reads on its own.',
       // Default first-time visitors to dark — basalt + amber is the
       // canonical Strata look. Toggle still works; user choice is sticky.
       head: [
