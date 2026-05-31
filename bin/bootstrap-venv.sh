@@ -6,8 +6,21 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV="$ROOT/.venv"
 REQ="$ROOT/requirements.txt"
+MARKER="$VENV/.strata-installed"
 
-if [[ -x "$VENV/bin/python" ]] && [[ -f "$VENV/.strata-installed" ]]; then
+# Hash requirements.txt so a plugin upgrade that adds/changes a dep forces a
+# re-resolve. Keying the marker on existence alone (the old behaviour) meant an
+# upgraded plugin kept running against a stale venv and crashed on the missing
+# import. Portable across the macOS/Linux runners we target.
+hash_req() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d' ' -f1
+  elif command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" | cut -d' ' -f1
+  else cksum "$1" | cut -d' ' -f1; fi
+}
+REQ_HASH="$(hash_req "$REQ")"
+
+# Skip only if the venv exists AND was built against the current requirements.
+if [[ -x "$VENV/bin/python" ]] && [[ "$(cat "$MARKER" 2>/dev/null)" == "$REQ_HASH" ]]; then
   exit 0
 fi
 
@@ -44,5 +57,5 @@ fi
 "$VENV/bin/python" -m pip install --quiet --disable-pip-version-check --upgrade pip >/dev/null
 "$VENV/bin/python" -m pip install --quiet --disable-pip-version-check -r "$REQ"
 
-touch "$VENV/.strata-installed"
+printf '%s\n' "$REQ_HASH" > "$MARKER"
 echo "strata: deps installed in $VENV" >&2
