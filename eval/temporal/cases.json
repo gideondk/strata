@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "note": "PILOT temporal set (6 cases) — UNDERPOWERED by design. Read the CI widths, not the point estimates; grow the set and re-run a power check before treating any delta as established. Construction: LongMemEval-style fact decomposition (arXiv:2410.10813). Queries are paraphrases (not verbatim body text) to limit train/test leakage. Each superseded note is deliberately MORE term-dense on the query terms than its current counterpart, so the OFF arm favours the stale note — isolating the supersession demotion as the only lever that can flip the result.",
+    "k": 5
+  },
+  "cases": [
+    {
+      "fact_id": "embeddings-store",
+      "query": "which store holds our vector embeddings",
+      "current": {"title": "pgvector for embeddings", "status": "accepted", "date": "2026-04-01", "body": "We keep vector embeddings in Postgres using the pgvector extension."},
+      "superseded": [{"title": "Pinecone for embeddings", "status": "superseded", "date": "2025-05-01", "body": "Our vector embeddings store is Pinecone. Pinecone holds the vector embeddings; the embeddings vector store is the Pinecone service for vector embeddings."}]
+    },
+    {
+      "fact_id": "token-rotation",
+      "query": "how often do we rotate API tokens",
+      "current": {"title": "Rotate tokens daily at the gateway", "status": "accepted", "date": "2026-03-12", "body": "API tokens rotate automatically every 24 hours at the gateway."},
+      "superseded": [{"title": "Manual weekly token rotation", "status": "superseded", "date": "2025-02-01", "body": "We rotate API tokens manually. Token rotation is weekly; rotate tokens by hand. Token rotation cadence for API tokens is the weekly manual token rotation."}]
+    },
+    {
+      "fact_id": "event-order",
+      "query": "ordering of the order lifecycle events",
+      "current": {"title": "OrderPriced fires before OrderConfirmed", "status": "accepted", "date": "2026-05-12", "body": "Order events emit OrderPriced before OrderConfirmed so confirmation carries the final price."},
+      "superseded": [{"title": "OrderConfirmed before OrderPriced", "status": "superseded", "date": "2025-01-20", "body": "Order lifecycle events: OrderConfirmed before OrderPriced. The order events ordering puts order confirmation first, then order pricing in the order event sequence."}]
+    },
+    {
+      "fact_id": "search-index",
+      "query": "what backs the search index",
+      "current": {"title": "Local SQLite FTS5 index", "status": "accepted", "date": "2026-05-30", "body": "The search index is a local SQLite FTS5 database."},
+      "superseded": [{"title": "Elasticsearch for search", "status": "superseded", "date": "2025-03-15", "body": "The search index runs on Elasticsearch. Elasticsearch backs the search; the search index cluster is Elasticsearch serving the search index for full-text search index queries."}]
+    },
+    {
+      "fact_id": "deploy-target",
+      "query": "where do we deploy the service",
+      "current": {"title": "Deploy to Fly.io", "status": "accepted", "date": "2026-04-22", "body": "The service deploys to Fly.io."},
+      "superseded": [{"title": "Deploy to Heroku", "status": "superseded", "date": "2024-11-01", "body": "We deploy the service to Heroku. The service deploy target is Heroku; deploys run on Heroku dynos and the service deploy pipeline pushes the service to Heroku."}]
+    },
+    {
+      "fact_id": "cache-layer",
+      "query": "what do we use for caching",
+      "current": {"title": "In-process LRU cache", "status": "accepted", "date": "2026-05-02", "body": "Caching is an in-process LRU cache."},
+      "superseded": [{"title": "Redis cache cluster", "status": "superseded", "date": "2025-04-10", "body": "We use Redis for caching. The cache layer is a Redis cache cluster; caching uses Redis, the Redis cache serves all caching for the cache layer."}]
+    }
+  ],
+  "distractors": [
+    {"title": "Code style", "body": "We use four-space indentation and type hints across the codebase."},
+    {"title": "Standup", "body": "The daily standup happens at ten in the morning in the team channel."},
+    {"title": "Release cadence", "body": "A release is cut every second Thursday afternoon."}
+  ]
+}
