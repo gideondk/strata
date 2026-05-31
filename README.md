@@ -29,13 +29,13 @@ If you're lucky, you remember to copy-paste a context dump. If you're not, Claud
 
 We built Strata because the loss compounds. The decisions, the domain vocabulary, the post-incident lessons, they're all sitting in your head, in old Slack threads, in PR descriptions nobody re-reads. None of it reaches Claude unless you carry it there by hand.
 
-## The shape of the problem
+## Why one big context file doesn't work
 
-The first instinct is to dump everything into one long context file and prepend it to every prompt. That fails for two reasons. The file gets too big and burns the context window. And it returns the wrong shape when you ask a question: you wanted a recipe for adding a new service, you got a definition of what a service is.
+The obvious fix is a single context file you prepend to every prompt. It breaks down fast. It grows until it eats the context window, and it answers in the wrong shape: you ask how to add a new service and get a paragraph defining what a service is.
 
-The second instinct is to use a vector database and hope semantic search figures it out. That fails differently. Vector search collapses everything to "similar by embedding distance" and gives you the most recent thing that pattern-matches, which is often a stale snapshot of something that has since been corrected.
+A vector database doesn't really fix that. Semantic search ranks by embedding distance, so it tends to return whatever pattern-matches most recently — often a stale note that's since been corrected, handed back with complete confidence.
 
-The real problem is that memory isn't one kind of thing. Cognitive science has names for the kinds, and the kinds have different lifetimes, different retrieval shapes, and different audit rules. Cramming them into one bucket makes recall worse, not better.
+The deeper issue is that memory isn't one kind of thing. A decision you make once and a recipe you follow every week age at different rates and need to be looked up in different ways. Put them in the same bucket and recall gets worse, not better.
 
 ## What Strata does
 
@@ -53,15 +53,15 @@ You don't have to remember any of this. You write notes when something deserves 
 
 You make a decision in conversation. You say "let's go with the section-at-once edit pattern". Claude offers to record it; you accept. A 40-line ADR lands in `decisions/` with the context, the chosen option, the alternatives you rejected, and the consequences.
 
-Six weeks later a teammate switches to your branch. Their Claude session reads the per-branch notes you saved and primes itself with what you were in the middle of. They ask "why didn't we use per-field PUTs?" and Claude pulls the alternatives section from your ADR, with the file path. No archaeology, no Slack scrolling, no asking you.
+Six weeks later a teammate switches to your branch. Their Claude session reads the per-branch notes you saved and primes itself with what you were in the middle of. They ask "why didn't we use per-field PUTs?" and Claude pulls the rejected-alternatives section straight from your ADR, file path included. Nobody digs through Slack, and nobody has to interrupt you to ask.
 
-A month after that, your team refactors. The old ADR gets superseded by a new one. The old file stays in the vault, marked `status: superseded`, with a forward link to its replacement. The chain is queryable. Nothing gets lost; nothing gets repeated.
+A month after that, your team refactors and a new ADR supersedes the old one. The old file stays in the vault, marked `status: superseded`, with a forward link to its replacement. You can still walk the chain — the old reasoning is preserved without pretending to be current.
 
 ## Local-first, by design
 
 The vault lives on your disk. Default location is `~/StrataVault`. Inside, one subfolder per repo, namespaced by your git remote. Inside that, one subfolder per scope. Plain markdown with YAML frontmatter.
 
-The search index is a local SQLite FTS5 database plus an on-device fastembed model for semantic recall. No network calls in the runtime path. No telemetry. No analytics. Greppable in the source.
+The search index is a local SQLite FTS5 database plus an on-device fastembed model for semantic recall. Nothing in the runtime path touches the network, there's no telemetry, and you can grep the source to check.
 
 Sync your vault however you already sync things: Obsidian Sync, Syncthing, iCloud, Dropbox, a private git repo. Strata doesn't care. The format is text; everything else is your choice.
 
