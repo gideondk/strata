@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import re
 import sys
 
 import frontmatter
@@ -38,6 +39,37 @@ from lib import (
     stamp_minute,
     write_text,
 )
+
+# Auto-discard floor: an observation that lexically overlaps an existing staged
+# one above this Jaccard threshold is dropped instead of queued, so the
+# quarantine lane can't fill with redundant re-captures (the "third bucket"
+# beside keep/discard). Deterministic + offline — no embeddings dependency.
+_DEDUP_JACCARD = 0.85
+_DEDUP_MIN_TOKENS = 5
+
+
+def _tokens(text: str) -> set[str]:
+    return set(re.findall(r"[a-z0-9]+", (text or "").lower()))
+
+
+def _is_near_duplicate(body: str, dir_) -> bool:
+    """True if `body` overlaps an existing `status: auto` observation in `dir_`
+    above the Jaccard floor. Best-effort: any read/parse failure → not a dup."""
+    new = _tokens(body)
+    if len(new) < _DEDUP_MIN_TOKENS:
+        return False  # too short to judge similarity reliably
+    with contextlib.suppress(Exception):
+        for f in dir_.glob("*.md"):
+            with contextlib.suppress(Exception):
+                post = frontmatter.load(f)
+                if post.metadata.get("status") != "auto":
+                    continue
+                other = _tokens(post.content)
+                if not other:
+                    continue
+                if len(new & other) / len(new | other) >= _DEDUP_JACCARD:
+                    return True
+    return False
 
 
 def capture(topic: str, body: str, *, source_file: list[str] | None = None,
@@ -67,6 +99,13 @@ def capture(topic: str, body: str, *, source_file: list[str] | None = None,
     when = stamp_minute()
     dir_ = pr_context_dir(slug)
     ensure_dir(dir_)
+
+    # Auto-discard floor: don't queue a near-duplicate of an existing staged
+    # observation — that just turns the quarantine into a redundant backlog.
+    if _is_near_duplicate(body, dir_):
+        return 0, ("[strata] skipped: near-duplicate of an existing staged "
+                   "observation — not captured")
+
     path = dir_ / f"{when}--{safe_slug(init)}--{safe_slug(topic)}.md"
 
     # Build frontmatter via the YAML lib (NOT hand-built strings): this quotes
@@ -135,7 +174,7 @@ def main() -> int:
     rc, msg = capture(args.topic, sys.stdin.read(),
                       source_file=args.source_file, commit=args.commit)
     print(msg, file=sys.stderr if rc else sys.stdout)
-    if rc == 0:
+    if rc == 0 and msg.startswith("[strata] auto-captured"):
         print("[strata] review it at /strata:dashboard — keep by editing, or "
               "/strata:forget to discard")
     return rc

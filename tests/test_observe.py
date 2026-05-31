@@ -221,3 +221,39 @@ def test_dashboard_recent_activity_excludes_auto(initialised_vault):
            "title: zrecentauto\n---\nbody\n")
     rows = dashboard._recent_activity()
     assert all("zrecent" not in r["path"] for r in rows)
+
+
+# --- auto-discard floor (the missing third bucket) -------------------------
+
+def _observations(mem):
+    return [n for n in (mem / "pr-context").rglob("*.md")
+            if frontmatter.load(n).metadata.get("kind") == "observation"]
+
+
+def test_observe_discards_near_duplicate(initialised_vault):
+    """A near-identical observation is dropped, not queued — the quarantine
+    lane must not fill with redundant re-captures."""
+    mem = initialised_vault
+    body = ("The pricing process manager now emits OrderPriced strictly before "
+            "OrderConfirmed so downstream projections never read a stale total.")
+    r1 = _run(["--topic", "event order fixed", "--source-file", "src/orders.py"],
+              body=body, env=os.environ.copy())
+    assert r1.returncode == 0, r1.stderr
+    # Same content, different topic → should be discarded as a near-duplicate.
+    r2 = _run(["--topic", "ordering note again", "--source-file", "src/orders.py"],
+              body=body + " Small clarifying addendum.", env=os.environ.copy())
+    assert r2.returncode == 0
+    assert "near-duplicate" in (r2.stdout + r2.stderr).lower(), r2.stdout
+    assert len(_observations(mem)) == 1, "near-duplicate must not be queued"
+
+
+def test_observe_keeps_distinct_observation(initialised_vault):
+    """A genuinely different observation is still captured (floor is targeted)."""
+    mem = initialised_vault
+    _run(["--topic", "retry", "--source-file", "src/a.py"],
+         body="The retry budget was raised from three to five attempts.",
+         env=os.environ.copy())
+    _run(["--topic", "cache", "--source-file", "src/b.py"],
+         body="Caching switched to an in-process LRU with a 512 entry cap.",
+         env=os.environ.copy())
+    assert len(_observations(mem)) == 2
