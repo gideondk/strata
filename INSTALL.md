@@ -92,7 +92,8 @@ seeds `INDEX.md`.
 
 The first time a Strata hook fires (typically SessionStart), it runs
 `bin/bootstrap-venv.sh`, which creates `.venv/` inside the plugin install
-directory and pip-installs the two runtime deps (`mcp`, `python-frontmatter`).
+directory and pip-installs the runtime deps (`mcp`, `python-frontmatter`,
+`pathspec`; `fastembed` is optional, for semantic search).
 
 Takes ~30 seconds on a typical connection. Subsequent sessions are
 zero-overhead.
@@ -111,7 +112,7 @@ via `brew install python@3.13` if needed.
 ## Verify
 
 ```
-/plugin                  # strata should be "enabled", v0.5.0
+/plugin                  # strata should be "enabled", v0.12.1
 /mcp                     # strata server should be listed with 13 tools
 ```
 
