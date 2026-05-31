@@ -3,9 +3,13 @@
  * MemoryTriad — three overlapping rings labelling the cognitive-science
  * memory taxonomy that Strata's vault scopes map onto.
  *
- * Episodic ∩ Procedural = `lessons/` bridge
- * Episodic ∩ Semantic = `decisions/` (events that became facts)
- * Semantic ∩ Procedural = how-to backed by domain truths
+ * Six scopes, mapped to the taxonomy:
+ *   Episodic ring  = `pr-context/`     Semantic ring = `domain/`
+ *   Procedural ring = `procedural/`
+ *   Episodic ∩ Semantic   = `decisions/`     (events that became facts)
+ *   Episodic ∩ Procedural = `lessons/`       (what an episode taught)
+ *   Semantic ∩ Procedural = `propositions/`  (open questions / debate)
+ *   Centre (all three)    = `vault`
  */
 ---
 
@@ -54,7 +58,7 @@
        stroke="var(--sl-color-bg)"
        stroke-width="4">
       <text x="100" y="106" text-anchor="start">pr-context/</text>
-      <text x="420" y="106" text-anchor="end">domain/ · decisions/</text>
+      <text x="420" y="106" text-anchor="end">domain/</text>
       <text x="260" y="411" text-anchor="middle">procedural/</text>
     </g>
 
@@ -67,9 +71,9 @@
        paint-order="stroke"
        stroke="var(--sl-color-bg)"
        stroke-width="4">
-      <text x="260" y="170" text-anchor="middle">decisions ← events</text>
-      <text x="170" y="260" text-anchor="middle">lessons/</text>
-      <text x="350" y="260" text-anchor="middle">how-to with truth</text>
+      <text x="260" y="140" text-anchor="middle">decisions/</text>
+      <text x="192" y="252" text-anchor="middle">lessons/</text>
+      <text x="328" y="252" text-anchor="middle">propositions/</text>
     </g>
 
     <g class="centre-label"
@@ -80,7 +84,7 @@
        paint-order="stroke"
        stroke="var(--sl-color-bg)"
        stroke-width="4">
-      <text x="260" y="226" text-anchor="middle" letter-spacing="0.04em">vault</text>
+      <text x="260" y="218" text-anchor="middle" letter-spacing="0.04em">vault</text>
     </g>
   </svg>
   <figcaption>
