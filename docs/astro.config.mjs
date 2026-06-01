@@ -92,6 +92,7 @@ export default defineConfig({
             { label: 'Skills', link: '/guide/skills/' },
             { label: 'MCP tools', link: '/guide/mcp-tools/' },
             { label: 'Code graph', link: '/guide/code-graph/' },
+            { label: 'Strata for teams', link: '/guide/teams/' },
           ],
         },
         {
