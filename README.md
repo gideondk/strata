@@ -48,11 +48,11 @@ A month after that, your team refactors and a new ADR supersedes the old one. Th
 "The current note wins, not the stale one" is the kind of claim every memory tool makes. Strata's is benchmarked, and the benchmark ships in the repo. `scripts/eval_temporal.py` builds a throwaway vault, runs recall with the supersession demotion off vs on, and measures whether a current note actually outranks the superseded twin a query also matches:
 
 ```
-stale-suppression:  off  7/19   →   on  19/19   (95% CI [0.83, 1.0],  P(on>off) ≈ 1.0)
+stale-suppression:  off  7/19   →   on  19/19      (paired McNemar: 12–0, exact p ≈ 0.0005)
 current-recall@k:   19/19 either way — demoting the stale note costs nothing
 ```
 
-Run it yourself: `bin/run-python.sh scripts/eval_temporal.py`. Honest scope: this proves the *mechanism* on a hand-built, leakage-checked set — it doesn't yet establish how often the stale-vs-current contest arises in real corpora, and n=19 is modest. The construction, the leakage check, and the caveats are in [`eval/temporal/`](./eval/temporal/). No "beats a vector DB" headline until that prevalence number exists.
+It's a paired ablation — every case runs with the demotion off and on, so the result is a real significance test, not a vibe. Run it yourself: `bin/run-python.sh scripts/eval_temporal.py`. Honest scope: this proves the *mechanism* on a hand-built, leakage-checked set — it doesn't establish how often the stale-vs-current contest arises in real corpora, and n=19 is modest. The construction, the leakage check, and the caveats are in [`eval/temporal/`](./eval/temporal/). No "beats a vector DB" headline until that prevalence number exists.
 
 ## Local-first, by design
 

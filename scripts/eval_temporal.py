@@ -169,6 +169,12 @@ def run(cases_path: Path, k: int, as_json: bool) -> int:
                 row[arm] = {"current_recall": rec, "suppression": supp}
             per_case.append(row)
 
+        # Paired (McNemar) view: discordant cases where exactly one arm wins.
+        b = sum(1 for r in per_case
+                if r["on"]["suppression"] and not r["off"]["suppression"])
+        c = sum(1 for r in per_case
+                if r["off"]["suppression"] and not r["on"]["suppression"])
+        mcnemar_p = es.mcnemar_exact_p(b, c)
         supp_delta = es.prob_improvement(results["on"]["supp"], n,
                                          results["off"]["supp"], n)
         rec_delta = es.prob_improvement(results["on"]["recall"], n,
@@ -184,7 +190,9 @@ def run(cases_path: Path, k: int, as_json: bool) -> int:
             "current_recall@k": {"on": rec_on, "off": rec_off,
                                  "P(on>off)": round(rec_delta, 3)},
             "stale_suppression": {"on": supp_on, "off": supp_off,
-                                  "P(on>off)": round(supp_delta, 3)},
+                                  "P(on>off)": round(supp_delta, 3),
+                                  "mcnemar": {"on_only": b, "off_only": c,
+                                              "exact_p": round(mcnemar_p, 5)}},
         }
         if as_json:
             print(json.dumps({"summary": summary, "per_case": per_case,
@@ -197,6 +205,8 @@ def run(cases_path: Path, k: int, as_json: bool) -> int:
             print(f"- ON : {supp_on}")
             print(f"- OFF: {supp_off}")
             print(f"- P(ON beats OFF): {supp_delta:.3f}")
+            print(f"- paired McNemar: {b} ON-only wins vs {c} OFF-only, "
+                  f"exact p = {mcnemar_p:.5f}")
             print("\n## current-recall@k")
             print(f"- ON : {rec_on}")
             print(f"- OFF: {rec_off}")

@@ -27,9 +27,12 @@ Beta-Binomial `P(ON > OFF)`.
 ## What it currently shows, and what it does NOT
 
 On the committed set (19 hand-built cases, leakage-checked) the demotion lifts
-stale-suppression from **7/19 (OFF) to 19/19 (ON)** — `P(ON>OFF) ≈ 1.0`, with
-non-overlapping 95% CIs (`OFF [0.19, 0.59]`, `ON [0.83, 1.0]`). current-recall@k
-is 19/19 in both arms, so the demotion costs nothing on findability.
+stale-suppression from **7/19 (OFF) to 19/19 (ON)**, with non-overlapping 95%
+CIs (`OFF [0.19, 0.59]`, `ON [0.83, 1.0]`). Because it's a **paired** ablation
+(every case runs both arms) the correct test is exact McNemar on the discordant
+pairs: **12 ON-only wins vs 0, exact p ≈ 0.0005** — significant at n=19 without
+padding the set. current-recall@k is 19/19 in both arms, so the demotion costs
+nothing on findability.
 
 Read that honestly:
 

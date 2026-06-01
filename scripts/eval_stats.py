@@ -59,6 +59,21 @@ def prob_improvement(on_k: int, on_n: int, off_k: int, off_n: int,
     return min(1.0, max(0.0, p))
 
 
+def mcnemar_exact_p(b: int, c: int) -> float:
+    """Exact two-sided McNemar (sign) test for a PAIRED binary ablation, where
+    `b` = cases the ON arm wins but OFF loses and `c` = the reverse. Our design
+    runs every case ON and OFF, so the arms are paired, not independent — this
+    is the correct test, and it's stronger than treating the two rates as
+    independent proportions. Returns 1.0 with no discordant pairs (no evidence).
+    """
+    n = b + c
+    if n == 0:
+        return 1.0
+    k = min(b, c)
+    tail = sum(math.comb(n, i) for i in range(k + 1)) * (0.5 ** n)
+    return min(1.0, 2.0 * tail)
+
+
 def fmt_rate(successes: int, n: int) -> str:
     """A proportion with its Wilson 95% CI — the only sanctioned way to print a
     benchmark rate, so a bare point estimate can't slip out."""

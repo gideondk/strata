@@ -48,6 +48,18 @@ def test_prob_improvement_modest_lift():
     assert 0.5 < p < 0.95  # suggestive, not certain, on a tiny set
 
 
+def test_mcnemar_exact():
+    import eval_stats as es
+    # 12 ON-wins, 0 OFF-wins → highly significant (≈ 0.5^12 * 2).
+    assert es.mcnemar_exact_p(12, 0) < 0.001
+    # Balanced discordant pairs → no evidence.
+    assert es.mcnemar_exact_p(5, 5) == 1.0
+    # No discordant pairs at all → 1.0 (uninformative).
+    assert es.mcnemar_exact_p(0, 0) == 1.0
+    # Symmetric in its arguments.
+    assert es.mcnemar_exact_p(8, 2) == es.mcnemar_exact_p(2, 8)
+
+
 def test_fmt_rate_includes_ci():
     import eval_stats as es
     s = es.fmt_rate(7, 10)
