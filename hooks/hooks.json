@@ -1,5 +1,16 @@
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/guard-vault-read.py\""
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [

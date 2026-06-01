@@ -223,6 +223,10 @@ def build_primer() -> str:
     push("_Use `/strata:find <query>` for full search, "
          "`/strata:save` to write a session note, "
          "`/strata:decide` for an ADR._")
+    push("_Retrieve vault knowledge through the `recall` MCP tool (or "
+         "`/strata:find`) — don't grep or read the vault files directly. "
+         "Recall is ranked and supersession-aware; raw reads surface "
+         "superseded/invalidated notes as if current._")
 
     primer = "\n".join(out)
     if len(primer) > PRIMER_CHAR_BUDGET:
