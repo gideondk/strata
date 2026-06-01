@@ -4,6 +4,27 @@ Strata is a Claude Code plugin that gives an LLM read access to a team
 knowledge vault and write access via human-typed slash commands. This document
 spells out the assumptions and guarantees.
 
+## For regulated codebases
+
+If you work somewhere that audits what touches your code — healthcare, finance,
+public sector — this is the page that matters. Strata is designed so an AI
+assistant can have durable memory **without** becoming an unaudited write path:
+
+- **No silent writes.** Durable memory changes only through a human-typed slash
+  command (Guarantee #1). A prompt injection can't mutate a decision behind your
+  back — verifiable, not promised: a CI test fails if any write tool is ever
+  exposed over MCP.
+- **No network.** Nothing in the runtime path opens a socket; grep the source to
+  confirm (Guarantee #3). The vault stays on infrastructure you control.
+- **Provenance you can audit.** Every note carries author + timestamps in
+  frontmatter; supersession and invalidation are explicit and bi-temporal; the
+  durable audit record is the vault's git history, not a disposable log.
+- **PHI/PII/secret lint** ships with bundled presets (`presets/`) and runs as a
+  pre-step on every write path.
+
+Everything below is the precise version — claims stated only where the code
+structurally delivers them.
+
 ## Threat model
 
 We assume:

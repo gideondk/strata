@@ -3,7 +3,7 @@
   "name": "strata",
   "displayName": "Strata",
   "version": "0.12.1",
-  "description": "Branch- and PR-aware shared memory for engineering teams. Read-only MCP, pluggable secret/PHI lint, sync-mechanism agnostic.",
+  "description": "Typed, local-first memory for Claude Code — decisions, domain rules, and runbooks Claude reads on its own. Human-confirmed writes, read-only MCP, benchmarked supersession-aware recall. Branch/PR-aware and team-shareable.",
   "author": {
     "name": "Strata Contributors"
   },

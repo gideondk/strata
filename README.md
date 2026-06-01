@@ -43,6 +43,17 @@ Six weeks later a teammate switches to your branch. Their Claude session reads t
 
 A month after that, your team refactors and a new ADR supersedes the old one. The old file stays in the vault, marked `status: superseded`, with a forward link to its replacement. You can still walk the chain — the old reasoning is preserved without pretending to be current.
 
+## Proven, not asserted
+
+"The current note wins, not the stale one" is the kind of claim every memory tool makes. Strata's is benchmarked, and the benchmark ships in the repo. `scripts/eval_temporal.py` builds a throwaway vault, runs recall with the supersession demotion off vs on, and measures whether a current note actually outranks the superseded twin a query also matches:
+
+```
+stale-suppression:  off  7/19   →   on  19/19   (95% CI [0.83, 1.0],  P(on>off) ≈ 1.0)
+current-recall@k:   19/19 either way — demoting the stale note costs nothing
+```
+
+Run it yourself: `bin/run-python.sh scripts/eval_temporal.py`. Honest scope: this proves the *mechanism* on a hand-built, leakage-checked set — it doesn't yet establish how often the stale-vs-current contest arises in real corpora, and n=19 is modest. The construction, the leakage check, and the caveats are in [`eval/temporal/`](./eval/temporal/). No "beats a vector DB" headline until that prevalence number exists.
+
 ## Local-first, by design
 
 The vault lives on your disk. Default location is `~/StrataVault`. Inside, one subfolder per repo, namespaced by your git remote. Inside that, one subfolder per scope. Plain markdown with YAML frontmatter.
