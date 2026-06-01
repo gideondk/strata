@@ -26,19 +26,24 @@ Beta-Binomial `P(ON > OFF)`.
 
 ## What it currently shows, and what it does NOT
 
-On the committed pilot (6 hand-built cases) the demotion flips stale-suppression
-from **0/6 to 6/6** with non-overlapping CIs — `P(ON>OFF) ≈ 1.0`.
+On the committed set (19 hand-built cases, leakage-checked) the demotion lifts
+stale-suppression from **7/19 (OFF) to 19/19 (ON)** — `P(ON>OFF) ≈ 1.0`, with
+non-overlapping 95% CIs (`OFF [0.19, 0.59]`, `ON [0.83, 1.0]`). current-recall@k
+is 19/19 in both arms, so the demotion costs nothing on findability.
 
 Read that honestly:
 
-- It **proves the mechanism**: whenever a stale note competes lexically with the
-  current one, the demotion deterministically puts current on top, at no cost to
-  recall.
-- It does **not** establish **prevalence** — the cases are deliberately *hard*
-  (superseded notes are term-dense on purpose to isolate the lever). How often a
-  stale note actually out-competes the current one in real corpora is unmeasured.
-- n=6 is **underpowered**. The CI on the ON arm is `[0.61, 1.0]`. Grow the set
-  and re-run a power analysis before treating any number as established.
+- It **proves the mechanism**: whenever a stale note competes with the current
+  one, the demotion deterministically puts current on top, at no cost to recall.
+  The demotion changes the outcome in **12 of 19** cases.
+- It does **not** establish real-world **prevalence**. The superseded notes are
+  deliberately term-dense to make the contest hard; ~37% of the time the current
+  note already wins without demotion. How often the contest actually arises in
+  real corpora is unmeasured.
+- n=19 is still **modest**. Grow the set and run a proper power analysis before
+  headlining a delta. The harness prints a leakage check (longest verbatim
+  query/note word-run) so contamination stays visible — keep it in the
+  paraphrase range (< 4).
 
 ## To grow it (the seq-4 work this seeds)
 

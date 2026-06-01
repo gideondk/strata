@@ -35,10 +35,40 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
 from pathlib import Path
+
+
+def _max_verbatim_run(cases: list[dict]) -> int:
+    """Worst-case train/test leakage measured the right way for short queries:
+    the longest CONTIGUOUS run of words a query shares verbatim with its own
+    evidence bodies. Sharing topic nouns is fine and expected (that's how a
+    query finds a note); leakage is copying a *phrase*. A paraphrase yields 1-2;
+    a query lifted from a note yields 4+."""
+    def words(s: str) -> list[str]:
+        return re.findall(r"[a-z0-9]+", (s or "").lower())
+
+    def longest_run(q: list[str], b: list[str]) -> int:
+        best = 0
+        for i in range(len(q)):
+            for j in range(len(b)):
+                run = 0
+                while (i + run < len(q) and j + run < len(b)
+                       and q[i + run] == b[j + run]):
+                    run += 1
+                best = max(best, run)
+        return best
+
+    worst = 0
+    for c in cases:
+        q = words(c["query"])
+        bodies = [c["current"]["body"]] + [o["body"] for o in c.get("superseded", [])]
+        for b in bodies:
+            worst = max(worst, longest_run(q, words(b)))
+    return worst
 
 
 def _default_cases() -> Path:
@@ -147,8 +177,10 @@ def run(cases_path: Path, k: int, as_json: bool) -> int:
         supp_off = es.fmt_rate(results["off"]["supp"], n)
         rec_on = es.fmt_rate(results["on"]["recall"], n)
         rec_off = es.fmt_rate(results["off"]["recall"], n)
+        leak = _max_verbatim_run(cases)
         summary = {
             "k": k, "n_cases": n,
+            "query_leakage_max_run_words": leak,
             "current_recall@k": {"on": rec_on, "off": rec_off,
                                  "P(on>off)": round(rec_delta, 3)},
             "stale_suppression": {"on": supp_on, "off": supp_off,
@@ -168,9 +200,12 @@ def run(cases_path: Path, k: int, as_json: bool) -> int:
             print("\n## current-recall@k")
             print(f"- ON : {rec_on}")
             print(f"- OFF: {rec_off}")
-            print("\n_Underpowered pilot — read the CI widths, not the point "
-                  "estimates. Grow the set + re-check power before claiming a "
-                  "delta._")
+            leak_flag = ("  (!) high - a query may be copied from a note"
+                         if leak >= 4 else "  (paraphrase range, OK)")
+            print(f"\n_leakage: longest verbatim query/note word-run = "
+                  f"{leak}{leak_flag}_")
+            print("_Modest set - read the CI widths, not the point estimates. "
+                  "Grow further + re-check power before headlining a delta._")
         return 0
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

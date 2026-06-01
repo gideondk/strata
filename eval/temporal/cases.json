@@ -1,49 +1,372 @@
 {
   "meta": {
-    "note": "PILOT temporal set (6 cases) — UNDERPOWERED by design. Read the CI widths, not the point estimates; grow the set and re-run a power check before treating any delta as established. Construction: LongMemEval-style fact decomposition (arXiv:2410.10813). Queries are paraphrases (not verbatim body text) to limit train/test leakage. Each superseded note is deliberately MORE term-dense on the query terms than its current counterpart, so the OFF arm favours the stale note — isolating the supersession demotion as the only lever that can flip the result.",
+    "note": "Temporal supersession set (18 cases). Still modest — read the CI widths, not the point estimates. Construction: LongMemEval-style fact decomposition (arXiv:2410.10813). Queries are paraphrases (shared vocabulary with the notes, but not verbatim slices of either body) to limit train/test leakage; the harness prints a leakage check. Each superseded note is deliberately MORE term-dense on the query terms than its current counterpart, so the OFF arm favours the stale note — isolating the supersession demotion as the only lever that can flip the result. Diverse domains (tools, policies, formats, conventions) so the result isn't an artefact of one phrasing.",
     "k": 5
   },
   "cases": [
     {
       "fact_id": "embeddings-store",
-      "query": "which store holds our vector embeddings",
-      "current": {"title": "pgvector for embeddings", "status": "accepted", "date": "2026-04-01", "body": "We keep vector embeddings in Postgres using the pgvector extension."},
-      "superseded": [{"title": "Pinecone for embeddings", "status": "superseded", "date": "2025-05-01", "body": "Our vector embeddings store is Pinecone. Pinecone holds the vector embeddings; the embeddings vector store is the Pinecone service for vector embeddings."}]
+      "query": "where are our embeddings kept",
+      "current": {
+        "title": "pgvector for embeddings",
+        "status": "accepted",
+        "date": "2026-04-01",
+        "body": "We keep vector embeddings in Postgres using the pgvector extension."
+      },
+      "superseded": [
+        {
+          "title": "Pinecone for embeddings",
+          "status": "superseded",
+          "date": "2025-05-01",
+          "body": "Our vector embeddings store is Pinecone. Pinecone holds the vector embeddings; the embeddings vector store is the Pinecone service for vector embeddings."
+        }
+      ]
     },
     {
       "fact_id": "token-rotation",
-      "query": "how often do we rotate API tokens",
-      "current": {"title": "Rotate tokens daily at the gateway", "status": "accepted", "date": "2026-03-12", "body": "API tokens rotate automatically every 24 hours at the gateway."},
-      "superseded": [{"title": "Manual weekly token rotation", "status": "superseded", "date": "2025-02-01", "body": "We rotate API tokens manually. Token rotation is weekly; rotate tokens by hand. Token rotation cadence for API tokens is the weekly manual token rotation."}]
+      "query": "how frequently are API tokens refreshed",
+      "current": {
+        "title": "Rotate tokens daily at the gateway",
+        "status": "accepted",
+        "date": "2026-03-12",
+        "body": "API tokens rotate automatically every 24 hours at the gateway."
+      },
+      "superseded": [
+        {
+          "title": "Manual weekly token rotation",
+          "status": "superseded",
+          "date": "2025-02-01",
+          "body": "We rotate API tokens manually. Token rotation is weekly; rotate tokens by hand. Token rotation cadence for API tokens is the weekly manual token rotation."
+        }
+      ]
     },
     {
       "fact_id": "event-order",
-      "query": "ordering of the order lifecycle events",
-      "current": {"title": "OrderPriced fires before OrderConfirmed", "status": "accepted", "date": "2026-05-12", "body": "Order events emit OrderPriced before OrderConfirmed so confirmation carries the final price."},
-      "superseded": [{"title": "OrderConfirmed before OrderPriced", "status": "superseded", "date": "2025-01-20", "body": "Order lifecycle events: OrderConfirmed before OrderPriced. The order events ordering puts order confirmation first, then order pricing in the order event sequence."}]
+      "query": "in which sequence do order events fire",
+      "current": {
+        "title": "OrderPriced fires before OrderConfirmed",
+        "status": "accepted",
+        "date": "2026-05-12",
+        "body": "Order events emit OrderPriced before OrderConfirmed so confirmation carries the final price."
+      },
+      "superseded": [
+        {
+          "title": "OrderConfirmed before OrderPriced",
+          "status": "superseded",
+          "date": "2025-01-20",
+          "body": "Order lifecycle events: OrderConfirmed before OrderPriced. The order events ordering puts order confirmation first, then order pricing in the order event sequence."
+        }
+      ]
     },
     {
       "fact_id": "search-index",
-      "query": "what backs the search index",
-      "current": {"title": "Local SQLite FTS5 index", "status": "accepted", "date": "2026-05-30", "body": "The search index is a local SQLite FTS5 database."},
-      "superseded": [{"title": "Elasticsearch for search", "status": "superseded", "date": "2025-03-15", "body": "The search index runs on Elasticsearch. Elasticsearch backs the search; the search index cluster is Elasticsearch serving the search index for full-text search index queries."}]
+      "query": "what powers our search index",
+      "current": {
+        "title": "Local SQLite FTS5 index",
+        "status": "accepted",
+        "date": "2026-05-30",
+        "body": "The search index is a local SQLite FTS5 database."
+      },
+      "superseded": [
+        {
+          "title": "Elasticsearch for search",
+          "status": "superseded",
+          "date": "2025-03-15",
+          "body": "The search index runs on Elasticsearch. Elasticsearch backs the search; the search index cluster is Elasticsearch serving the search index for full-text search index queries."
+        }
+      ]
     },
     {
       "fact_id": "deploy-target",
-      "query": "where do we deploy the service",
-      "current": {"title": "Deploy to Fly.io", "status": "accepted", "date": "2026-04-22", "body": "The service deploys to Fly.io."},
-      "superseded": [{"title": "Deploy to Heroku", "status": "superseded", "date": "2024-11-01", "body": "We deploy the service to Heroku. The service deploy target is Heroku; deploys run on Heroku dynos and the service deploy pipeline pushes the service to Heroku."}]
+      "query": "where is the service deployed",
+      "current": {
+        "title": "Deploy to Fly.io",
+        "status": "accepted",
+        "date": "2026-04-22",
+        "body": "The service deploys to Fly.io."
+      },
+      "superseded": [
+        {
+          "title": "Deploy to Heroku",
+          "status": "superseded",
+          "date": "2024-11-01",
+          "body": "We deploy the service to Heroku. The service deploy target is Heroku; deploys run on Heroku dynos and the service deploy pipeline pushes the service to Heroku."
+        }
+      ]
     },
     {
       "fact_id": "cache-layer",
       "query": "what do we use for caching",
-      "current": {"title": "In-process LRU cache", "status": "accepted", "date": "2026-05-02", "body": "Caching is an in-process LRU cache."},
-      "superseded": [{"title": "Redis cache cluster", "status": "superseded", "date": "2025-04-10", "body": "We use Redis for caching. The cache layer is a Redis cache cluster; caching uses Redis, the Redis cache serves all caching for the cache layer."}]
+      "current": {
+        "title": "In-process LRU cache",
+        "status": "accepted",
+        "date": "2026-05-02",
+        "body": "Caching is an in-process LRU cache."
+      },
+      "superseded": [
+        {
+          "title": "Redis cache cluster",
+          "status": "superseded",
+          "date": "2025-04-10",
+          "body": "We use Redis for caching. The cache layer is a Redis cache cluster; caching uses Redis, the Redis cache serves all caching for the cache layer."
+        }
+      ]
+    },
+    {
+      "fact_id": "message-queue",
+      "query": "what message queue do we run",
+      "current": {
+        "title": "NATS for messaging",
+        "status": "accepted",
+        "date": "2026-05-18",
+        "body": "Our message queue for messaging is NATS."
+      },
+      "superseded": [
+        {
+          "title": "RabbitMQ message queue",
+          "status": "superseded",
+          "date": "2025-02-12",
+          "body": "The message queue is RabbitMQ. RabbitMQ is our messaging broker; the RabbitMQ message queue handles messaging, and the message queue broker is RabbitMQ."
+        }
+      ]
+    },
+    {
+      "fact_id": "auth-method",
+      "query": "how do users authenticate",
+      "current": {
+        "title": "OAuth2 via the identity provider",
+        "status": "accepted",
+        "date": "2026-03-30",
+        "body": "Users authenticate with OAuth2 through the identity provider."
+      },
+      "superseded": [
+        {
+          "title": "Cookie session authentication",
+          "status": "superseded",
+          "date": "2024-12-05",
+          "body": "Users authenticate with session cookies. Cookie-based authentication: the login sets a session cookie; authentication relies on the session cookie for user authentication."
+        }
+      ]
+    },
+    {
+      "fact_id": "api-style",
+      "query": "what API style do services expose",
+      "current": {
+        "title": "gRPC service APIs",
+        "status": "accepted",
+        "date": "2026-04-15",
+        "body": "Services expose gRPC APIs as the API style."
+      },
+      "superseded": [
+        {
+          "title": "REST APIs",
+          "status": "superseded",
+          "date": "2025-01-08",
+          "body": "Services expose REST APIs. The API style is REST; REST endpoints expose the service API, and the REST API style defines the service API surface."
+        }
+      ]
+    },
+    {
+      "fact_id": "ci-runner",
+      "query": "where does continuous integration run",
+      "current": {
+        "title": "GitHub Actions for CI",
+        "status": "accepted",
+        "date": "2026-05-20",
+        "body": "Continuous integration runs on GitHub Actions."
+      },
+      "superseded": [
+        {
+          "title": "Jenkins CI server",
+          "status": "superseded",
+          "date": "2024-10-22",
+          "body": "Continuous integration runs on Jenkins. The CI server is Jenkins; Jenkins pipelines run CI, and the Jenkins CI runner executes the continuous integration jobs."
+        }
+      ]
+    },
+    {
+      "fact_id": "id-format",
+      "query": "what format are entity identifiers",
+      "current": {
+        "title": "UUIDv7 identifiers",
+        "status": "accepted",
+        "date": "2026-05-06",
+        "body": "Entity identifiers use the UUIDv7 format."
+      },
+      "superseded": [
+        {
+          "title": "Auto-increment integer ids",
+          "status": "superseded",
+          "date": "2024-09-30",
+          "body": "Entity identifiers are auto-increment integers. The identifier format is a sequential integer; integer primary keys give each entity an integer identifier in integer format."
+        }
+      ]
+    },
+    {
+      "fact_id": "branching-model",
+      "query": "what is our branching strategy",
+      "current": {
+        "title": "Trunk-based development",
+        "status": "accepted",
+        "date": "2026-04-28",
+        "body": "Our git branching model is trunk-based development."
+      },
+      "superseded": [
+        {
+          "title": "GitFlow branching",
+          "status": "superseded",
+          "date": "2024-11-18",
+          "body": "Our git branching model is GitFlow. GitFlow uses release branches and feature branches; the GitFlow branching model defines our branching with long-lived branches."
+        }
+      ]
+    },
+    {
+      "fact_id": "log-format",
+      "query": "how are application logs structured",
+      "current": {
+        "title": "Structured JSON logs",
+        "status": "accepted",
+        "date": "2026-05-09",
+        "body": "Application logs are structured JSON logs."
+      },
+      "superseded": [
+        {
+          "title": "Plaintext line logs",
+          "status": "superseded",
+          "date": "2025-01-30",
+          "body": "Application logs are plaintext line logs. Logging writes unstructured plain text log lines; the log format is plain text and logs are text log lines."
+        }
+      ]
+    },
+    {
+      "fact_id": "secret-store",
+      "query": "where are application secrets stored",
+      "current": {
+        "title": "Secrets in cloud KMS",
+        "status": "accepted",
+        "date": "2026-05-22",
+        "body": "Application secrets are stored in the cloud KMS."
+      },
+      "superseded": [
+        {
+          "title": "Secrets in dotenv files",
+          "status": "superseded",
+          "date": "2024-12-20",
+          "body": "Application secrets are stored in dotenv files. Secrets live in .env environment files; the secret store is dotenv, and secrets are kept in env files."
+        }
+      ]
+    },
+    {
+      "fact_id": "retry-policy",
+      "query": "how do we retry failed calls",
+      "current": {
+        "title": "Exponential backoff with jitter",
+        "status": "accepted",
+        "date": "2026-04-19",
+        "body": "Failed calls retry with exponential backoff and jitter."
+      },
+      "superseded": [
+        {
+          "title": "Fixed-interval retries",
+          "status": "superseded",
+          "date": "2025-02-25",
+          "body": "Failed calls retry on a fixed interval. The retry policy is a constant retry interval; retries use fixed-delay retries and a fixed retry interval for every retry."
+        }
+      ]
+    },
+    {
+      "fact_id": "wire-format",
+      "query": "how are service messages serialized on the wire",
+      "current": {
+        "title": "Protobuf wire format",
+        "status": "accepted",
+        "date": "2026-05-14",
+        "body": "The wire format for service messages is Protobuf."
+      },
+      "superseded": [
+        {
+          "title": "JSON over the wire",
+          "status": "superseded",
+          "date": "2025-01-12",
+          "body": "The wire format for service messages is JSON. JSON payloads go over the wire; the JSON wire format serializes service messages as JSON on the wire."
+        }
+      ]
+    },
+    {
+      "fact_id": "test-framework",
+      "query": "which framework do we run tests with",
+      "current": {
+        "title": "pytest test suite",
+        "status": "accepted",
+        "date": "2026-05-25",
+        "body": "The test framework running our suite is pytest."
+      },
+      "superseded": [
+        {
+          "title": "unittest framework",
+          "status": "superseded",
+          "date": "2024-10-10",
+          "body": "The test framework running our suite is unittest. unittest TestCase classes are the test framework; the unittest framework runs the tests in the test suite."
+        }
+      ]
+    },
+    {
+      "fact_id": "feature-flags",
+      "query": "how are features toggled",
+      "current": {
+        "title": "Config-file feature flags",
+        "status": "accepted",
+        "date": "2026-05-03",
+        "body": "We gate features with config-file feature flags."
+      },
+      "superseded": [
+        {
+          "title": "LaunchDarkly feature flags",
+          "status": "superseded",
+          "date": "2025-03-08",
+          "body": "We gate features with LaunchDarkly. LaunchDarkly is our feature flag service; feature flagging and feature gating use LaunchDarkly remote feature flags."
+        }
+      ]
+    },
+    {
+      "fact_id": "rate-limit",
+      "query": "what governs our rate limiting",
+      "current": {
+        "title": "Token-bucket rate limiting",
+        "status": "accepted",
+        "date": "2026-05-11",
+        "body": "Request rate limiting is enforced with a token-bucket limiter."
+      },
+      "superseded": [
+        {
+          "title": "Fixed-window rate limiting",
+          "status": "superseded",
+          "date": "2025-02-02",
+          "body": "Request rate limiting is enforced with a fixed window. The rate limiting uses a fixed-window counter; fixed-window rate limiting counts requests per window for rate limiting."
+        }
+      ]
     }
   ],
   "distractors": [
-    {"title": "Code style", "body": "We use four-space indentation and type hints across the codebase."},
-    {"title": "Standup", "body": "The daily standup happens at ten in the morning in the team channel."},
-    {"title": "Release cadence", "body": "A release is cut every second Thursday afternoon."}
+    {
+      "title": "Code style",
+      "body": "We use four-space indentation and type hints across the codebase."
+    },
+    {
+      "title": "Standup",
+      "body": "The daily standup happens at ten in the morning in the team channel."
+    },
+    {
+      "title": "Release cadence",
+      "body": "A release is cut every second Thursday afternoon."
+    },
+    {
+      "title": "Onboarding",
+      "body": "New engineers pair with a buddy for their first two weeks."
+    },
+    {
+      "title": "Docs site",
+      "body": "The documentation site is published from the docs directory on each merge."
+    }
   ]
 }
