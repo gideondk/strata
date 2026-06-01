@@ -30,6 +30,15 @@
             "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/on-bash.py\""
           }
         ]
+      },
+      {
+        "matcher": "mcp__.*recall",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/mark-recall-used.py\""
+          }
+        ]
       }
     ],
     "PreCompact": [

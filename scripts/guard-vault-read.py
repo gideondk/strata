@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
-"""PreToolUse guard: steer Claude off raw Read/Grep/Glob of the vault and onto
-recall — using the proven "block-once-then-allow" pattern.
+"""PreToolUse guard: keep Claude on recall, off raw Read/Grep/Glob of the vault.
 
 The whole point of Strata's retrieval — ranked hybrid recall, supersession
 demotion, quarantine of unreviewed (`status: auto`) and invalidated notes — only
-applies when memory is read through the `recall` MCP tool (or `/strata:find`).
-A raw grep of the vault returns the RAW corpus: superseded and invalidated notes
-at full weight, unranked. That silently defeats the moat.
+applies when memory is read through the `recall` MCP tool. A raw grep of the
+vault returns the RAW corpus: superseded and invalidated notes at full weight,
+unranked. That silently defeats the moat.
 
-Pattern (after codebase-memory-mcp's "CBM-first" gate): don't hard-block
-forever — that feels broken and removes the legitimate fallback. Instead, the
-FIRST time per session Claude greps the vault, DENY with a redirect to recall
-(so it learns the tool exists); after that, allow, so a deliberate fallback
-still works. A single Read of one note is allowed but gets a one-time reminder.
+FIRM gate (stronger than codebase-memory-mcp's warn-once variant): a vault
+Grep/Glob is DENIED until `recall` has actually been used this session — then
+allowed, so a deliberate fallback still works once the proper path has been
+exercised. The recall-used marker is set by the PostToolUse hook
+`mark-recall-used.py`. A single Read of one note is allowed but gets a one-time
+reminder.
 
-State is a per-session marker in plugin-data. Best-effort, fail-open: any error
-emits nothing (exit 0) and never breaks a tool call. The plugin's own scripts
-read the vault via Bash/run-python.sh, not these tools, so they're unaffected.
+Best-effort, fail-open: any error emits nothing (exit 0) and never breaks a tool
+call. The plugin's own scripts read the vault via Bash/run-python.sh, not these
+tools, so they're unaffected.
 """
 from __future__ import annotations
 
@@ -26,7 +26,8 @@ import sys
 from pathlib import Path
 
 import lib_loader  # noqa: F401
-from lib import plugin_data_dir, vault_root
+import vault_guard_state as state
+from lib import vault_root
 
 
 def _target(tool_input: dict) -> str | None:
@@ -43,23 +44,6 @@ def _in_vault(candidate: str) -> bool:
     return target == root or root in target.parents
 
 
-def _gate(session_id: str, kind: str) -> Path:
-    safe = "".join(c for c in session_id if c.isalnum() or c in "-_")[:64] or "_"
-    return plugin_data_dir() / f"vault-guard-{kind}-{safe}"
-
-
-def _seen(session_id: str, kind: str) -> bool:
-    """Has this steer already fired this session? Marks it if not (so it's a
-    once-per-session redirect, never a permanent wall)."""
-    g = _gate(session_id, kind)
-    if g.exists():
-        return True
-    with contextlib.suppress(OSError):
-        g.parent.mkdir(parents=True, exist_ok=True)
-        g.touch()
-    return False
-
-
 def main() -> int:
     with contextlib.suppress(Exception):
         data = json.load(sys.stdin)
@@ -73,21 +57,21 @@ def main() -> int:
             return 0
 
         if tool in ("Grep", "Glob"):
-            if _seen(session_id, "search"):
-                return 0  # already redirected this session — preserve fallback
+            if state.is_set(session_id, "recall-used"):
+                return 0  # recall exercised this session — allow the fallback
             print(json.dumps({"hookSpecificOutput": {
                 "hookEventName": "PreToolUse",
                 "permissionDecision": "deny",
                 "permissionDecisionReason": (
-                    "Use the `recall` MCP tool (or `/strata:find`) instead of "
-                    "grepping the Strata vault. Recall is ranked and "
+                    "Use the `recall` MCP tool to search Strata memory — not a "
+                    "raw grep of the vault. Recall is ranked and "
                     "supersession-aware: it demotes superseded/deprecated notes "
-                    "and hides invalidated + unreviewed ones, which a raw grep "
-                    "does not — so grep can surface a stale note as if current. "
-                    "(If you genuinely need a raw scan, retry; this redirect "
-                    "fires once per session.)"),
+                    "and hides invalidated + unreviewed ones, which grep does "
+                    "not, so grep can surface a stale note as if current. Raw "
+                    "vault grep stays blocked until you've used `recall` once "
+                    "this session; after that it's allowed as a fallback."),
             }}))
-        elif tool == "Read" and not _seen(session_id, "read"):
+        elif tool == "Read" and not state.mark_if_unset(session_id, "read"):
             print(json.dumps({"hookSpecificOutput": {
                 "hookEventName": "PreToolUse",
                 "additionalContext": (
