@@ -33,6 +33,7 @@ from lib import (
     ensure_dir,
     is_git_repo,
     lessons_dir,
+    memory_dir,
     origin_branch,
     pr_context_dir,
     safe_slug,
@@ -198,7 +199,13 @@ def main() -> int:
         lint_check.emit_warnings(frontmatter_str + body, label=f"{args.scope} note")
 
     write_text(path, frontmatter_str + body + "\n")
-    print(f"[strata] saved {path}")
+    # Friendly one-line receipt (vault-relative, not an absolute path) — the
+    # index-regeneration chatter is silenced unless STRATA_VERBOSE.
+    try:
+        where = str(path.relative_to(memory_dir()))
+    except Exception:
+        where = path.name
+    print(f'✓ Strata: saved "{args.topic}" → {where}')
 
     # Telemetry for graduated autonomy: per-kind save + whether it came through
     # the Stop-hook draft-accept flow (the accept-rate signal). Best-effort.

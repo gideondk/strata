@@ -327,15 +327,17 @@ def main() -> int:
         lint_check.emit_warnings(composed, label="decision")
 
     write_text(path, composed + "\n")
-    print(f"[strata] decision created: {path}")
+    # Friendly one-line receipt (vault-relative). Index chatter is silenced
+    # unless STRATA_VERBOSE.
+    new_rel = path.relative_to(memory_dir()).as_posix()
+    print(f'✓ Strata: recorded decision "{args.title}" → {new_rel}')
 
     # Bidirectional supersession: update each predecessor's frontmatter so
     # the link survives re-indexing.
-    new_rel = path.relative_to(memory_dir()).as_posix()
     for pred in args.supersedes:
         linked = _link_predecessor(memory_dir(), pred, new_rel)
         if linked:
-            print(f"[strata] linked predecessor: {linked}")
+            print(f"  + supersedes {linked}")
 
     # Refresh index
     import importlib.util

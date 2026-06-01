@@ -7,10 +7,19 @@ clobber.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import lib_loader  # noqa: F401
 from lib import first_heading, info, memory_dir, memory_display
+
+
+def _vinfo(msg: str) -> None:
+    """Index-regeneration chatter (fts5 counts, regenerated files) — internal
+    side-effect noise that clutters the transcript on every save/decide. Silent
+    unless STRATA_VERBOSE is set; the caller's one-line receipt is the signal."""
+    if os.environ.get("STRATA_VERBOSE"):
+        info(msg)
 
 
 def _section(title: str, items: list[str]) -> str:
@@ -68,7 +77,7 @@ def regenerate_index() -> None:
     try:
         import db as _db
         counts = _db.reindex(force=False)
-        info(
+        _vinfo(
             f"fts5: indexed={counts['indexed']} "
             f"removed={counts['removed']} unchanged={counts['unchanged']}"
         )
@@ -86,7 +95,7 @@ def regenerate_index() -> None:
                 "vault is intact._\n")
 
     (mem / "INDEX.md").write_text(body + "\n", encoding="utf-8")
-    info(f"regenerated {memory_display()}INDEX.md")
+    _vinfo(f"regenerated {memory_display()}INDEX.md")
 
     # index.html — the richer, glanceable team surface (open it via file://).
     # Written atomically (tmp + os.replace) so a browser reload never catches a
@@ -99,7 +108,7 @@ def regenerate_index() -> None:
         tmp = mem / "index.html.tmp"
         tmp.write_text(html_body, encoding="utf-8")
         os.replace(tmp, mem / "index.html")
-        info(f"regenerated {memory_display()}index.html")
+        _vinfo(f"regenerated {memory_display()}index.html")
     except Exception as e:
         info(f"index.html generation skipped: {e}")
 

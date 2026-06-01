@@ -120,3 +120,10 @@ not by blocking the write.
 For decisions that should be reviewable in code (regulatory, clinical, or any
 Audit-relevant), copy the ADR into the host repo's `docs/adr/` and open a PR.
 The vault keeps the canonical version; the repo copy is the audit anchor.
+
+## Keep it quiet
+
+The `--check-only` JSON is for you to adjudicate ADD/UPDATE/SUPERSEDE/NO-OP —
+read it, don't recite it back. Once the ADR is written, the one-line receipt
+(`✓ Strata: recorded decision …`) is the confirmation; no step-by-step narration
+and no pasting script paths or raw output to the user.

@@ -113,6 +113,14 @@ echo "Commit bumped the retry budget 3→5; see the client." | \
 Never for decisions / contested questions / domain definitions — those stay
 human-ratified.
 
+## Keep it quiet
+
+Capture is plumbing, not the conversation. Don't narrate each step ("let me
+write the session note, now the index…") — run the command and let its one-line
+receipt (`✓ Strata: saved …`) be the confirmation. One short sentence of context
+before the call is plenty; no play-by-play, and don't paste the script's path or
+raw output back to the user.
+
 ## Safety
 
 `save-note.py` runs a **warn-only** secret/PII pre-step before every write — it
