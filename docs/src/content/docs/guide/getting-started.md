@@ -105,7 +105,7 @@ When you ask a question that overlaps the vault (*"what's the token rotation app
 
 - Capture **decisions** as you make them: `/strata:decide "Use Postgres for tenant data"`
 - Define **domain terms** when conventions crystallise: `/strata:domain order-aggregate`
-- Run `/strata:bootstrap` once if you have existing planning docs to migrate ([bootstrap guide](/guide/bootstrap/))
-- Install [Graphify](https://graphifylabs.ai) for code-graph awareness ([code graph guide](/guide/code-graph/))
+- Run `/strata:bootstrap` once if you have existing planning docs to migrate ([bootstrap guide](../bootstrap/))
+- Install [Graphify](https://graphifylabs.ai) for code-graph awareness ([code graph guide](../code-graph/))
 
 The vault grows as you work. There's no upfront ceremony. Write when something deserves to survive the conversation.

@@ -128,4 +128,4 @@ It's not networked. No telemetry, no LLM calls from Strata code, no external ser
 
 ---
 
-Next: [Skills](/guide/skills/) — every slash command and when each one auto-invokes.
+Next: [Skills](../skills/) — every slash command and when each one auto-invokes.

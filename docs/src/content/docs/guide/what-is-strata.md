@@ -54,4 +54,4 @@ Everything else (correcting notes, migrating old docs, exporting back into the r
 
 The next pages explain the model (why three kinds of memory, not one), the slash commands, and how Strata talks to Claude under the hood. Pick whatever order you like; they're independent.
 
-For five-minute setup with no theory, jump to [Getting started](/guide/getting-started/).
+For five-minute setup with no theory, jump to [Getting started](../getting-started/).

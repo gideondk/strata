@@ -25,7 +25,7 @@ Every slash command Strata ships. Some are auto-invokable: when you describe a s
 | `/strata:find <terms>` | "Search for…", "do we have notes about…" |
 | `/strata:resume` | New session, surfaces last branch + latest notes |
 
-Most reads happen via MCP rather than skill invocation. Claude calls `memory_search`, `memory_insights`, `recent_decisions`, etc. automatically when conversation overlaps known topics. See [MCP tools](/guide/mcp-tools/).
+Most reads happen via MCP rather than skill invocation. Claude calls `memory_search`, `memory_insights`, `recent_decisions`, etc. automatically when conversation overlaps known topics. See [MCP tools](../mcp-tools/).
 
 ## User-only (high stakes)
 
@@ -43,7 +43,7 @@ These never auto-invoke. The audit trail must reflect the user's explicit intent
 | Command | Use |
 |---|---|
 | `/strata:init` | One-time vault setup for a repo |
-| `/strata:bootstrap` | One-time migration of existing planning docs ([bootstrap guide](/guide/bootstrap/)) |
+| `/strata:bootstrap` | One-time migration of existing planning docs ([bootstrap guide](../bootstrap/)) |
 | `/strata:graphify` | Build / refresh the code graph |
 
 ## Auto-invocation rules
@@ -61,4 +61,4 @@ Skills call each other through skill instructions, not Python imports. `/strata:
 
 ---
 
-Next: [Bootstrap](/guide/bootstrap/) — the one-time migration that pulls existing planning docs into the vault.
+Next: [Bootstrap](../bootstrap/) — the one-time migration that pulls existing planning docs into the vault.

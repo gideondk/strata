@@ -48,7 +48,7 @@ Four options, depending on what's wrong:
 - **Supersede** — a new decision replaces an old one. `/strata:decide --supersedes <old>`
 - **Forget** — the note should never have been written. `/strata:forget <path>`
 
-Every operation leaves an audit trail. See [Correcting the vault](/guide/correcting/).
+Every operation leaves an audit trail. See [Correcting the vault](../correcting/).
 
 ## What if I already have planning docs?
 

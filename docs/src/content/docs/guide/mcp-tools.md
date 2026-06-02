@@ -121,7 +121,7 @@ The headline tool. Token-budgeted projection of the graph. Top tier carries full
 code_map(focus=["OrderAggregate"], budget=1500)
 ```
 
-See [code graph guide](/guide/code-graph/) for the full design.
+See [code graph guide](../code-graph/) for the full design.
 
 ## Resources surface
 
@@ -137,4 +137,4 @@ The boundary is firm. Even `bootstrap_scan` (which enumerates) is read-only; the
 
 ---
 
-Next: [Architecture](/guide/architecture/) — how the pieces fit, and what to read when you want to extend.
+Next: [Architecture](../architecture/) — how the pieces fit, and what to read when you want to extend.

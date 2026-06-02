@@ -155,5 +155,5 @@ is one command. Typically takes seconds.
 
 ---
 
-Next: [Correcting the vault](/guide/correcting/). Fix notes, mark them
+Next: [Correcting the vault](../correcting/). Fix notes, mark them
 Invalidated, supersede ADRs.

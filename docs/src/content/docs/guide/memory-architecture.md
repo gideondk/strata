@@ -60,4 +60,4 @@ The triad is a guide, not a law. Edge cases:
 
 ## Reading order
 
-If you're new: [Getting started](/guide/getting-started/) → [Concepts](/guide/concepts/) → this page (you're here) → [Skills](/guide/skills/).
+If you're new: [Getting started](../getting-started/) → [Concepts](../concepts/) → this page (you're here) → [Skills](../skills/).

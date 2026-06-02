@@ -17,6 +17,11 @@ const links = [
   { n: '08', href: '/guide/mcp-tools/',           title: 'MCP tools',           blurb: 'The ambient surface plus the memory-recall subagent.',       icon: 'wire' },
   { n: '09', href: '/guide/architecture/',        title: 'Architecture',        blurb: 'How the pieces fit. The seam between skills, scripts, vault.', icon: 'core' },
 ];
+
+// Astro does NOT prepend the configured `base` to hrefs built in component
+// JS (only to markdown links), so under a sub-path deploy (e.g. /strata/) a
+// bare "/guide/..." 404s. Prepend the base explicitly.
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <section class="link-grid">
@@ -25,7 +30,7 @@ const links = [
 
   <div class="lg-cards">
     {links.map((l) => (
-      <a class="lg-card" href={l.href}>
+      <a class="lg-card" href={base + l.href}>
         <div class="lg-icon" aria-hidden="true">
           {l.icon === 'flag' && (
             <svg viewBox="0 0 32 32" fill="none">
