@@ -1,6 +1,6 @@
 ---
 title: Skills
-description: "Every slash command Strata ships. Some are auto-invokable: when you describe a situation that matches the skill's description, Claude triggers it without you ty"
+description: "Every slash command Strata ships. Some are auto-invokable: when you describe a matching situation, Claude triggers them without you typing the command. Others are user-only."
 ---
 
 Every slash command Strata ships. Some are auto-invokable: when you describe a situation that matches the skill's description, Claude triggers it without you typing the command. Others are user-only. They take destructive or audit-sensitive actions.

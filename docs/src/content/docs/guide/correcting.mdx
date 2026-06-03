@@ -9,7 +9,7 @@ Knowledge changes. A domain definition shifts after a refactor. An
 ADR turns out to be wrong. A lesson misremembered the conclusion.
 
 Strata has four ways to handle it. Each carries a different blast
-Radius.
+radius.
 
 <NoteLifecycle />
 
@@ -55,13 +55,13 @@ The script:
 5. Refreshes the FTS index.
 
 `--set` is repeatable. `--reason` is strongly recommended. It's the
-Durable audit trail.
+durable audit trail.
 
 ### Auto-invocation
 
 Fires on *"fix the note about X"*, *"the part about Y should say Z"*,
 or *"update the status of `<slug>`"*. Claude proposes the edit, you
-Approve, the script writes.
+approve, the script writes.
 
 ## Invalidate
 
@@ -81,7 +81,7 @@ flow with required `--reason` and optional `--replaced-by`.
 ```
 
 The note stays in the vault. Readable in Obsidian, in `git log`, in
-Audit reviews. But:
+audit reviews. But:
 
 - `status: invalidated` joins the frontmatter.
 - `invalidated_at`, `invalidated_by`, `invalidation_reason` are
@@ -96,7 +96,7 @@ Audit reviews. But:
 - Opt back in with `include_invalidated=true` when you need history.
 
 `--reason` is required. Invalidation without an explanation is just
-Deletion in disguise.
+deletion in disguise.
 
 ### Auto-invocation
 
@@ -106,7 +106,7 @@ outdated"*, *"deprecate \<note\>"*.
 ## Supersede (decisions only)
 
 Decisions get special treatment. A new ADR can formally retire an
-Older one with bidirectional linking.
+older one with bidirectional linking.
 
 ```bash
 /strata:decide "Use Postgres with pgvector" \
@@ -116,11 +116,11 @@ Older one with bidirectional linking.
 The new ADR records `supersedes: [2026-03-15-pinecone-for-embeddings]`.
 The old ADR gets `superseded_by: [<new-path>]` written back into its
 frontmatter, and its status flips to `superseded`. The chain survives
-Re-indexing on any machine.
+re-indexing on any machine.
 
 Why not invalidate? Because supersession captures the reasoning
 through the new ADR's body. The whole point of an ADR is the
-Reasoning, so the successor carries that load. A one-line `--reason`
+reasoning, so the successor carries that load. A one-line `--reason`
 on invalidate can't.
 
 Strata never deletes a superseded decision — it expires and rewrites.
@@ -141,11 +141,11 @@ The hard delete. Use only when the note shouldn't exist at all.
 ```
 
 The note moves to `<vault>/<repo>/.trash/` with a JSONL audit log
-Entry recording who, when, why, and SHA256. Recoverable. `.trash/`
+entry recording who, when, why, and SHA256. Recoverable. `.trash/`
 is preserved unless you explicitly clean it.
 
 `--reason` is required. Never auto-invokes. Forget only fires on
-Explicit user request. The audit trail must reflect intent.
+explicit user request. The audit trail must reflect intent.
 
 ## Auto-detection of drift
 
@@ -157,7 +157,7 @@ the current `graph.json`, `/strata:review` surfaces the note.
 
 Path claims that broke. For ADRs and lessons extracted via bootstrap,
 `plan_correlate` re-runs to detect when previously-resolved paths no
-Longer exist.
+longer exist.
 
 Staleness by usage. `/strata:review` also scores durable notes on an
 importance-weighted decay curve: a decision that's old (by its own

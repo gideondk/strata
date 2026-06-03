@@ -21,11 +21,11 @@
 
 ---
 
-Strata gives Claude Code structured memory: the decisions you've made, the domain rules you follow, the runbooks you reach for — kept as plain markdown on your disk, each on its own retrieval path. Claude reads them on its own through the MCP layer, so you stop pasting context dumps and you stop hand-maintaining a giant prompt file.
+Strata gives Claude Code structured memory: the decisions you've made, the domain rules you follow, the runbooks you reach for. They're kept as plain markdown on your disk, each on its own retrieval path. Claude reads them on its own through the MCP layer, so you stop pasting context dumps and you stop hand-maintaining a giant prompt file.
 
-The usual alternatives make recall worse. One big context file blows the window and answers in the wrong shape: you ask how to add a service and get a paragraph defining what a service is. A vector database returns whatever pattern-matches most recently, which is often a stale note that's since been corrected — handed back with full confidence. Strata writes only what you confirm and retires old notes explicitly, so what comes back is current.
+The usual alternatives make recall worse. One big context file blows the window and answers in the wrong shape: you ask how to add a service and get a paragraph defining what a service is. A vector database returns whatever pattern-matches most recently, which is often a stale note that's since been corrected, handed back with full confidence. Strata writes only what you confirm and retires old notes explicitly, so what comes back is current.
 
-## Three kinds of memory, three retrieval paths
+## Three kinds of memory
 
 Recall works because memory isn't one thing. A decision you make once ages differently from a runbook you follow every week, so Strata keeps them apart:
 
@@ -41,18 +41,24 @@ You make a decision in conversation. You say "let's go with the section-at-once 
 
 Six weeks later a teammate switches to your branch. Their Claude session reads the per-branch notes you saved and primes itself with what you were in the middle of. They ask "why didn't we use per-field PUTs?" and Claude pulls the rejected-alternatives section straight from your ADR, file path included. Nobody digs through Slack, and nobody has to interrupt you to ask.
 
-A month after that, your team refactors and a new ADR supersedes the old one. The old file stays in the vault, marked `status: superseded`, with a forward link to its replacement. You can still walk the chain — the old reasoning is preserved without pretending to be current.
+A month after that, your team refactors and a new ADR supersedes the old one. The old file stays in the vault, marked `status: superseded`, with a forward link to its replacement. You can still walk the chain: the old reasoning is preserved without pretending to be current.
 
-## Proven, not asserted
+## Does the supersession actually work?
 
-"The current note wins, not the stale one" is the kind of claim every memory tool makes. Strata's is benchmarked, and the benchmark ships in the repo. `scripts/eval_temporal.py` builds a throwaway vault, runs recall with the supersession demotion off vs on, and measures whether a current note actually outranks the superseded twin a query also matches:
+Plenty of tools claim the current note beats the stale one. Here's Strata's, measured. `scripts/eval_temporal.py` builds a throwaway vault and runs recall over the same cases twice: once with supersession demotion off, once with it on. It checks whether the current note outranks the superseded twin that a query also matches.
 
 ```
 stale-suppression:  off  7/19   →   on  19/19      (paired McNemar: 12–0, exact p ≈ 0.0005)
-current-recall@k:   19/19 either way — demoting the stale note costs nothing
+current-recall@k:   19/19 either way; demoting the stale note costs nothing
 ```
 
-It's a paired ablation — every case runs with the demotion off and on, so the result is a real significance test, not a vibe. Run it yourself: `bin/run-python.sh scripts/eval_temporal.py`. Honest scope: this proves the *mechanism* on a hand-built, leakage-checked set — it doesn't establish how often the stale-vs-current contest arises in real corpora, and n=19 is modest. The construction, the leakage check, and the caveats are in [`eval/temporal/`](./eval/temporal/). No "beats a vector DB" headline until that prevalence number exists.
+Each case runs both ways, so it's a paired test you can rerun, not a number you have to take on faith:
+
+```text
+bin/run-python.sh scripts/eval_temporal.py
+```
+
+It proves the mechanism on a hand-built, leakage-checked set of 19 cases. What it doesn't prove: how often the stale-versus-current clash actually shows up in a real vault, and 19 is a small set. The cases, the leakage check, and the caveats are in [`eval/temporal/`](./eval/temporal/). No "beats a vector database" line here, and there won't be one until I can measure how common that clash really is.
 
 ## Local-first, by design
 

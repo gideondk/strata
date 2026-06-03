@@ -1,6 +1,6 @@
 ---
 title: Concepts
-description: "A short tour of the model. Two ideas drive everything: scopes (different kinds of knowledge live in different places) and branch awareness (PR-context separates"
+description: "A short tour of the model. Two ideas drive everything: scopes (different kinds of knowledge live in different places) and branch awareness (PR-context separates from durable truth)."
 ---
 
 A short tour of the model. Two ideas drive everything: **scopes** (different kinds of knowledge live in different places) and **branch awareness** (PR-context separates from durable truth).

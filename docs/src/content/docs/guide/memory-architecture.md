@@ -35,11 +35,11 @@ When you ask Claude *"how do we handle tenant data"*, the recall layer prefers:
 - excluding `procedural/` unless the question is shaped as "how do I..."
 - excluding `pr-context/` unless filtered by branch
 
-The progressive-disclosure pattern (Layer 1 → 2 → 3) means you almost always get Layer 1 (compact index) and only escalate to Layer 3 (full body) when needed. Token economy by default.
+The progressive-disclosure pattern (Layer 1 → 2 → 3) means you almost always get Layer 1 (compact index) and only escalate to Layer 3 (full body) when needed. That keeps token use low by default.
 
 ## What the model commits to
 
-The triad isn't a marketing carve-out. It's a design choice with real consequences for how the vault behaves:
+The triad is a design choice with real consequences for how the vault behaves:
 
 | Commitment | What it gets you |
 |---|---|

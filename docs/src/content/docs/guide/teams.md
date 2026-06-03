@@ -12,7 +12,7 @@ session. You do not need a team to get value. Everything on this page is the
 
 - **A shared vault.** Point everyone's plugin at the same synced folder and the
   same decisions, domain notes, and lessons are there for every teammate's
-  Claude session — no copy-paste, no "ask the person who knows".
+  Claude session. No copy-paste, no "ask the person who knows".
 - **Branch- and PR-aware context.** Per-branch working notes travel with the
   branch; when a teammate switches to it, their session primes on what was in
   flight. Notes archive when the PR merges.
@@ -27,10 +27,10 @@ session. You do not need a team to get value. Everything on this page is the
   [`SECURITY.md`](https://github.com/gideondk/strata/blob/main/SECURITY.md) for
   the regulated-codebase story.
 - **Supersession-aware recall, benchmarked.** When a current decision and the
-  one it replaced both match a query, recall puts the current one on top. That's
-  measured, not asserted — see `eval/temporal/` in the repo (paired McNemar,
-  exact p ≈ 0.0005 on the current set). Honest scope: proven as a mechanism;
-  real-world prevalence is still being measured.
+  one it replaced both match a query, recall puts the current one on top. The
+  repo ships the benchmark that shows it (`eval/temporal/`: paired McNemar,
+  exact p ≈ 0.0005 on a 19-case set). It proves the mechanism works; how often
+  that clash comes up in a real vault is still an open question.
 
 ## Team-scoped distribution
 
@@ -62,4 +62,4 @@ worse than one that doesn't:
   "team" is whoever shares the folder.
 
 If your team needs hard multi-writer guarantees or a hosted control plane,
-Strata isn't that today — and won't pretend to be.
+Strata isn't that today, and won't pretend to be.

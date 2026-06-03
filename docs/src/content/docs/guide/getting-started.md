@@ -103,8 +103,8 @@ When you ask a question that overlaps the vault (*"what's the token rotation app
 
 ## What to do next
 
-- Capture **decisions** as you make them: `/strata:decide "Use Postgres for tenant data"`
-- Define **domain terms** when conventions crystallise: `/strata:domain order-aggregate`
+- Capture decisions as you make them: `/strata:decide "Use Postgres for tenant data"`
+- Define domain terms when conventions crystallise: `/strata:domain order-aggregate`
 - Run `/strata:bootstrap` once if you have existing planning docs to migrate ([bootstrap guide](../bootstrap/))
 - Install [Graphify](https://graphifylabs.ai) for code-graph awareness ([code graph guide](../code-graph/))
 

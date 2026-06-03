@@ -5,12 +5,11 @@ description: "Graphify integration. The vault becomes code-aware: notes verify s
 
 [Graphify](https://graphifylabs.ai) builds an AST graph of your repo.
 Install it alongside Strata and the vault becomes code-aware. Notes
-Verify their symbol references. Recall returns ranked structure
-Projections. Claude answers *"what does this aggregate emit"* from a
+verify their symbol references. Recall returns ranked structure
+projections. Claude answers *"what does this aggregate emit"* from a
 500-token compressed view, not by grepping 200 files.
 
-The layer that makes Strata pay for itself: token economy, not just
-Documentation.
+This is where the token economy pays off, not just documentation.
 
 ## Install Graphify
 
@@ -28,8 +27,8 @@ Strata doesn't depend on Graphify's Python. We parse the JSON it emits.
 ```
 
 Wraps `graphify update .`. AST-only path. No LLM key needed. Output
-Lands at `<repo>/graphify-out/graph.json`. Rebuild after material
-Code changes; the SessionStart primer tells you when it's stale.
+lands at `<repo>/graphify-out/graph.json`. Rebuild after material
+code changes; the SessionStart primer tells you when it's stale.
 
 ## What Strata does with the graph
 
@@ -86,7 +85,7 @@ Nine integration points.
 ## `code_map` in practice
 
 The dynamic projection is what Claude actually calls during a
-Conversation. From any session:
+conversation. From any session:
 
 ```text
 code_map(focus=["OrderAggregate"], budget=1500)
@@ -129,18 +128,18 @@ Pass `budget=2000` to widen or `budget=500` to tighten.
 ### Focus matching
 
 Exact label match wins. Substring-on-id is the fallback. Only
-Triggers when nothing matched exactly. Without that gating, a focus
+triggers when nothing matched exactly. Without that gating, a focus
 on `OrderAggregate` would drown in `OrderAggregateTests` and every
-Test fixture sharing the substring.
+test fixture sharing the substring.
 
 When focus matches nothing, output leads with `_no nodes matched
-Focus: ..._` and falls back to global hubs. You'll see the warning
+focus: ..._` and falls back to global hubs. You'll see the warning
 and can retry with a different spelling.
 
 ## Staleness is a first-class signal
 
 The code map is only as good as the graph it reads. When the graph
-Drifts behind HEAD:
+drifts behind HEAD:
 
 ```text
 ### Code graph (Graphify)
@@ -156,4 +155,4 @@ is one command. Typically takes seconds.
 ---
 
 Next: [Correcting the vault](../correcting/). Fix notes, mark them
-Invalidated, supersede ADRs.
+invalidated, supersede ADRs.

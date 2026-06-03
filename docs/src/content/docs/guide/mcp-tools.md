@@ -1,20 +1,20 @@
 ---
 title: MCP tools
-description: "Strata ships an MCP server (stdio transport) that exposes the vault and code graph as structured tools to Claude. Claude calls these automatically during conver"
+description: "Strata ships an MCP server (stdio transport) that exposes the vault and code graph as structured tools to Claude. Claude calls these automatically during conversations; you rarely invoke them yourself."
 ---
 
 Strata ships an MCP server (stdio transport) that exposes the vault and code graph as structured tools to Claude. Claude calls these automatically during conversations. You rarely invoke them yourself.
 
 All tools are **read-only**. Writes happen through visible bash invocations (skills running scripts) so the user sees state changes. The MCP surface is consultation only.
 
-## Two surfaces: ambient vs. on-demand
+## Two surfaces: ambient and on-demand
 
 Strata splits its tools across two layers to keep every conversation cheap:
 
 - **Ambient surface (7 tools)** — always present in Claude's tool palette. Small set, low context cost. Includes `recall` (the unified search entry point), `memory_status`, `current_pr`, `code_graph_status`, `code_map`, `plan_status`, `bootstrap_scan`.
 - **On-demand surface (12 tools)** — only invoked through the `strata:memory-recall` subagent. Heavier reads (`memory_search`, `memory_get`, `decision_chain`, `memory_insights`, etc.) happen in isolated subagent context; only a curated summary returns to the main conversation. This keeps the main session window from filling with tool-result text.
 
-The tools documented below are the **full catalogue** — both surfaces. Anything not in the ambient seven is reachable via the recall agent (Claude dispatches it automatically when you ask synthesis questions). For one-shot lookups, prefer `recall` directly; for cross-note synthesis, the agent.
+The tools documented below are the **full catalogue**, both surfaces. Anything not in the ambient seven is reachable via the recall agent, which Claude dispatches automatically when you ask synthesis questions. Use `recall` directly for one-shot lookups; use the agent for cross-note synthesis.
 
 ## Search & retrieve
 
@@ -115,7 +115,7 @@ Summary of the graph: node/edge counts, languages, age. Returns "not available" 
 
 ### `code_map(focus?, budget?, include_docs?)`
 
-The headline tool. Token-budgeted projection of the graph. Top tier carries full signatures. Middle tier carries file context. Low tier carries label only.
+Token-budgeted projection of the graph. Top tier carries full signatures, the middle tier carries file context, the low tier carries the label only.
 
 ```text
 code_map(focus=["OrderAggregate"], budget=1500)
