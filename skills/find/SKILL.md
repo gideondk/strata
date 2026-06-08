@@ -13,7 +13,7 @@ once recall has run and you need exact literal-string hits with line numbers.
 ## How
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/find.py" <term1> [<term2> ...] [--scope decisions|lessons|domain|pr-context|all]
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" find <term1> [<term2> ...] [--scope decisions|lessons|domain|pr-context|all]
 ```
 
 All terms must appear in a file (AND, not OR). Use the `recall` MCP tool for

@@ -37,8 +37,7 @@ Workflow worth capturing. You:
 3. Invoke:
 
 ```bash
-cat <<'EOF' | "${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-    "${CLAUDE_PLUGIN_ROOT}/scripts/new-procedure.py" \
+cat <<'EOF' | "${CLAUDE_PLUGIN_ROOT}/bin/strata" procedure \
     --title "<title>"
 # <Title>
 

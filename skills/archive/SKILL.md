@@ -19,12 +19,10 @@ so the search/index reflects active work.
 
 ```bash
 # See what would happen, no mutation
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/archive-merged.py" --dry-run
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" archive --dry-run
 
 # Apply
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/archive-merged.py"
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" archive
 ```
 
 Strategies (auto-selected, override with `--strategy`):

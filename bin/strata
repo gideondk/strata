@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# strata — the single front door for every Strata command.
+#
+# Skills invoke `"${CLAUDE_PLUGIN_ROOT}/bin/strata" <command> [args]` instead of
+# the raw `run-python.sh .../scripts/<x>.py` plumbing. The point is legibility:
+# a vault write should read as an intention-revealing, obviously-Strata command
+# in the transcript — `strata procedure --title "..."` — not as arbitrary Python
+# script execution. It stays a visible Bash call (so Claude Code still surfaces
+# and permission-gates it, and there is still no write *tool* over MCP for a
+# prompt injection to call); it just stops looking scary.
+#
+# Mechanics: this maps <command> to the right scripts/<x>.py and execs through
+# run-python.sh, which owns venv bootstrap, env resolution, and stdin passthrough
+# (note bodies still arrive on stdin via the caller's heredoc).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+sub="${1:-}"
+shift || true
+
+case "$sub" in
+  # ---- writes (create / mutate vault notes) -----------------------------
+  decide)            script="new-decision.py" ;;
+  propose)           script="new-proposition.py" ;;
+  procedure)         script="new-procedure.py" ;;
+  domain)            script="save-note.py" ;;   # reserved; domain writes via Write tool today
+  save)              script="save-note.py" ;;
+  observe)           script="observe.py" ;;
+  correct)           script="correct-note.py" ;;
+  invalidate)        script="invalidate-note.py" ;;
+  forget)            script="forget.py" ;;
+  consolidate)       script="consolidate.py" ;;
+  archive)           script="archive-merged.py" ;;
+  archive-planning)  script="archive-planning.py" ;;
+  promote-to-pr)     script="promote-to-pr.py" ;;
+  export)            script="export-to-repo.py" ;;
+  # ---- reads / inspection ----------------------------------------------
+  find)              script="find.py" ;;
+  review)            script="review.py" ;;
+  dashboard)         script="dashboard.py" ;;
+  doctor)            script="doctor.py" ;;
+  audit-config)      script="audit-config.py" ;;
+  lint)              script="memory-lint.py" ;;
+  plan-correlate)    script="plan_correlate.py" ;;
+  code-map)          script="code-map.py" ;;
+  bootstrap-scan)    script="bootstrap-scan.py" ;;
+  # ---- lifecycle / index ------------------------------------------------
+  init)              script="init-memory.py" ;;
+  prime)             script="prime-context.py" ;;
+  reindex)           script="refresh-index.py" ;;
+  graphify)          script="graphify-orchestrate.py" ;;
+  eval)              script="eval.py" ;;
+  # ---- meta -------------------------------------------------------------
+  ""|-h|--help|help)
+    cat >&2 <<'USAGE'
+strata — Strata vault commands
+
+Writes (visible, permission-gated; no write tool is exposed over MCP):
+  decide          record an ADR (scripts/new-decision.py)
+  propose         open a proposition / debate
+  procedure       capture a procedural note
+  save            write a pr-context or lessons note
+  observe         auto-capture a grounded observation (quarantined)
+  correct         edit a note (with audit trail)
+  invalidate      mark a note no longer current
+  forget          move a note to .trash/ (user-only)
+  consolidate     merge near-duplicate notes
+  archive         move merged-PR context to archive/
+  archive-planning  archive bootstrapped planning docs
+  promote-to-pr   surface vault context in a PR
+  export          copy a note into the host repo
+
+Reads / inspection:
+  find            literal-string vault search (fallback to the recall tool)
+  review          vault health report
+  dashboard       current vault state
+  doctor          install / health check
+  audit-config    show active settings
+  lint            secret / PII scan
+  plan-correlate  cross-check a planning subdir vs git + graph
+  code-map        token-budgeted code-graph projection
+  bootstrap-scan  enumerate migration candidates
+
+Lifecycle / index:
+  init            one-time vault setup for a repo
+  prime           re-emit the SessionStart context primer
+  reindex         refresh the FTS index
+  graphify        build / refresh the code graph
+  eval            run the temporal benchmark
+
+Retrieval is the `recall` MCP tool, not a command here.
+USAGE
+    [ -z "$sub" ] && exit 2 || exit 0
+    ;;
+  *)
+    echo "strata: unknown command '$sub' (try \`strata help\`)" >&2
+    exit 2
+    ;;
+esac
+
+exec "$ROOT/bin/run-python.sh" "$ROOT/scripts/$script" "$@"

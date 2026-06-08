@@ -13,8 +13,7 @@ Three-step onboarding. Always step 1; step 2 and 3 are user-chosen.
 Always do this. Idempotent.
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/init-memory.py"
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" init
 ```
 
 Creates `<vault>/<repo>/{decisions,domain,lessons,procedural,propositions,pr-context}/`
@@ -63,8 +62,7 @@ brew install graphifylabs/tap/graphify
 Then offer to build the first graph:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/graphify-orchestrate.py"
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" graphify
 ```
 
 ### If no / later

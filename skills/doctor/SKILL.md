@@ -13,8 +13,7 @@ quietly fall back to FTS? `doctor` answers all of it at once.
 ## How
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/doctor.py"
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" doctor
 ```
 
 ## What it checks

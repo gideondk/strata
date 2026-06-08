@@ -20,12 +20,10 @@ Read-only by design, flags issues, never auto-fixes.
 ## How
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/review.py"
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" review
 
 # Tune the staleness thresholds
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/review.py" \
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" review \
   --stale-days 7 --pr-stale-days 14
 ```
 

@@ -31,8 +31,7 @@ User runs `/strata:promote-to-pr [--pr N]`. You:
 2. Invoke:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/promote-to-pr.py" --dry-run <<'STRATA_PR_COMMENT'
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" promote-to-pr --dry-run <<'STRATA_PR_COMMENT'
 <summary body>
 STRATA_PR_COMMENT
 ```

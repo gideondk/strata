@@ -12,7 +12,7 @@ Context was compacted, call this.
 ## How
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/prime-context.py" </dev/null
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" prime </dev/null
 ```
 
 (The trailing `</dev/null` substitutes for the JSON-RPC payload that the hook

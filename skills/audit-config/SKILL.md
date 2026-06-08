@@ -30,12 +30,10 @@ Default), so you can revisit them deliberately.
 
 ```bash
 # Default: 180-day staleness threshold
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/audit-config.py"
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" audit-config
 
 # Tighter cadence
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/audit-config.py" --stale-days 90
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" audit-config --stale-days 90
 ```
 
 ## What it covers

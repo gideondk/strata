@@ -32,8 +32,7 @@ top-recalled notes.
 ## Run it
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/eval.py" -k 5
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" eval -k 5
 ```
 
 ## Measure the rerank lift
@@ -41,8 +40,7 @@ top-recalled notes.
 Compare the pipeline with and without the cross-encoder rerank:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/eval.py" -k 5 --sweep
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" eval -k 5 --sweep
 ```
 
 `--sweep` runs the golden set rerank-OFF then rerank-ON and prints both rows +

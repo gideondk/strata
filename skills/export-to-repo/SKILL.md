@@ -22,8 +22,7 @@ User runs `/strata:export-to-repo decisions/<slug>.md`. You:
 2. Run with `--dry-run` first so the user sees the destination + lint:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/export-to-repo.py" \
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" export \
   --source decisions/2026-05-20-use-postgres.md \
   --preset secrets,pii \
   --dry-run

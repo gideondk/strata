@@ -18,8 +18,7 @@ User says "save this as <topic>" or you decide to save autonomously.
 2. Write:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/save-note.py" \
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" save \
   --topic "<topic>" --kind session <<'STRATA_NOTE'
 <note body>
 STRATA_NOTE
@@ -49,7 +48,7 @@ The draft has four sections: `What was done` (from commits), `In progress`
      re-confirm
    - **Skip** — abandon
 
-3. On accept, pipe the final body through save-note.py with the topic
+3. On accept, pipe the final body through `strata save` with the topic
    from the draft.
 
 ### Apply-draft (one-keystroke acceptance of a Stop-hook offer)
@@ -60,8 +59,7 @@ uncommitted files, or 8+ uncommitted files), the user can save it as-is
 with no further prompting:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/save-note.py" \
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" save \
   --apply-draft
 ```
 
@@ -104,8 +102,7 @@ the dashboard. Grounding is required (`--source-file` and/or `--commit`):
 
 ```bash
 echo "Commit bumped the retry budget 3→5; see the client." | \
-  "${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/save-note.py" \
+  "${CLAUDE_PLUGIN_ROOT}/bin/strata" save \
   --observe --topic "retry budget bumped" \
   --source-file "src/http/client.py" --commit "$(git rev-parse --short HEAD)"
 ```
@@ -123,7 +120,7 @@ raw output back to the user.
 
 ## Safety
 
-`save-note.py` runs a **warn-only** secret/PII pre-step before every write — it
+`strata save` runs a **warn-only** secret/PII pre-step before every write — it
 advises on stderr if it spots credentials/identifiers but **never blocks** the
 save. `/strata:lint` remains the explicit blocking scan; the pre-push git hook
 is the final backstop. Still: don't paste identifiers, NHS numbers, postcodes,

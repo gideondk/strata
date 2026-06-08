@@ -73,8 +73,7 @@ Evidence of work and which don't. The verdict line drives your
 Status choice in step 4.
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/plan_correlate.py" \
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" plan-correlate \
   "<parent-dir-of-group>"
 ```
 
@@ -96,8 +95,7 @@ frontmatter, which is what later `code_map(focus=code_refs)` queries
 Pivot from. Skipping this step means the note ages blindly.
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/code-map.py" \
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" code-map \
   --focus "<Symbol1>" --focus "<Symbol2>" --budget 600
 ```
 
@@ -189,8 +187,7 @@ ages gracefully even as the code moves.
 After Write, refresh the index so the note is searchable:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/refresh-index.py"
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" reindex
 ```
 
 #### decide
@@ -203,8 +200,7 @@ recall-before-write gate would block on legitimately related historical
 decisions with no human there to adjudicate):
 
 ```bash
-cat <<'EOF' | "${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-    "${CLAUDE_PLUGIN_ROOT}/scripts/new-decision.py" \
+cat <<'EOF' | "${CLAUDE_PLUGIN_ROOT}/bin/strata" decide \
     --title "<short imperative — e.g. Use Postgres for tenant data>" \
     --status accepted \
     --no-dedup \
@@ -241,8 +237,7 @@ Wrong for bootstrap content. ALWAYS pass `--project-dir` to pin the
 namespace, and repeat `--source-file` per source:
 
 ```bash
-cat <<'EOF' | "${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-    "${CLAUDE_PLUGIN_ROOT}/scripts/save-note.py" \
+cat <<'EOF' | "${CLAUDE_PLUGIN_ROOT}/bin/strata" save \
     --scope lessons \
     --kind handoff \
     --topic "<2-5 word topic>" \
@@ -264,8 +259,7 @@ source file in the group:
 
 ```bash
 for path in <file_paths...>; do
-  "${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-    "${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap-scan.py" \
+  "${CLAUDE_PLUGIN_ROOT}/bin/strata" bootstrap-scan \
     --mark "$path"
 done
 ```

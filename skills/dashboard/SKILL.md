@@ -30,8 +30,7 @@ Write). 95% of cases.
 ### Fresh (regenerate first)
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \
-  "${CLAUDE_PLUGIN_ROOT}/scripts/dashboard.py"
+"${CLAUDE_PLUGIN_ROOT}/bin/strata" dashboard
 ```
 
 `dashboard.py` rebuilds the content from live data (db, code_graph,
