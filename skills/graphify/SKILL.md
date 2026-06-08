@@ -126,8 +126,8 @@ to, and what shape of thing it is within that package.
 ## Result
 
 After running, Strata's SessionStart primer shows updated node + edge
-counts and the top god nodes. `code_graph_status` MCP tool returns the
-fresh summary. `memory_graph` MCP tool can cross-link decisions
-referencing code symbols back to their graphify nodes (even via
-unresolved wikilinks, the bridge resolves `[[MedicationService]]` to
-`graphify:MedicationService` against `graph.json`).
+counts and the top god nodes. The `code_graph_status` MCP tool returns the
+fresh summary. The wikilink-to-code bridge (internal, surfaced via `recall`
+at layer 2) cross-links decisions referencing code symbols back to their
+graphify nodes: even via unresolved wikilinks, it resolves
+`[[MedicationService]]` to `graphify:MedicationService` against `graph.json`.

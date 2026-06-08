@@ -91,8 +91,8 @@ audit reviews. But:
   being true* — separate from `invalidated_at`, which is just when you
   recorded it. Keeping both answers "how long were we acting on a wrong
   assumption?", which a single timestamp can't.
-- Default search filters it out. `memory_search`, `find`, and
-  `domain_lookup` skip invalidated notes.
+- Default search filters it out. `recall` and `find` skip invalidated
+  notes.
 - Opt back in with `include_invalidated=true` when you need history.
 
 `--reason` is required. Invalidation without an explanation is just

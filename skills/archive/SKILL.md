@@ -1,6 +1,7 @@
 ---
 name: strata:archive
-description: Move merged branches' pr-context dirs into archive/. Use when the user asks to "clean up old branches", "archive merged work", "tidy the vault", after a release, or whenever the pr-context directory has gotten visibly stale. Read-only on archive/ and merged branches' notes, never deletes, only moves. Detects merged branches via `gh pr list --state merged` or `git branch --merged main` fallback.
+disable-model-invocation: true
+description: Move merged branches' pr-context dirs into archive/. User-only — run when the user explicitly asks to "clean up old branches", "archive merged work", or "tidy the vault". Never deletes, only moves, but it mutates the vault and changes what recall returns, so it does not auto-invoke (matching forget / export-to-repo / promote-to-pr). Detects merged branches via `gh pr list --state merged` or `git branch --merged main` fallback.
 ---
 
 # strata:archive

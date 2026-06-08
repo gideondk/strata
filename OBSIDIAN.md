@@ -40,7 +40,7 @@ one that matches yours and install it as a separate MCP server in your
 | Layer | Strata | Obsidian MCP |
 |---|---|---|
 | Sources of truth | Files on disk (vault) | Same files, accessed via Obsidian |
-| Reads | FTS5 + path-sandboxed `memory_get` | Whatever the Obsidian plugin exposes |
+| Reads | FTS5 + path-sandboxed `recall` | Whatever the Obsidian plugin exposes |
 | Writes | User-typed slash commands only | MCP tools — Claude can write directly |
 | Sandbox | Vault root only | Whole vault (per Obsidian) |
 | Network | None | Loopback to localhost:27124 |
@@ -115,10 +115,11 @@ Obsidian's graph view shows one continuous knowledge graph: a decision
 note that wikilinks `[[MedicationService]]` visually connects to the
 Strata-generated node for that class.
 
-On the Strata side, `memory_graph` MCP tool **resolves unresolved
+On the Strata side, an internal wikilink bridge **resolves unresolved
 wikilinks against graph.json node names** — so a vault wikilink like
-`[[MedicationService]]` returns a `graphify:MedicationService` match even
-if no corresponding markdown file exists. The visual co-location is theirs;
+`[[MedicationService]]` resolves to a `graphify:MedicationService` node even
+if no corresponding markdown file exists. It's not a callable tool; the
+matches surface through `recall` (layer 2). The visual co-location is theirs;
 the programmatic bridge is ours.
 
 Filter recipes in Obsidian:

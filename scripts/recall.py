@@ -248,6 +248,27 @@ def _paths_search(paths: list[str], scope: str | None,
     return rows
 
 
+def _indexed_after(paths: list[str], since: str) -> set[str]:
+    """Subset of `paths` whose note was (re)indexed on/after `since`.
+
+    The fused FTS rows don't carry a timestamp, so look it up. `indexed_at` is
+    stored via `datetime('now')` (`YYYY-MM-DD HH:MM:SS`); a plain lexicographic
+    compare against an ISO date (`YYYY-MM-DD`) prefix is correct because the
+    date portion shares the same fixed-width format."""
+    if not paths:
+        return set()
+    fresh: set[str] = set()
+    placeholders = ",".join("?" * len(paths))
+    with contextlib.suppress(Exception), db.connect() as conn:
+        for r in conn.execute(
+            f"SELECT path FROM files WHERE path IN ({placeholders}) "
+            "AND indexed_at >= ?",
+            (*paths, since),
+        ):
+            fresh.add(r["path"])
+    return fresh
+
+
 def _layer1(query: str, scope: str | None, since: str | None,
             limit: int, budget: int) -> str:
     """Compact ranked index. bm25 + semantic fused via Reciprocal Rank Fusion
@@ -256,8 +277,8 @@ def _layer1(query: str, scope: str | None, since: str | None,
     rows, total = _hybrid_search(query, scope, limit)
 
     if since:
-        rows = [r for r in rows if r.get("indexed_at", "") >= since
-                or r.get("mtime_iso", "") >= since]
+        fresh = _indexed_after([r["path"] for r in rows], since)
+        rows = [r for r in rows if r["path"] in fresh]
 
     if not rows:
         return f"no relevant notes found for: {query!r}"
@@ -307,6 +328,8 @@ def _layer3(query: str, scope: str | None, since: str | None,
     if not rows:
         return f"no relevant notes found for: {query!r}"
     top = rows[0]
+    if since and not _indexed_after([top["path"]], since):
+        return f"no relevant notes found for: {query!r}"
     rec = db.get_file(top["path"])
     if rec is None:
         return f"top hit unreadable: `{top['path']}`"

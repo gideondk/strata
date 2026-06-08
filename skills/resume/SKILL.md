@@ -20,8 +20,9 @@ Runner would normally send on stdin, the script tolerates an empty stdin.)
 
 ## Tip
 
-For *targeted* lookups, prefer the MCP tools:
-- `memory_search` for full-text queries
-- `recent_decisions` / `pr_context_for_branch` / `domain_lookup` for scoped recall
+For *targeted* lookups, prefer the `recall` MCP tool:
+- `recall(query="...", layer=1)` for ranked + semantic recall
+- add `scope="decisions|domain|lessons|procedural|propositions|pr-context|all"`
+  to narrow the search
 
-`/strata:resume` is a wide net; the MCP tools are tweezers.
+`/strata:resume` is a wide net; `recall` is the tweezers.

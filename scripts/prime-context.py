@@ -166,15 +166,18 @@ def build_primer() -> str:
     dec = mem / "decisions"
     if dec.exists():
         superseded: set[str] = set()
+        quarantined: set[str] = set()
         try:
             import db as _db
             superseded = _db.superseded_paths()
+            quarantined = _db.quarantined_paths()
         except Exception:
             pass
         candidates = [
             f for f in sorted(dec.glob("*.md"), reverse=True)
             if f.name not in ("README.md", "INDEX.md")
             and f.relative_to(mem).as_posix() not in superseded
+            and f.relative_to(mem).as_posix() not in quarantined
         ][:RECENT_DECISIONS]
         if candidates:
             push(f"### Recent decisions ({len(candidates)})")
@@ -185,11 +188,20 @@ def build_primer() -> str:
                 push(f"_({len(superseded)} superseded hidden)_")
             push("")
 
-    # Domain notes index (titles only)
+    # Domain notes index (titles only). Exclude invalidated/unreviewed notes
+    # (status: invalidated / auto) so the primer never lists a quarantined
+    # definition as canonical — the same filter recall applies.
     dom = mem / "domain"
     if dom.exists():
+        dom_quarantined: set[str] = set()
+        try:
+            import db as _db
+            dom_quarantined = _db.quarantined_paths()
+        except Exception:
+            pass
         files = [f for f in sorted(dom.glob("*.md"))
-                 if f.name not in ("README.md", "INDEX.md")]
+                 if f.name not in ("README.md", "INDEX.md")
+                 and f.relative_to(mem).as_posix() not in dom_quarantined]
         if files:
             push(f"### Domain notes available ({len(files)})")
             titles = [first_heading(f) or f.stem for f in files]

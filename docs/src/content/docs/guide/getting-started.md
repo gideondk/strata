@@ -99,7 +99,7 @@ Context economy: 22 notes • skim 2,800t • full read 19,400t • 86% savings
 _built 2h ago  ·  348 nodes  ·  1,204 edges  ·  top hubs: SessionService, AuthGuard_
 ```
 
-When you ask a question that overlaps the vault (*"what's the token rotation approach?"*), Claude calls `memory_search` via MCP and finds the note. No `/find` invocation needed.
+When you ask a question that overlaps the vault (*"what's the token rotation approach?"*), Claude calls `recall(query="token rotation approach")` via MCP and finds the note. No `/find` invocation needed.
 
 ## What to do next
 

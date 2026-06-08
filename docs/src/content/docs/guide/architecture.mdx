@@ -27,7 +27,7 @@ hooks/
 
 mcp/
 ├── .mcp.json           # stdio server config
-└── server.py           # 18 tools, 1 resource surface
+└── server.py           # 7 registered tools, plus internal helpers; 1 resource surface
 
 skills/<name>/SKILL.md  # one folder per skill, frontmatter declares triggers
 agents/<name>.md        # subagent definitions, e.g. bootstrap-worker
@@ -81,8 +81,8 @@ This split is deliberate. Skills can change without code changes. Scripts can ch
 
 - Has its own context window (main agent context stays clean)
 - Has restricted tools (Read, Write, Bash, Glob, Grep; no Agent, no WebSearch, no Edit)
+- Has no MCP grant, so it runs the bundled scripts via Bash for context (`plan_correlate` is a script, not a tool)
 - Reads a group of related source files
-- Calls `plan_correlate` + `code_map` for context
 - Writes one note per concept (or skips)
 - Returns one summary line per write
 
@@ -90,7 +90,7 @@ The grouping (by parent directory) prevents the duplicate-ADR problem an earlier
 
 ## MCP server
 
-`mcp/server.py` uses the official `mcp` Python SDK with stdio transport. ~800 lines, 18 tools, plus resource registration for the vault as `strata://<scope>/<filename>` URIs.
+`mcp/server.py` uses the official `mcp` Python SDK with stdio transport. ~800 lines, 7 registered tools plus internal helpers, and resource registration for the vault as `strata://<scope>/<filename>` URIs.
 
 Started by Claude Code via `mcp/.mcp.json` pointing at `bin/run-python.sh mcp/server.py`. Lives for the lifetime of the session.
 

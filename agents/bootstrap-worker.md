@@ -32,6 +32,9 @@ related sources. Now you see the whole set and consolidate.
 - `vault_dir` — absolute path to `<vault>/<repo>/` (used for `domain/`
   writes you do directly via the Write tool; the Strata scripts
   resolve their own destinations from project-dir + vault config).
+- `plugin_root` — absolute path to the plugin install directory. Use it
+  to pin `${CLAUDE_PLUGIN_ROOT}` (see below) in case it isn't already
+  exported into your shell.
 
 The project root MUST be your cwd before every script invocation —
 the scripts use it to resolve which vault namespace to write to.
@@ -39,8 +42,18 @@ the scripts use it to resolve which vault namespace to write to.
 to every `new-decision.py` and `save-note.py` call. This pins the
 namespace explicitly and survives any cwd drift inside the worker.
 
-`${CLAUDE_PLUGIN_ROOT}` is the plugin install path (exported by
-Claude Code).
+**Before your first script call, pin the plugin root.** Don't assume
+`${CLAUDE_PLUGIN_ROOT}` is exported into a subagent's shell — recover it
+from the `plugin_root` input, and fail loudly if neither is present, so a
+missing root surfaces as a clear error instead of malformed `/bin/...`
+paths and silent no-writes:
+
+```bash
+export CLAUDE_PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-<plugin_root input>}"
+: "${CLAUDE_PLUGIN_ROOT:?plugin root unavailable — re-run /strata:bootstrap}"
+```
+
+Every `"${CLAUDE_PLUGIN_ROOT}/..."` call below then resolves correctly.
 
 ## Procedure
 

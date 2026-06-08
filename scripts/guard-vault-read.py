@@ -8,20 +8,26 @@ vault returns the RAW corpus: superseded and invalidated notes at full weight,
 unranked. That silently defeats the moat.
 
 FIRM gate (stronger than codebase-memory-mcp's warn-once variant): a vault
-Grep/Glob is DENIED until `recall` has actually been used this session — then
-allowed, so a deliberate fallback still works once the proper path has been
-exercised. The recall-used marker is set by the PostToolUse hook
-`mark-recall-used.py`. A single Read of one note is allowed but gets a one-time
-reminder.
+Grep/Glob — or a vault-targeted Bash read verb (`grep`, `find`, `cat`, …) — is
+DENIED until `recall` has actually been used this session, then allowed, so a
+deliberate fallback still works once the proper path has been exercised. The
+recall-used marker is set by the PostToolUse hook `mark-recall-used.py`. A single
+Read of one note is allowed but gets a one-time reminder.
+
+The Bash branch exists because Grep/Glob are not the only way to grep the vault:
+`grep -r`/`cat`/`find` over the vault folder returns the same raw, unranked
+corpus and would otherwise walk straight past a guard wired only for the search
+tools. The plugin's own scripts (invoked via `run-python.sh` / `scripts/`) are
+exempt — they read the vault through the indexer/recall path on purpose.
 
 Best-effort, fail-open: any error emits nothing (exit 0) and never breaks a tool
-call. The plugin's own scripts read the vault via Bash/run-python.sh, not these
-tools, so they're unaffected.
+call.
 """
 from __future__ import annotations
 
 import contextlib
 import json
+import shlex
 import sys
 from pathlib import Path
 
@@ -29,10 +35,41 @@ import lib_loader  # noqa: F401
 import vault_guard_state as state
 from lib import vault_root
 
+# Shell read verbs that would dump raw vault content if pointed at the vault.
+_READ_VERBS = {"grep", "rg", "egrep", "fgrep", "find", "ls", "cat", "head",
+               "tail", "awk", "sed", "bat", "less", "more"}
+
 
 def _target(tool_input: dict) -> str | None:
     # Read uses file_path; Grep/Glob use path (search root, optional).
     return tool_input.get("file_path") or tool_input.get("path")
+
+
+def _bash_targets_vault(command: str) -> bool:
+    """True if a Bash command reads vault files through a shell read verb.
+
+    Exempts the plugin's own invocations (`run-python.sh` / `scripts/`), which
+    legitimately read the vault to build the index or run recall."""
+    if not command:
+        return False
+    if ("run-python.sh" in command or "/scripts/" in command
+            or "CLAUDE_PLUGIN_ROOT" in command):
+        return False
+    try:
+        tokens = shlex.split(command, comments=True)
+    except Exception:
+        tokens = command.split()
+    if not any(tok in _READ_VERBS for tok in tokens):
+        return False
+    # Path-targeted at the vault? Check resolvable tokens, then a raw substring
+    # of the vault root (catches `~`/relative spellings shlex can't resolve).
+    for tok in tokens:
+        if tok and not tok.startswith("-") and _in_vault(tok):
+            return True
+    root = str(vault_root())
+    home = str(Path.home())
+    return root in command or (root.startswith(home)
+                               and root.replace(home, "~", 1) in command)
 
 
 def _in_vault(candidate: str) -> bool:
@@ -50,6 +87,25 @@ def main() -> int:
         tool = data.get("tool_name")
         tool_input = data.get("tool_input") or {}
         session_id = str(data.get("session_id") or "_")
+
+        # Bash carries a command string, not a path. A vault-targeted read verb
+        # is the same bypass as Grep/Glob, so gate it the same way.
+        if tool == "Bash":
+            if (_bash_targets_vault(tool_input.get("command") or "")
+                    and not state.is_set(session_id, "recall-used")):
+                print(json.dumps({"hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "deny",
+                    "permissionDecisionReason": (
+                        "Use the `recall` MCP tool to search Strata memory — not "
+                        "a raw `grep`/`find`/`cat` of the vault folder. Recall is "
+                        "ranked and supersession-aware; a raw shell read surfaces "
+                        "superseded, invalidated, and unreviewed notes as if "
+                        "current. Blocked until you've used `recall` once this "
+                        "session, then allowed as a fallback."),
+                }}))
+            return 0
+
         candidate = _target(tool_input)
         # Grep/Glob with no path search the cwd (the repo), not the vault — leave
         # those alone. Only act when the access points into the vault.

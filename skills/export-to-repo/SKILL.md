@@ -18,7 +18,7 @@ Lint pass first, so PHI/secrets can't slip across the boundary unnoticed.
 
 User runs `/strata:export-to-repo decisions/<slug>.md`. You:
 
-1. Confirm the file path is right (use `memory_search` if unsure).
+1. Confirm the file path is right (use `recall` or `/strata:find` if unsure).
 2. Run with `--dry-run` first so the user sees the destination + lint:
 
 ```bash

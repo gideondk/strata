@@ -31,7 +31,10 @@ Workflow worth capturing. You:
 
 1. Compose the procedure as a numbered step list with prerequisites + a
    verification step.
-2. Invoke:
+2. **Recall first.** Call `recall(query="<title>", scope="procedural", layer=1)`.
+   If a near-duplicate already exists (e.g. "shipping a hotfix" vs "hotfix
+   release runbook"), extend that one instead of adding a second.
+3. Invoke:
 
 ```bash
 cat <<'EOF' | "${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \

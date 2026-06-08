@@ -1,13 +1,14 @@
 ---
 name: strata:find
-description: Grep-style line-numbered text search across the vault — the human-friendly fallback to the `memory_search` MCP tool. Prefer `memory_search` for ranked/semantic recall; use /strata:find when the user explicitly wants literal grep hits with line numbers, or asks to "grep the vault" / "find the exact line that mentions X".
+description: Grep-style line-numbered text search across the vault — the literal-string fallback to the `recall` MCP tool. Prefer `recall` for ranked/semantic recall; use /strata:find after recall when the user explicitly wants literal grep hits with line numbers, or asks to "grep the vault" / "find the exact line that mentions X".
 ---
 
 # strata:find
 
 A no-frills full-text walk over the current repo's vault namespace. For
-Ranked structured queries, use the `memory_search` MCP tool instead, it uses
-FTS5 and is much faster on large vaults.
+Ranked or semantic queries, use the `recall` MCP tool first — it fuses FTS5
+and semantic search and is much faster on large vaults. Reach for /strata:find
+once recall has run and you need exact literal-string hits with line numbers.
 
 ## How
 
@@ -15,8 +16,8 @@ FTS5 and is much faster on large vaults.
 "${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/find.py" <term1> [<term2> ...] [--scope decisions|lessons|domain|pr-context|all]
 ```
 
-All terms must appear in a file (AND, not OR). Use the MCP `memory_search`
-Tool for phrase queries.
+All terms must appear in a file (AND, not OR). Use the `recall` MCP tool for
+phrase and ranked queries.
 
 ## Output
 

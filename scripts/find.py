@@ -2,8 +2,8 @@
 """Search the Strata vault for a query.
 
 Pure-Python full-text walk — no SQLite, no FTS engine, no third-party libs.
-This is the human-readable fallback; for ranked queries from Claude, prefer
-the `memory_search` MCP tool which uses FTS5.
+This is the literal-string fallback; for ranked or semantic queries from
+Claude, prefer the `recall` MCP tool which fuses FTS5 and semantic search.
 
 Output is structured for Claude to read:
     PATH:LINE  <one-line excerpt>

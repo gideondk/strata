@@ -39,10 +39,9 @@ Read-only by design, flags issues, never auto-fixes.
 | Unresolved wikilinks | Typo — fix the target or create the missing note |
 | Stale PR-context dirs | Run `/strata:archive` if the branch is merged |
 
-## MCP tools that back this
+## What backs this
 
-Claude can call the same queries individually via:
-- `stale_decisions(stale_days)`
-- `orphan_notes(scope)`
-
-…which is useful when triaging from a longer report.
+`review.py` reads these signals from internal db helpers — `stale_decisions`
+and `orphan_notes`. They aren't callable MCP tools; `/strata:review` is how you
+surface them. For ad-hoc triage outside the full report, use the `recall` MCP
+tool.

@@ -77,7 +77,8 @@ with `--no-dedup`; that escape hatch is for batch flows, not interactive use.
 If this ADR replaces an earlier one, pass `--supersedes` (repeatable). The
 Predecessor's `superseded_by` frontmatter is updated automatically, its
 Status flips to `superseded`, and the INDEX hides it from the "live" list.
-The chain is queryable via the `decision_chain` MCP tool.
+The chain is recorded in frontmatter (`supersedes` / `superseded_by`) and
+surfaced by `recall` at layer 2, which walks a note's neighbours.
 
 ```bash
 "${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" \

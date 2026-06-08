@@ -51,7 +51,8 @@ Nine integration points.
   freshness percentage.
 - `plan_correlate` checks every symbol in a planning subdir against
   the graph. Resolution count drives the completion estimate.
-- `bootstrap-worker` calls `code_map` on top symbols in its group
+- `bootstrap-worker` has no MCP grant. It shells the bundled Strata
+  scripts via `bin/run-python.sh` to project top symbols in its group
   before classifying. Informs wikilink choices.
 
 ### On-demand
@@ -60,9 +61,9 @@ Nine integration points.
   tier carries file and line and refs count. Middle tier carries file
   only. Bottom tier carries label only. The `focus` parameter
   promotes one-hop neighbours of named symbols into the top tier.
-- `memory_graph` (MCP tool): when a vault wikilink doesn't resolve to
-  another note, attempts to bridge to a graph node. Surfaces as
-  `graphify:NodeName`.
+- Wikilink-to-code bridging (internal, surfaced via `recall` layer 2):
+  when a vault wikilink doesn't resolve to another note, Strata
+  attempts to bridge to a graph node. Surfaces as `graphify:NodeName`.
 
 ### Write protection
 

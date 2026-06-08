@@ -25,6 +25,21 @@ A proposition that never gets settled or refuted is itself a signal.
 
 ## How
 
+### Recall before you open it
+
+Before creating a proposition, call `recall` to check it isn't already
+tracked. Two agents opening the same open question — or re-litigating one
+that's already decided — is the failure this prevents:
+
+```
+recall(query="<the question, in your words>", scope="propositions", layer=1)
+```
+
+Then run a second pass with `scope="decisions"`. Adjudicate:
+- existing open proposition → add a position to it (below), don't fork.
+- already settled or decided → tell the user and point at the note; write nothing.
+- genuinely new → create it.
+
 ### Create
 
 ```bash

@@ -112,7 +112,7 @@ The current branch is derived from `git rev-parse --abbrev-ref HEAD`. Skills tha
 
 - `/strata:save` → `pr-context/<branch-slug>/...`
 - The Stop hook checks if you're on a non-trunk branch before nudging
-- `memory_search` can filter to a branch via `--branch`
+- `recall(scope="pr-context")` surfaces branch-scoped notes for the current branch
 
 Trunk branches (`main`, `master`, `develop`, `trunk`, `default`) are excluded from the Stop nudge. You shouldn't be doing feature work on trunk anyway.
 

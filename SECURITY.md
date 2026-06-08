@@ -45,7 +45,8 @@ We assume:
    slash command, whose Bash invocation is visible. A prompt injection
    asking Claude to overwrite a decision cannot succeed silently; Claude has
    to call a `Bash` tool which the user sees.
-2. **Path sandboxing.** The MCP `memory_get` tool rejects:
+2. **Path sandboxing.** The MCP `recall` tool's body fetch (layer 3,
+   `db.get_file`) rejects:
    - Absolute paths (`/etc/passwd`)
    - Traversal (`../`, `..\\`)
    - Anything resolving outside the configured vault root

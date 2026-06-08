@@ -606,6 +606,17 @@ def demoted_paths() -> set[str]:
             "WHERE status IN ('superseded', 'deprecated')")}
 
 
+def quarantined_paths() -> set[str]:
+    """Paths recall hides entirely: `invalidated` (dead) and `auto` (unreviewed
+    auto-capture). Anything listing notes outside the recall path — e.g. the
+    SessionStart primer — should exclude these so a quarantined note never
+    renders as canonical context."""
+    with connect() as conn:
+        return {row["path"] for row in conn.execute(
+            "SELECT path FROM files "
+            "WHERE status IN ('invalidated', 'auto')")}
+
+
 def decision_chain(rel_path: str) -> dict:
     """Return the predecessor / successor chains for a decision.
 

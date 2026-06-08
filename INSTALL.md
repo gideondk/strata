@@ -113,13 +113,13 @@ via `brew install python@3.13` if needed.
 
 ```
 /plugin                  # strata should be "enabled", v0.12.1
-/mcp                     # strata server should be listed with 13 tools
+/mcp                     # strata server should be listed with 7 tools
 ```
 
 Functional check inside Claude:
 
-- Ask: *"List the recent decisions"* — Claude should call the
-  `recent_decisions` MCP tool autonomously.
+- Ask: *"What do we know about this repo?"* — Claude should call the
+  `recall` MCP tool autonomously and return a ranked index of notes.
 - Ask: *"What's in the open PR?"* — calls `current_pr` (requires `gh` auth).
 - Run `/strata:save smoke-test` with a few bullet points — writes to
   `<vault>/<repo>/pr-context/<branch>/`.

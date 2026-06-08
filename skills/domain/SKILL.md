@@ -21,7 +21,11 @@ to exactly one Customer), and pin conventions (event names use past tense).
 
 User runs `/strata:domain <concept-name>`. You:
 
-1. Decide whether this is a NEW note or an UPDATE.
+1. **Recall first.** Call `recall(query="<concept>", scope="domain", layer=1)`
+   to find an existing note for this concept, possibly under a different slug.
+   If one exists, UPDATE it instead of forking a second definition; if two
+   notes would conflict, reconcile through `/strata:correct`. Only create a
+   new note when recall shows nothing close.
 2. If new, write the body using `templates/domain.md` as the shape.
 3. Save it directly to `<vault>/<repo>/domain/<slug>.md` via the standard
    Write tool. Use the absolute path printed by `/strata:init` or read it

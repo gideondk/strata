@@ -25,7 +25,7 @@ Every slash command Strata ships. Some are auto-invokable: when you describe a s
 | `/strata:find <terms>` | "Search for…", "do we have notes about…" |
 | `/strata:resume` | New session, surfaces last branch + latest notes |
 
-Most reads happen via MCP rather than skill invocation. Claude calls `memory_search`, `memory_insights`, `recent_decisions`, etc. automatically when conversation overlaps known topics. See [MCP tools](../mcp-tools/).
+Most reads happen via MCP rather than skill invocation. Claude calls `recall` (the memory-recall path) automatically when conversation overlaps known topics. See [MCP tools](../mcp-tools/).
 
 ## User-only (high stakes)
 
