@@ -59,3 +59,11 @@ fi
 
 printf '%s\n' "$REQ_HASH" > "$MARKER"
 echo "strata: deps installed in $VENV" >&2
+
+# Install ~/.local/bin/strata symlink so bare `strata` works on PATH.
+# Self-heals on every bootstrap (plugin update changes ROOT, symlink refreshes).
+LINK_TARGET="${STRATA_LINK_TARGET:-$HOME/.local/bin/strata}"
+LINK_DIR="$(dirname "$LINK_TARGET")"
+mkdir -p "$LINK_DIR"
+ln -sf "$ROOT/bin/strata" "$LINK_TARGET"
+echo "strata: linked $LINK_TARGET → $ROOT/bin/strata" >&2

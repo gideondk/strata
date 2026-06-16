@@ -23,7 +23,7 @@ by intent and flags.
 ### Replace body
 
 ```bash
-cat <<'EOF' | "${CLAUDE_PLUGIN_ROOT}/bin/strata" correct \
+cat <<'EOF' | strata correct \
     domain/order-aggregate.md \
     --reason "OrderPriced now emitted before OrderConfirmed, not after."
 # Order Aggregate
@@ -35,7 +35,7 @@ EOF
 ### Update one field
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" correct \
+strata correct \
   domain/order-aggregate.md \
   --set status=stable \
   --reason "Adopted in production after two-week rollout."
@@ -50,7 +50,7 @@ The note stays readable but drops out of default search. Required `--reason`,
 optional `--replaced-by`:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" invalidate \
+strata invalidate \
   domain/old-aggregate-pattern.md \
   --reason "Aggregate split into Order + Payment in 2026-05-24 refactor." \
   --replaced-by "domain/order-aggregate.md"

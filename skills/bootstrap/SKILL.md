@@ -75,7 +75,7 @@ file_paths:
   .planning/auth-rewrite/SPEC.md
 
 vault_dir: /Users/gd/StrataVault/myrepo
-plugin_root: ${CLAUDE_PLUGIN_ROOT}
+plugin_root: <output of `strata root`>
 
 Group freshness: <average freshness% across the group, when verify was on>
 Group age: <oldest bucket across the group>

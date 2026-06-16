@@ -34,7 +34,7 @@ User runs `/strata:domain <concept-name>`. You:
 After saving, regenerate the index so the MCP search picks it up:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" reindex
+strata reindex
 ```
 
 ## Cross-repo (shared) domain notes

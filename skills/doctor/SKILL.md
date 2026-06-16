@@ -13,7 +13,7 @@ quietly fall back to FTS? `doctor` answers all of it at once.
 ## How
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" doctor
+strata doctor
 ```
 
 ## What it checks

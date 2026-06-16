@@ -32,21 +32,21 @@ connects to the Graphify-generated note for that class.
 
 ```bash
 # Default — incremental graphify update + vault wiring
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" graphify
+strata graphify
 
 # Skip the vault wiring (graph.json still produced)
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" graphify --no-obsidian
+strata graphify --no-obsidian
 
 # Full rebuild instead of incremental (slower, deterministic)
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" graphify --rebuild
+strata graphify --rebuild
 
 # Status only — print graph age + size, no build
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" graphify --status
+strata graphify --status
 
 # Semantic-edge mode (uses Graphify's LLM path).
 # Costs tokens AND sends file content to an external LLM API.
 # DO NOT use for regulated content.
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" graphify --deep
+strata graphify --deep
 ```
 
 ## Resulting vault layout

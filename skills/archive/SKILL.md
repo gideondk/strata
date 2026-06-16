@@ -19,10 +19,10 @@ so the search/index reflects active work.
 
 ```bash
 # See what would happen, no mutation
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" archive --dry-run
+strata archive --dry-run
 
 # Apply
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" archive
+strata archive
 ```
 
 Strategies (auto-selected, override with `--strategy`):

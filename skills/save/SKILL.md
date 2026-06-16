@@ -18,7 +18,7 @@ User says "save this as <topic>" or you decide to save autonomously.
 2. Write:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" save \
+strata save \
   --topic "<topic>" --kind session <<'STRATA_NOTE'
 <note body>
 STRATA_NOTE
@@ -33,10 +33,7 @@ writing.
 1. Snapshot the session:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" -c \
-  "import sys; sys.path.insert(0, '${CLAUDE_PLUGIN_ROOT}/scripts'); \
-   import session_state; \
-   print(session_state.draft_note_body(session_state.snapshot()))"
+strata draft-snapshot
 ```
 
 The draft has four sections: `What was done` (from commits), `In progress`
@@ -59,7 +56,7 @@ uncommitted files, or 8+ uncommitted files), the user can save it as-is
 with no further prompting:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" save \
+strata save \
   --apply-draft
 ```
 
@@ -102,7 +99,7 @@ the dashboard. Grounding is required (`--source-file` and/or `--commit`):
 
 ```bash
 echo "Commit bumped the retry budget 3→5; see the client." | \
-  "${CLAUDE_PLUGIN_ROOT}/bin/strata" save \
+  strata save \
   --observe --topic "retry budget bumped" \
   --source-file "src/http/client.py" --commit "$(git rev-parse --short HEAD)"
 ```

@@ -37,7 +37,7 @@ Workflow worth capturing. You:
 3. Invoke:
 
 ```bash
-cat <<'EOF' | "${CLAUDE_PLUGIN_ROOT}/bin/strata" procedure \
+cat <<'EOF' | strata procedure \
     --title "<title>"
 # <Title>
 

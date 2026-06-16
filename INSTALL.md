@@ -170,3 +170,112 @@ Optionally:
 - Delete `.venv/` inside the plugin source
 
 The plugin has no entries anywhere else on the system.
+
+## Installing for opencode
+
+Strata works with [opencode](https://opencode.ai) alongside Claude Code —
+both read and write the same vault. The MCP server (read/recall path) and
+the skill layer (write path) are fully supported.
+
+### Setup
+
+The `bootstrap-venv.sh` script auto-installs a `~/.local/bin/strata` symlink
+on first run, so bare `strata` works on PATH. To bootstrap manually:
+
+```bash
+~/strata/bin/bootstrap-venv.sh    # or ~/Development/bigbrain/bin/bootstrap-venv.sh
+```
+
+Then generate the opencode config snippet:
+
+```bash
+strata opencode-setup
+```
+
+This prints a JSON fragment to merge into `~/.config/opencode/opencode.json`.
+It wires the MCP server (7 read tools) and points `skills.paths` at the
+generated `opencode/skills/` layer (24 skills with opencode-legal names).
+
+After saving the config, **restart opencode** — it loads config once at startup.
+
+### What works
+
+| Feature | Claude Code | opencode |
+|---|---|---|
+| MCP read tools (`recall`, `code_map`, …) | Yes | Yes |
+| Skills (save, decide, domain, …) | `/strata:save` | auto-invoked via description |
+| `strata` CLI on PATH | Yes (via `${CLAUDE_PLUGIN_ROOT}`) | Yes (via `~/.local/bin/strata`) |
+| Hooks (SessionStart, Stop draft, …) | Yes | Not yet (different event model) |
+
+### How skills are shared
+
+The Claude Code skills live in `skills/<name>/SKILL.md` with `name: strata:<name>`.
+The opencode layer at `opencode/skills/strata-<name>/SKILL.md` is generated from
+those by `strata generate-opencode-skills` — it rewrites the frontmatter name to
+`strata-<name>` (opencode rejects colons) and strips Claude-Code-only keys. Skill
+bodies are identical and use bare `strata` commands.
+
+### Regenerating the opencode skills layer
+
+After changing skills, regenerate:
+
+```bash
+strata generate-opencode-skills
+```
+
+The output is deterministic and idempotent. Commit the result so users don't
+need to run the generator themselves.
+
+## Installing for zcode
+
+[zcode](https://z.ai) (Z.ai's CLI agent) runs an opencode-schema config at
+`~/.zcode/v2/config.json`, so Strata lands there the same way it lands in
+opencode — the MCP server (read/recall path) and the skill layer (write path)
+are identical. zcode has no third-party plugin install flow (its official
+plugins are baked into the app bundle), so the config-merge path below is the
+supported route.
+
+### Setup
+
+Bootstrap the venv (same as opencode — creates `~/.local/bin/strata`):
+
+```bash
+~/Development/bigbrain/bin/bootstrap-venv.sh
+```
+
+Then merge the Strata snippet into zcode's config:
+
+```bash
+strata zcode-setup --apply
+```
+
+This deep-merges `mcp.strata` + `skills.paths` into `~/.zcode/v2/config.json`,
+leaving the existing `provider` block untouched. To preview the snippet without
+writing, run `strata zcode-setup` bare. After applying, **restart zcode** — it
+loads config once at startup, like opencode.
+
+### What works
+
+| Feature | Claude Code | zcode |
+|---|---|---|
+| MCP read tools (`recall`, `code_map`, …) | Yes | Yes |
+| Skills (save, decide, domain, …) | `/strata:save` | auto-invoked via description |
+| `strata` CLI on PATH | Yes (via `${CLAUDE_PLUGIN_ROOT}`) | Yes (via `~/.local/bin/strata`) |
+| Hooks (SessionStart, Stop draft, …) | Yes | No (opencode/v2 layer has no hook system) |
+
+The hook gap is the one functional difference. Without SessionStart priming,
+zcode sessions don't auto-load vault context at startup — call `strata prime`
+manually when you want it. The Stop-hook save-draft and PreCompact flush are
+also absent; saves stay explicit (`strata save …`), which is the security model
+anyway (writes are never automatic). Recall and the full skill set are
+unaffected.
+
+### Skills are shared with opencode
+
+zcode reads the same `opencode/skills/` layer (the `strata-<name>` frontmatter
+is legal in both). After changing skills, regenerate and both targets pick it
+up:
+
+```bash
+strata generate-opencode-skills
+```

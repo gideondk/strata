@@ -22,27 +22,26 @@ it **is** sync'd to other team members, same blast radius. Lint before sync.
 
 ## How
 
-The front door handles the venv automatically, invoke via
-`${CLAUDE_PLUGIN_ROOT}/bin/strata`:
+The front door handles the venv automatically, invoke via `strata`:
 
 ```bash
 # Default: scan the whole vault with the `secrets` preset
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" lint
+strata lint
 
 # Add region-specific PHI presets
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" lint \
+strata lint \
   --preset secrets,pii,phi-us
 
 # Staged *.md files in the host repo
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" lint \
+strata lint \
   --scope staged --preset secrets,pii
 
 # A specific file or directory
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" lint \
+strata lint \
   --scope ~/StrataVault/myrepo/pr-context/feat-x/
 
 # Treat warnings as errors (CI mode)
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" lint \
+strata lint \
   --scope vault --preset secrets,pii --strict
 ```
 

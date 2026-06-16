@@ -25,13 +25,13 @@ the PR merged.
 
 ```bash
 # Dry-run (default)
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" consolidate
+strata consolidate
 
 # With a different age threshold
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" consolidate --age-days 30
+strata consolidate --age-days 30
 
 # Perform
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" consolidate --apply
+strata consolidate --apply
 ```
 
 ## What it does

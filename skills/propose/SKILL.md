@@ -43,7 +43,7 @@ Then run a second pass with `scope="decisions"`. Adjudicate:
 ### Create
 
 ```bash
-cat <<'EOF' | "${CLAUDE_PLUGIN_ROOT}/bin/strata" propose \
+cat <<'EOF' | strata propose \
     --title "Should we move to Postgres for tenant data?"
 # Should we move to Postgres for tenant data?
 
@@ -68,7 +68,7 @@ When someone weighs in on an open proposition, append a position — don't
 rewrite the note. Each entry is attributed, dated, and append-only:
 
 ```bash
-cat <<'EOF' | "${CLAUDE_PLUGIN_ROOT}/bin/strata" propose \
+cat <<'EOF' | strata propose \
     --update propositions/2026-05-25-should-we-move-to-postgres.md \
     --position --stance against
 Postgres adds an ops burden we can't staff. Evidence: our last two
@@ -98,7 +98,7 @@ EOF
 ### Promote (when settled)
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" propose \
+strata propose \
   --update propositions/2026-05-25-should-we-move-to-postgres.md \
   --settled-as "decisions/2026-05-30-use-postgres-tenant-data.md"
 ```
@@ -111,7 +111,7 @@ Alternatives in this proposition."
 ### Retire (when refuted)
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" propose \
+strata propose \
   --update propositions/2026-05-25-foo.md \
   --refuted-as "lessons/2026-06-02-why-we-didnt.md"
 ```

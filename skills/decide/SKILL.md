@@ -30,7 +30,7 @@ User runs `/strata:decide <title>`. You:
    recorded (the "agents battling on ADRs" failure):
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" decide \
+strata decide \
   --title "<title>" --check-only <<'STRATA_ADR'
 <the body you drafted>
 STRATA_ADR
@@ -59,7 +59,7 @@ STRATA_ADR
 4. Write it (ADD):
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" decide \
+strata decide \
   --title "<title>" --status proposed <<'STRATA_ADR'
 <body — Context / Decision / Consequences / Alternatives>
 STRATA_ADR
@@ -79,7 +79,7 @@ The chain is recorded in frontmatter (`supersedes` / `superseded_by`) and
 surfaced by `recall` at layer 2, which walks a note's neighbours.
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" decide \
+strata decide \
   --title "Adopt SQLiteData" --status accepted \
   --supersedes "2026-05-15-use-core-data" \
   --supersedes "2026-04-02-swift-data-migration" <<'EOF'

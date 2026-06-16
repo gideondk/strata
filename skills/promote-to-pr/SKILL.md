@@ -31,7 +31,7 @@ User runs `/strata:promote-to-pr [--pr N]`. You:
 2. Invoke:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" promote-to-pr --dry-run <<'STRATA_PR_COMMENT'
+strata promote-to-pr --dry-run <<'STRATA_PR_COMMENT'
 <summary body>
 STRATA_PR_COMMENT
 ```

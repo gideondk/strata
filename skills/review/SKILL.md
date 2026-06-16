@@ -20,10 +20,10 @@ Read-only by design, flags issues, never auto-fixes.
 ## How
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" review
+strata review
 
 # Tune the staleness thresholds
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" review \
+strata review \
   --stale-days 7 --pr-stale-days 14
 ```
 

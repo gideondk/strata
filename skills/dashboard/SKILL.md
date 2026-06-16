@@ -16,12 +16,7 @@ Two paths depending on freshness needs:
 ### Quick (read what's on disk)
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/run-python.sh" -c "
-import sys
-sys.path.insert(0, '${CLAUDE_PLUGIN_ROOT}/scripts')
-from lib import memory_dir
-print((memory_dir() / 'INDEX.md').read_text())
-"
+strata read-index
 ```
 
 Use when you trust the cached state (it was regenerated on the last
@@ -30,7 +25,7 @@ Write). 95% of cases.
 ### Fresh (regenerate first)
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" dashboard
+strata dashboard
 ```
 
 `dashboard.py` rebuilds the content from live data (db, code_graph,

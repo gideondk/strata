@@ -29,7 +29,7 @@ and/or `--commit`. Ungrounded auto-writes are refused.
 
 ```bash
 echo "Commit bumped the HTTP retry budget 3→5; see the client." | \
-  "${CLAUDE_PLUGIN_ROOT}/bin/strata" observe \
+  strata observe \
   --topic "retry budget bumped" \
   --source-file "src/http/client.py" --commit "$(git rev-parse --short HEAD)"
 ```

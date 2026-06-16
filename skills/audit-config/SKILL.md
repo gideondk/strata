@@ -30,10 +30,10 @@ Default), so you can revisit them deliberately.
 
 ```bash
 # Default: 180-day staleness threshold
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" audit-config
+strata audit-config
 
 # Tighter cadence
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" audit-config --stale-days 90
+strata audit-config --stale-days 90
 ```
 
 ## What it covers

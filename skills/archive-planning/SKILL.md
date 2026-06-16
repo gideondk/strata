@@ -35,7 +35,7 @@ vault/<repo>/lessons/2026-05-24-auth-rewrite.md
 Dry-run first:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" archive-planning \
+strata archive-planning \
   .planning/auth-rewrite
 ```
 
@@ -46,7 +46,7 @@ Refuses, telling you to bootstrap them first.
 Then apply:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" archive-planning \
+strata archive-planning \
   .planning/auth-rewrite --apply
 ```
 

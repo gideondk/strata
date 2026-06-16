@@ -13,7 +13,7 @@ Three-step onboarding. Always step 1; step 2 and 3 are user-chosen.
 Always do this. Idempotent.
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" init
+strata init
 ```
 
 Creates `<vault>/<repo>/{decisions,domain,lessons,procedural,propositions,pr-context}/`
@@ -23,9 +23,10 @@ via `STRATA_VAULT_PATH` or plugin `userConfig.vault_path`.
 `init-memory.py` also runs an inline venv health check at the end —
 imports every required package and reports any missing required or
 Optional deps. The bootstrap-venv.sh wrapper auto-installs from
-`requirements.txt` on first run, so this is usually green, but it
-Makes the state legible to the user before they invoke their first
-Save / decide / recall.
+`requirements.txt` on first run (and installs a `~/.local/bin/strata`
+symlink so bare `strata` works on PATH), so this is usually green, but it
+makes the state legible to the user before they invoke their first
+save / decide / recall.
 
 Show the user the resulting layout in one line:
 
@@ -62,7 +63,7 @@ brew install graphifylabs/tap/graphify
 Then offer to build the first graph:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" graphify
+strata graphify
 ```
 
 ### If no / later

@@ -23,13 +23,13 @@ Two-step with `--dry-run` for safety.
 
 ```bash
 # 1. Preview
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" forget \
+strata forget \
   --path decisions/2026-05-20-mistake.md \
   --reason "Erasure request — ticket #1234" \
   --dry-run
 
 # 2. Apply
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" forget \
+strata forget \
   --path decisions/2026-05-20-mistake.md \
   --reason "Erasure request — ticket #1234"
 ```
