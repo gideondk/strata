@@ -53,10 +53,10 @@ Show the install command. Don't run it yourself. Paths vary,
 they may want sudo, they may already have it:
 
 ```text
-# macOS via Homebrew
-brew install graphifylabs/tap/graphify
+uv tool install graphifyy
 
-# Or use the installer at https://graphifylabs.ai/install
+# or: pipx install graphifyy
+# (PyPI package is graphifyy, double-y; see https://graphifylabs.ai)
 ```
 
 Then offer to build the first graph:
