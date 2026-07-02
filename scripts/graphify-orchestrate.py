@@ -71,7 +71,7 @@ def main() -> int:
     if shutil.which("graphify") is None:
         print("[strata] graphify not installed.",
               file=sys.stderr)
-        print("[strata] install: pip install graphifyy && graphify install",
+        print("[strata] install: uv tool install graphifyy  (or: pipx install graphifyy)",
               file=sys.stderr)
         return 2
 

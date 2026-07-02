@@ -14,9 +14,14 @@ This is where the token economy pays off, not just documentation.
 ## Install Graphify
 
 ```bash
-brew install graphifylabs/tap/graphify
-# or the official installer
+uv tool install graphifyy
+# or: pipx install graphifyy
 ```
+
+The PyPI package is `graphifyy` — double-y. Other `graphify*` names on
+PyPI are unaffiliated. Strata only needs the `graphify` binary on PATH;
+uv and pipx put it in `~/.local/bin` (run `uv tool update-shell` or
+`pipx ensurepath` if it isn't found).
 
 Strata doesn't depend on Graphify's Python. We parse the JSON it emits.
 

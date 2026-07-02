@@ -7,7 +7,7 @@ description: Rebuild the code map so functions/classes show up in Obsidian's gra
 # strata:graphify
 
 Orchestration wrapper. Doesn't bundle Graphify, shells out to whatever
-`graphify` is on PATH (install separately: `pip install graphifyy`).
+`graphify` is on PATH (install separately: `uv tool install graphifyy`).
 
 ## What it does
 
