@@ -17,12 +17,16 @@ import sys
 
 import lib_loader  # noqa: F401
 from lib import (
+    _vault_git,
+    git_remote,
     is_git_repo,
     memory_dir,
     memory_display,
     plugin_root,
     repo_name,
+    vault_is_git_repo,
     vault_root,
+    vault_sync_mode,
 )
 
 # Mirror init-memory.py — keep the two lists in sync.
@@ -34,6 +38,7 @@ REQUIRED_PACKAGES: dict[str, str] = {
 OPTIONAL_PACKAGES: dict[str, str] = {
     "fastembed": "fastembed",
     "numpy": "numpy",
+    "tree_sitter_language_pack": "tree-sitter-language-pack",
 }
 
 OK, WARN, FAIL = "✓", "⚠", "✗"
@@ -72,9 +77,19 @@ def _check_packages(r: Report) -> None:
              f"{len(REQUIRED_PACKAGES)} required, "
              f"{opt_ok}/{len(OPTIONAL_PACKAGES)} optional present")
     if missing_opt:
-        r.warn("optional packages",
-                f"{', '.join(missing_opt)} absent — semantic search falls "
-                "back to FTS5 (still works, just keyword-only)")
+        # Surface the specific degradation per missing package rather
+        # than a single generic message — the fallbacks differ.
+        semantic_missing = [p for p in ("fastembed", "numpy")
+                            if p in missing_opt]
+        if semantic_missing:
+            r.warn("optional packages",
+                   f"{'/'.join(semantic_missing)} absent — semantic search "
+                   "falls back to FTS5 (still works, just keyword-only)")
+        if "tree-sitter-language-pack" in missing_opt:
+            r.warn("optional packages",
+                    "tree-sitter-language-pack absent — code-graph "
+                    "features need Graphify installed (no coarse "
+                    "fallback). Install it for out-of-the-box support")
 
 
 def _check_vault(r: Report) -> bool:
@@ -154,6 +169,44 @@ def _check_git(r: Report) -> None:
                 "not inside a git repo — branch/PR scoping is disabled")
 
 
+def _check_vault_git(r: Report) -> None:
+    """Git-backed vault mode. The classic misconfig — vault_sync=git without
+    ever running `strata init --git` — makes every auto-commit a silent no-op,
+    so that exact state FAILS rather than warns."""
+    mode = vault_sync_mode()
+    if mode != "git":
+        if vault_is_git_repo():
+            r.warn("vault git",
+                   "vault is a git repo but vault_sync=manual — writes are "
+                   "NOT auto-committed. Set vault_sync=git to enable.")
+        return
+    if not vault_is_git_repo():
+        r.fail("vault git",
+               "vault_sync=git but the vault is not a git repo — every "
+               "auto-commit is silently skipped. Run `strata init --git`.")
+        return
+    # Repo existing isn't enough — with no committer identity every
+    # auto-commit fails, which is exactly the silent state to surface here.
+    ident = _vault_git("var", "GIT_COMMITTER_IDENT")
+    if ident is None or ident.returncode != 0:
+        r.fail("vault git",
+               "git has no committer identity — auto-commits are failing. "
+               "Fix: git -C <vault> config user.email you@example.com "
+               "(and user.name).")
+        return
+    remote = git_remote()
+    up = _vault_git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+    upstream = (up.stdout.strip()
+                if up is not None and up.returncode == 0 else "")
+    if remote or upstream:
+        r.ok("vault git", f"auto-commit on; /strata:sync ↔ {remote or upstream}")
+    else:
+        r.warn("vault git",
+               "auto-commit on, but no remote/upstream configured — "
+               "/strata:sync commits locally only. Set git_remote or add "
+               "an origin to share.")
+
+
 def main() -> int:
     r = Report()
     print(f"[strata] doctor — health check for {repo_name()}\n")
@@ -166,6 +219,7 @@ def main() -> int:
     _check_semantic(r)
     _check_mcp(r)
     _check_git(r)
+    _check_vault_git(r)
 
     print("\n".join(r.lines))
     if r.failed:

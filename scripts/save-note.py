@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Write a PR-context note for the current branch, or a retrospective
-lesson note (with `--scope lessons`).
+"""Write a PR-context note for the current branch, a retrospective
+lesson note (`--scope lessons`), or a domain note (`--scope domain`).
 
 PR-context (default):
     python3 save-note.py --topic "<topic>" [--kind ...]
@@ -13,6 +13,15 @@ Lessons:
     Branch-agnostic. For retrospectives, "we considered this in 2026",
     and bootstrap-extracted historical content that has no current
     branch context.
+
+Domain:
+    python3 save-note.py --topic "<Concept>" --scope domain [--overwrite]
+    → domain/<slug>.md
+    One concept per file, no date prefix. Refuses to clobber an existing
+    note unless --overwrite is passed (which preserves the original
+    `created` date and stamps `updated`). This is the scripted path the
+    /strata:domain skill uses so domain writes read as a visible `strata`
+    command and auto-commit in git-backed vaults.
 
 The body is written verbatim with a YAML frontmatter prefix. A warn-only
 secret/PII pre-step (lint_check) runs before the write — it advises on stderr
@@ -39,6 +48,7 @@ from lib import (
     safe_slug,
     stamp_minute,
     today,
+    vault_git_autocommit,
     write_text,
 )
 
@@ -53,11 +63,23 @@ def main() -> int:
                     choices=["session", "review", "decision-draft",
                              "investigation", "handoff"])
     ap.add_argument("--scope", default="pr-context",
-                    choices=["pr-context", "lessons"],
+                    choices=["pr-context", "lessons", "domain"],
                     help="Destination scope. Default `pr-context` writes "
                          "to the current branch's folder; `lessons` writes "
                          "to the branch-agnostic lessons/ for retrospective "
-                         "and bootstrap-extracted content.")
+                         "and bootstrap-extracted content; `domain` writes "
+                         "one-concept-per-file vocabulary notes.")
+    ap.add_argument("--overwrite", action="store_true",
+                    help="With --scope domain: replace an existing note for "
+                         "the same concept (keeps its original `created` "
+                         "date). Without this flag an existing note is an "
+                         "error, so a re-run can't silently clobber one.")
+    ap.add_argument("--code-ref", action="append", default=[],
+                    help="With --scope domain: code-graph-verified symbol "
+                         "this note touches (repeatable). Lands as "
+                         "`code_refs:` frontmatter — names only, projections "
+                         "are fetched fresh via code_map(focus=...) at read "
+                         "time. Ignored for other scopes.")
     ap.add_argument("--source-file", action="append", default=[],
                     help="Provenance: project-relative path(s) of source doc(s) "
                          "this note was extracted from. Repeatable, or pass a "
@@ -159,6 +181,17 @@ def main() -> int:
         ensure_dir(dir_)
         fname = f"{today()}-{topic_slug}.md"
         path = dir_ / fname
+    elif args.scope == "domain":
+        # One concept per file, no date prefix, stable slug.
+        dir_ = memory_dir() / "domain"
+        ensure_dir(dir_)
+        path = dir_ / f"{topic_slug}.md"
+        if path.exists() and not args.overwrite:
+            print(f"[strata] error: domain/{topic_slug}.md already exists. "
+                  "Re-run with --overwrite to replace it (keeps the original "
+                  "created date), or reconcile via /strata:correct.",
+                  file=sys.stderr)
+            return 2
     else:
         when = stamp_minute()
         dir_ = pr_context_dir(slug)
@@ -166,20 +199,40 @@ def main() -> int:
         fname = f"{when}--{init}--{topic_slug}.md"
         path = dir_ / fname
 
-    fm_lines = ["---"]
-    # pr-context notes are branch-scoped; lessons are deliberately
-    # branch-agnostic retrospectives, so they keep no branch.
-    if args.scope == "pr-context":
-        ob = origin_branch()
-        if ob:
-            fm_lines.append(f"branch: {ob}")
-    fm_lines.extend([
-        f"kind: {args.kind}",
-        f"author: {author_name()}",
-        f"author_initials: {init}",
-        f"topic: {args.topic}",
-        f"created: {today() if args.scope == 'lessons' else stamp_minute()}",
-    ])
+    if args.scope == "domain":
+        # Match templates/domain.md: title/kind/status/created/updated.
+        created = today()
+        if path.exists():
+            import contextlib
+            with contextlib.suppress(Exception):
+                import frontmatter as _fm
+                created = str(_fm.load(path).metadata.get("created") or created)
+        fm_lines = [
+            "---",
+            f"title: {args.topic}",
+            "kind: domain",
+            "status: stable",
+            f"author: {author_name()}",
+            f"created: {created}",
+            f"updated: {today()}",
+        ]
+        if args.code_ref:
+            fm_lines.append(f"code_refs: [{', '.join(args.code_ref)}]")
+    else:
+        fm_lines = ["---"]
+        # pr-context notes are branch-scoped; lessons are deliberately
+        # branch-agnostic retrospectives, so they keep no branch.
+        if args.scope == "pr-context":
+            ob = origin_branch()
+            if ob:
+                fm_lines.append(f"branch: {ob}")
+        fm_lines.extend([
+            f"kind: {args.kind}",
+            f"author: {author_name()}",
+            f"author_initials: {init}",
+            f"topic: {args.topic}",
+            f"created: {today() if args.scope == 'lessons' else stamp_minute()}",
+        ])
     if args.source_file:
         if len(args.source_file) == 1:
             fm_lines.append(f"source_file: {args.source_file[0]}")
@@ -199,13 +252,16 @@ def main() -> int:
         lint_check.emit_warnings(frontmatter_str + body, label=f"{args.scope} note")
 
     write_text(path, frontmatter_str + body + "\n")
+    verb = "domain" if args.scope == "domain" else "save"
+    vault_git_autocommit([path], f'strata: {verb} "{args.topic}"')
     # Friendly one-line receipt (vault-relative, not an absolute path) — the
     # index-regeneration chatter is silenced unless STRATA_VERBOSE.
     try:
         where = str(path.relative_to(memory_dir()))
     except Exception:
         where = path.name
-    print(f'✓ Strata: saved "{args.topic}" → {where}')
+    done = "domain note" if args.scope == "domain" else "saved"
+    print(f'✓ Strata: {done} "{args.topic}" → {where}')
 
     # Telemetry for graduated autonomy: per-kind save + whether it came through
     # the Stop-hook draft-accept flow (the accept-rate signal). Best-effort.

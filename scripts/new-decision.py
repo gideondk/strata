@@ -34,6 +34,7 @@ from lib import (
     plugin_root,
     safe_slug,
     today,
+    vault_git_autocommit,
     write_text,
 )
 
@@ -327,6 +328,7 @@ def main() -> int:
         lint_check.emit_warnings(composed, label="decision")
 
     write_text(path, composed + "\n")
+    vault_git_autocommit([path], f'strata: decide "{args.title}"')
     # Friendly one-line receipt (vault-relative). Index chatter is silenced
     # unless STRATA_VERBOSE.
     new_rel = path.relative_to(memory_dir()).as_posix()

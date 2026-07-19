@@ -78,6 +78,11 @@ Claude Code prompts for these userConfig values when the plugin is enabled:
   to derive from `git remote.origin.url` (preferred) or the directory name.
 - **lint_presets** (default `secrets`) — comma-separated. Add `pii`, `phi-uk`,
   `phi-us`, `financial-iban` as needed.
+- **vault_sync** (default `manual`) — set to `git` to make the vault its own
+  git repo: every confirmed write is committed locally with a readable message,
+  and `/strata:sync` (the only network command in Strata) pulls + pushes.
+- **git_remote** (optional, git mode only) — remote for `/strata:sync`. Leave
+  blank to use the vault repo's own upstream.
 
 After install, in a Claude Code session inside the repo:
 
@@ -87,6 +92,30 @@ After install, in a Claude Code session inside the repo:
 
 That creates `<vault>/<repo>/{decisions,lessons,domain,pr-context}/` and
 seeds `INDEX.md`.
+
+## Git-backed vault (teams)
+
+For a shared team vault, back it with git instead of a file-sync service:
+
+```bash
+strata init --git --remote git@github.com:yourorg/knowledge.git
+```
+
+Then set `vault_sync: git` in the plugin config. From that point every
+confirmed note lands as a local commit (`strata: decide "…"`, `strata: save
+"…"`), and nothing reaches the remote until someone runs `/strata:sync` —
+which commits pending changes, pulls with rebase, lints outgoing notes for
+secrets (add `--strict` to block on findings), and pushes.
+
+Teammates clone the same repo to their `vault_path` and run `/strata:sync` at
+the start and end of a session. `strata init --git` also scaffolds a
+`.gitignore` (regenerable artifacts like `INDEX.md` stay out of history) and a
+`.gitattributes` (append-only audit logs union-merge, so concurrent writes
+never conflict). One vault repo serves all your projects — each repo gets its
+own subfolder, `_shared/` holds cross-repo vocabulary.
+
+Prefer iCloud/Dropbox/Obsidian Sync? Keep `vault_sync: manual` (the default)
+and skip all of this — plain files, no commits, no sync command.
 
 ## Venv bootstrap
 
@@ -112,7 +141,7 @@ via `brew install python@3.13` if needed.
 ## Verify
 
 ```
-/plugin                  # strata should be "enabled", v0.12.1
+/plugin                  # strata should be "enabled", v0.13.0
 /mcp                     # strata server should be listed with 7 tools
 ```
 
@@ -206,6 +235,19 @@ After saving the config, **restart opencode** — it loads config once at startu
 | Skills (save, decide, domain, …) | `/strata:save` | auto-invoked via description |
 | `strata` CLI on PATH | Yes (via `${CLAUDE_PLUGIN_ROOT}`) | Yes (via `~/.local/bin/strata`) |
 | Hooks (SessionStart, Stop draft, …) | Yes | Not yet (different event model) |
+
+**Git-backed vault outside Claude Code:** opencode and zcode have no
+`userConfig` auto-export, so `vault_sync`/`git_remote` come from the
+environment instead. Export them in your shell profile so the `strata`
+commands the skills run pick them up:
+
+```bash
+export STRATA_VAULT_SYNC=git
+export STRATA_GIT_REMOTE=origin   # optional
+```
+
+(Claude Code users on the same vault don't need this — the plugin config
+covers it there.)
 
 ### How skills are shared
 

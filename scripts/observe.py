@@ -37,6 +37,7 @@ from lib import (
     pr_context_dir,
     safe_slug,
     stamp_minute,
+    vault_git_autocommit,
     write_text,
 )
 
@@ -138,6 +139,7 @@ def capture(topic: str, body: str, *, source_file: list[str] | None = None,
         import lint_check
         lint_check.emit_warnings(composed, label="observation")
     write_text(path, composed + "\n")
+    vault_git_autocommit([path], f"strata: observe {topic}")
 
     import importlib.util
     import os

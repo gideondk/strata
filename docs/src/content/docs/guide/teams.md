@@ -45,16 +45,45 @@ known version:
 Commit a shared `.claude/settings.json` (see `examples/`) so everyone on the
 repo gets the plugin enabled with the same vault path and lint presets.
 
+## Git-backed vault
+
+The default vault is plain files you sync however you like. For teams there's
+a git mode that makes the vault its own repo:
+
+```bash
+strata init --git --remote git@github.com:yourorg/knowledge.git
+```
+
+Set `vault_sync: git` in the plugin config and every confirmed note becomes a
+local commit with a readable message — `strata: decide "use per-tenant
+queues"`, `strata: forget old-note.md`. Nothing touches the remote until
+someone runs `/strata:sync`, which commits pending work, pulls with rebase,
+lints outgoing notes for secrets, and pushes. That one command is the only
+place Strata ever opens a network connection.
+
+What you get over a file-sync service: history and blame on team memory, PRs
+on the knowledge repo if you want review, and a real audit trail (who wrote
+which note, when, superseding what). `init --git` scaffolds the details —
+regenerable files like `INDEX.md` stay out of history, and append-only audit
+logs union-merge so two people's writes never conflict.
+
+One vault repo serves the whole team across all projects: each code repo gets
+its own subfolder automatically, and `_shared/` holds cross-repo vocabulary.
+Run `/strata:sync` at the start of a session (get teammates' notes) and at the
+end (publish yours).
+
 ## What it is NOT (yet)
 
 Being straight about the edges, because a team tool that overpromises here is
 worse than one that doesn't:
 
-- **Sync is bring-your-own.** Strata does not ship a multi-writer merge engine.
-  It is sync-mechanism agnostic — point the vault at Obsidian Sync, Syncthing,
-  iCloud, Dropbox, or a private git repo and use that tool's conflict handling.
-  Plain markdown keeps conflicts human-readable, but concurrent edits to the
-  *same note* are resolved by your sync layer, not by Strata.
+- **No multi-writer merge engine.** Git mode gives you commits, history, and a
+  sync command, but when two people edit the *same note* concurrently, the
+  rebase conflict is handed to a human — `strata sync` stops and prints the
+  steps rather than auto-resolving. In manual mode the same applies via your
+  sync layer (Obsidian Sync, Syncthing, iCloud, Dropbox). Plain markdown keeps
+  conflicts human-readable; note conventions (timestamped filenames,
+  union-merged logs) make them rare.
 - **Recall telemetry is per-machine.** The usage ledger is local, so
   "dead-weight" detection reflects *your* recalls, not the team's. That's a
   deliberate privacy choice, not a synced feature.

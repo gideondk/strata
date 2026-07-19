@@ -9,13 +9,17 @@ import sys
 
 import lib_loader  # noqa: F401
 from lib import (
+    _vault_git,
     ensure_dir,
     info,
     memory_dir,
     memory_display,
     plugin_root,
     repo_name,
+    scaffold_vault_git_files,
+    vault_is_git_repo,
     vault_root,
+    vault_sync_mode,
     write_text,
 )
 
@@ -29,6 +33,7 @@ REQUIRED_PACKAGES: dict[str, str] = {
 OPTIONAL_PACKAGES: dict[str, str] = {
     "fastembed": "fastembed",
     "numpy": "numpy",
+    "tree_sitter_language_pack": "tree-sitter-language-pack",
 }
 
 
@@ -47,6 +52,16 @@ def _venv_health() -> tuple[list[str], list[str], bool]:
             missing_opt.append(pkg)
     marker = (plugin_root() / ".venv" / ".strata-installed").exists()
     return missing_req, missing_opt, marker
+
+
+def _optional_degradation_notes(missing_opt: list[str]) -> None:
+    """Per-package consequence lines — the fallbacks differ per package,
+    so name what's actually degraded rather than one generic message."""
+    if "fastembed" in missing_opt or "numpy" in missing_opt:
+        info("  semantic search falls back to FTS5 (keyword-only)")
+    if "tree-sitter-language-pack" in missing_opt:
+        info("  code-graph features need Graphify installed "
+             "(no coarse fallback)")
 
 # The four scopes map to the 2026 memory taxonomy:
 #   - episodic   → pr-context/   (specific past interactions on a branch)
@@ -109,6 +124,16 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--profile", choices=list(PROFILES.keys()), default="team",
                     help=f"Install profile. {' '.join(f'`{k}`={v}' for k, v in PROFILES.items())}")
+    ap.add_argument("--git", action="store_true",
+                    help="Make the vault its own git repo: `git init` (if "
+                         "needed), scaffold .gitignore/.gitattributes, and make "
+                         "an initial commit. After this, set vault_sync=git so "
+                         "each write auto-commits locally. All local — no "
+                         "remote is contacted. Pass --remote URL to also wire "
+                         "an upstream for `/strata:sync`.")
+    ap.add_argument("--remote", metavar="URL", default="",
+                    help="With --git: add this URL as `origin` (config only, "
+                         "no network). `/strata:sync` uses it to pull/push.")
     ap.add_argument("--verify-env", action="store_true",
                     help="Check that the plugin's Python venv has every "
                          "required runtime package importable, and report "
@@ -126,8 +151,8 @@ def main() -> int:
             info("install with: bin/run-python.sh -m pip install -r requirements.txt")
             return 2
         if missing_opt:
-            info(f"optional packages not installed: {', '.join(missing_opt)} "
-                 "(semantic search will fall back to FTS5-only)")
+            info(f"optional packages not installed: {', '.join(missing_opt)}")
+            _optional_degradation_notes(missing_opt)
         info(f"venv healthy — every required package importable "
              f"({len(REQUIRED_PACKAGES)} required, "
              f"{len(OPTIONAL_PACKAGES) - len(missing_opt)}/"
@@ -181,7 +206,8 @@ def main() -> int:
              f"{opt_ok}/{len(OPTIONAL_PACKAGES)} optional packages present)")
         if missing_opt:
             info(f"  optional not installed: {', '.join(missing_opt)} "
-                 "(plugin still works; semantic search falls back to FTS5)")
+                 "(plugin still works)")
+            _optional_degradation_notes(missing_opt)
 
     # Regenerate index immediately so the user sees a real one
     import os
@@ -195,7 +221,90 @@ def main() -> int:
         spec.loader.exec_module(mod)
         mod.regenerate_index()
 
+    # Git backend: opt-in via --git, or implied when the user already set
+    # vault_sync=git. All operations here are local — no remote is contacted.
+    if args.git or vault_sync_mode() == "git":
+        rc = _setup_git_backend(vroot, args.remote)
+        if rc != 0 and args.git:
+            # Explicit --git that couldn't deliver is a failure, not a shrug.
+            # (Implied mode still degrades gracefully: the vault works as
+            # plain files, and doctor/audit-config flag the gap.)
+            return rc
+
     print(f"[strata] memory ready at {memory_dir()}")
+    return 0
+
+
+def _setup_git_backend(vroot, remote: str) -> int:
+    """Make the vault a git repo (idempotent): init, scaffold ignore/attrs,
+    optionally set origin, and make an initial commit. Local only.
+    Returns 0 on success, 2 on a refused/failed setup."""
+    from pathlib import Path
+
+    # Refuse catastrophic vault paths BEFORE any git command runs. `git init`
+    # + `git add -A` over $HOME (a one-line vault_path misconfig away) would
+    # commit the user's entire home directory — SSH keys included — and a
+    # configured remote + sync would push it off the machine.
+    resolved = Path(vroot).resolve()
+    home = Path.home().resolve()
+    if resolved in (home, *home.parents):
+        info(f"✗ refusing --git: vault path resolves to {resolved}, which is "
+             "your home directory (or a parent of it). `git add -A` there "
+             "would commit everything you own. Point vault_path at a "
+             "dedicated folder, e.g. ~/StrataVault.")
+        return 2
+
+    if _vault_git("--version") is None:
+        info("⚠ git not found on PATH — skipping vault git setup")
+        return 2
+
+    fresh = not vault_is_git_repo()
+    if fresh:
+        r = _vault_git("init")
+        if r is None or r.returncode != 0:
+            info("⚠ git init failed — vault left as plain files")
+            return 2
+        info(f"git: initialised repo at {vroot}")
+
+    # Fail loudly on missing identity now, not silently on every later write.
+    # `git var GIT_COMMITTER_IDENT` errors when git can't determine who is
+    # committing (no user.email and auto-detection unavailable).
+    ident = _vault_git("var", "GIT_COMMITTER_IDENT")
+    if ident is None or ident.returncode != 0:
+        info("✗ git has no committer identity on this machine, so nothing "
+             "can be committed. Fix, then re-run `strata init --git`:")
+        info(f"  git -C {vroot} config user.email you@example.com")
+        info(f"  git -C {vroot} config user.name  \"Your Name\"")
+        return 2
+
+    created = scaffold_vault_git_files()
+    if created:
+        info(f"git: scaffolded {', '.join(created)}")
+
+    if remote:
+        # `set-url` if origin exists, else `add`. Config only — no fetch.
+        existing = _vault_git("remote", "get-url", "origin")
+        verb = "set-url" if (existing and existing.returncode == 0) else "add"
+        _vault_git("remote", verb, "origin", remote)
+        info(f"git: origin → {remote}")
+
+    _vault_git("add", "-A")
+    commit = _vault_git("commit", "-m", "strata: initialize vault")
+    if commit is not None and commit.returncode == 0:
+        info("git: initial commit created")
+    else:
+        out = ((commit.stdout + commit.stderr) if commit is not None else "")
+        if "nothing to commit" in out.lower():
+            info("git: working tree already clean — nothing new to commit")
+        else:
+            first = out.strip().splitlines()
+            info("✗ git: initial commit failed — "
+                 f"{first[0] if first else 'unknown error'}")
+            return 2
+
+    if vault_sync_mode() != "git":
+        info("git: set vault_sync=git in plugin config so writes auto-commit; "
+             "run /strata:sync to pull/push.")
     return 0
 
 

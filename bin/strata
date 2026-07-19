@@ -152,7 +152,18 @@ ZESCRIPT
   decide)            script="new-decision.py" ;;
   propose)           script="new-proposition.py" ;;
   procedure)         script="new-procedure.py" ;;
-  domain)            script="save-note.py" ;;   # reserved; domain writes via Write tool today
+  domain)
+    # The subcommand IS the scope — refuse a contradictory user-supplied
+    # --scope rather than letting argparse's last-wins quietly reroute a
+    # note that the transcript says went to domain/.
+    for arg in "$@"; do
+      if [ "$arg" = "--scope" ] || [[ "$arg" == --scope=* ]]; then
+        echo "strata domain: --scope is implied (domain); use \`strata save --scope ...\` for other scopes" >&2
+        exit 2
+      fi
+    done
+    exec "$ROOT/bin/run-python.sh" "$ROOT/scripts/save-note.py" --scope domain "$@"
+    ;;
   save)              script="save-note.py" ;;
   observe)           script="observe.py" ;;
   correct)           script="correct-note.py" ;;
@@ -177,6 +188,7 @@ ZESCRIPT
   read-index)        script="read-index.py" ;;
   # ---- lifecycle / index ------------------------------------------------
   init)              script="init-memory.py" ;;
+  sync)              script="git-sync.py" ;;
   prime)             script="prime-context.py" ;;
   reindex)           script="refresh-index.py" ;;
   graphify)          script="graphify-orchestrate.py" ;;
@@ -196,6 +208,7 @@ Writes (visible, permission-gated; no write tool is exposed over MCP):
   decide            record an ADR (scripts/new-decision.py)
   propose           open a proposition / debate
   procedure         capture a procedural note
+  domain            write a domain note (one concept per file; --overwrite to update)
   save              write a pr-context or lessons note
   observe           auto-capture a grounded observation (quarantined)
   correct           edit a note (with audit trail)
@@ -221,7 +234,8 @@ Reads / inspection:
   bootstrap-scan    enumerate migration candidates
 
 Lifecycle / index:
-  init              one-time vault setup for a repo
+  init              one-time vault setup for a repo (--git makes the vault a git repo)
+  sync              pull + push the git-backed vault (the ONLY network command)
   prime             re-emit the SessionStart context primer
   reindex           refresh the FTS index
   graphify          build / refresh the code graph

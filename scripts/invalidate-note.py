@@ -9,7 +9,14 @@ import sys
 import frontmatter
 
 import lib_loader  # noqa: F401
-from lib import author_name, memory_dir, safe_resolve, today, write_text
+from lib import (
+    author_name,
+    memory_dir,
+    safe_resolve,
+    today,
+    vault_git_autocommit,
+    write_text,
+)
 
 
 def _refresh_index() -> None:
@@ -62,6 +69,7 @@ def main() -> int:
         post.metadata["invalid_since"] = args.invalid_since
 
     write_text(path, frontmatter.dumps(post) + "\n")
+    vault_git_autocommit([path], f"strata: invalidate {args.note}")
     print(f"[strata] invalidated: {args.note}")
     print(f"[strata] reason: {args.reason}")
     if args.replaced_by:

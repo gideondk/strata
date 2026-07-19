@@ -19,6 +19,19 @@ Creates `<vault>/<repo>/{decisions,domain,lessons,procedural,propositions,pr-con
 Plus `INDEX.md`. Vault path defaults to `~/StrataVault`, overridable
 via `STRATA_VAULT_PATH` or plugin `userConfig.vault_path`.
 
+If the user wants a git-backed team vault (they mention sharing via git,
+a knowledge repo, or team sync), add `--git`:
+
+```bash
+strata init --git --remote git@github.com:org/knowledge.git
+```
+
+That makes the vault its own git repo (local only — the remote is config,
+never fetched here), scaffolds `.gitignore`/`.gitattributes`, and commits.
+Remind them to set `vault_sync: git` in the plugin config so writes
+auto-commit, and that `/strata:sync` is the pull/push command. Don't
+suggest `--git` unprompted; manual (file-sync) mode is the default.
+
 `init-memory.py` also runs an inline venv health check at the end —
 imports every required package and reports any missing required or
 Optional deps. The bootstrap-venv.sh wrapper auto-installs from

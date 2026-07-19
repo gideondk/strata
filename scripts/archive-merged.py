@@ -27,6 +27,7 @@ from lib import (
     memory_dir,
     project_dir,
     today,
+    vault_git_autocommit,
 )
 
 
@@ -134,6 +135,9 @@ def main() -> int:
         else:
             ensure_dir(archive_root)
             shutil.move(str(slug_dir), str(dest_parent))
+            # Commit source-deletion + destination as one move, like forget.
+            vault_git_autocommit([slug_dir, dest_parent],
+                                 f"strata: archive {slug}")
             info(f"archived {slug} → {dest_parent.relative_to(mem)}")
         moved += 1
 

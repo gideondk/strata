@@ -307,13 +307,14 @@ def _verify_paths(claims: list[str], git_files: set[str]) -> tuple[list[str], li
 
 
 def _verify_symbols(claims: list[str], pd: Path) -> tuple[list[str], list[str]]:
-    """Return (verified, missing). Uses graph.json if present, else skips
-    (returns empty verified/missing) — we don't run unbounded greps."""
+    """Return (verified, missing). Uses graph.json if present, else the
+    coarse tree-sitter index if available; if neither, skips (returns
+    empty verified/missing) — we don't run unbounded greps."""
     if not claims:
         return [], []
     try:
         import code_graph
-        if code_graph.graph_path() is None:
+        if code_graph.graph_source() is None:
             return [], []
         verified: list[str] = []
         missing: list[str] = []

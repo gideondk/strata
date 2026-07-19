@@ -141,6 +141,11 @@ def _load_graph_json() -> dict | None:
     The cost matters: bootstrap-scan --verify calls resolve_symbol once
     per backtick identifier per doc — easily thousands of calls per
     scan. Without caching, each call re-parses a multi-MB JSON file.
+
+    Graphify-only: returns None when graph.json is absent. The coarse
+    fallback is layered on by _load_any_graph() below; callers that
+    only care about Graphify (summary, format_primer_block) keep using
+    this one.
     """
     p = graph_path()
     if p is None:
@@ -159,6 +164,77 @@ def _load_graph_json() -> dict | None:
     _GRAPH_CACHE.clear()
     _GRAPH_CACHE[key] = data
     return data
+
+
+# ---------------------------------------------------------------------------
+# Tiered loader — Graphify (deep) or coarse tree-sitter fallback
+# ---------------------------------------------------------------------------
+#
+# resolution order:
+#   1. graphify-out/graph.json  → source "graphify" (deep, cross-service)
+#   2. tree-sitter coarse index → source "coarse"  (defs + within-file edges)
+#   3. neither                  → source None
+#
+# graph_path() stays Graphify-only so existing `is None` contracts hold.
+# Consumers that want "is symbol resolution possible at all" call
+# graph_source() instead.
+
+_ANY_GRAPH_CACHE: dict[str, tuple[dict, str] | tuple[None, None]] = {}
+
+
+def _load_coarse() -> dict | None:
+    """Build/refresh the tree-sitter coarse index. None if unavailable."""
+    try:
+        import code_index
+    except ImportError:
+        return None
+    try:
+        return code_index.build()
+    except Exception:
+        return None
+
+
+def _load_any_graph() -> tuple[dict, str] | tuple[None, None]:
+    """Return (graph_data, source) for whichever tier is active.
+
+    Memoised so a bootstrap-scan making thousands of resolve_symbol
+    calls only builds the coarse index once per process.
+    """
+    g = _load_graph_json()
+    if g is not None:
+        return g, "graphify"
+
+    if "coarse" in _ANY_GRAPH_CACHE:
+        return _ANY_GRAPH_CACHE["coarse"]
+    coarse = _load_coarse()
+    # An empty coarse build (no parseable source) resolves no symbols, so
+    # treat it as "no tier active" — graph_source() returns None, matching
+    # the old graph_path()-is-None contract for empty repos. Keeps the
+    # primer honest: we don't advertise a coarse tier that knows nothing.
+    # The negative is memoised too — otherwise every resolve_symbol call
+    # on a docs-only repo re-runs the whole tree-sitter build.
+    nodes = coarse.get("nodes") if coarse else None
+    pair: tuple[dict, str] | tuple[None, None]
+    if coarse is not None and isinstance(nodes, list) and nodes:
+        pair = (coarse, "coarse")
+    else:
+        pair = (None, None)
+    _ANY_GRAPH_CACHE.clear()
+    _ANY_GRAPH_CACHE["coarse"] = pair
+    return pair
+
+
+def graph_source() -> str | None:
+    """Which tier is active: "graphify", "coarse", or None.
+
+    Use this (not graph_path()) to gate "is symbol resolution possible".
+    graph_path() remains Graphify-only for consumers that need to
+    distinguish "Graphify specifically is installed".
+    """
+    data, src = _load_any_graph()
+    if data is None:
+        return None
+    return src
 
 
 def _extract_node_names(node: dict) -> list[str]:
@@ -186,20 +262,29 @@ def _extract_node_names(node: dict) -> list[str]:
 
 def symbol_index() -> dict[str, list[dict]] | None:
     """Build {name → [node]} lookup. Same name can map to multiple nodes
-    (e.g. `process` in Python and TypeScript). Cached per graph mtime."""
-    p = graph_path()
-    if p is None:
+    (e.g. `process` in Python and TypeScript). Cached per graph mtime.
+
+    Serves whichever tier _load_any_graph() resolves (Graphify first,
+    then the coarse tree-sitter fallback), so resolve_symbol works even
+    when Graphify isn't installed.
+    """
+    data, src = _load_any_graph()
+    if data is None:
         return None
-    key = _cache_key(p)
+    # Cache key: for Graphify, the file's mtime (invalidates on rebuild);
+    # for the coarse tier, the source tag is enough since code_index
+    # memoises its own build behind _load_any_graph().
+    if src == "graphify":
+        p = graph_path()
+        key = _cache_key(p) if p is not None else None
+    else:
+        key = ("coarse",)  # type: ignore[assignment]
     if key is None:
         return None
     cached = _SYMBOL_INDEX_CACHE.get(key)
     if cached is not None:
         return cached
 
-    data = _load_graph_json()
-    if data is None:
-        return None
     nodes = data.get("nodes")
     if not isinstance(nodes, list):
         return None
@@ -229,8 +314,10 @@ def top_god_nodes(n: int = 5) -> list[str]:
 
     Best-effort: counts edges by src/dst/source/target/from/to keys.
     Falls back to first-N node names if the edge schema is unrecognised.
+
+    Serves whichever tier is active (Graphify or coarse).
     """
-    data = _load_graph_json()
+    data, _src = _load_any_graph()
     if data is None:
         return []
     nodes = data.get("nodes") or []
@@ -366,14 +453,17 @@ def project(
     Returns:
         Markdown ready to inject into a prompt.
     """
-    g = _load_graph_json()
+    g, src = _load_any_graph()
     if g is None:
         return ("_code map unavailable — no `graphify-out/graph.json` in "
-                "project. Run `/strata:graphify` to build one._")
+                "project and no parseable source to build a coarse index. "
+                "Run `/strata:graphify` (or install Graphify) to build one._")
 
     nodes = g.get("nodes") or []
     links = g.get("links") or g.get("edges") or []
     if not isinstance(nodes, list) or not nodes:
+        if src == "coarse":
+            return "_code map: coarse index found no source files to parse_"
         return "_code map: graph has no nodes_"
     nodes_by_id: dict[str, dict] = {
         n["id"]: n for n in nodes
@@ -469,6 +559,16 @@ def project(
         )
     else:
         out.append("# Code map — top symbols by reference count")
+
+    # Provenance: when serving from the coarse tree-sitter tier (Graphify
+    # absent), say so explicitly. Ranking is flatter (no cross-file call
+    # resolution) and the caller should know before trusting in-degree as
+    # a hub signal.
+    if src == "coarse":
+        out.append(
+            "_coarse (tree-sitter) — cross-file ranking limited. "
+            "Install Graphify for the full graph._"
+        )
     out.append("")
 
     used = sum(len(line) + 1 for line in out)
@@ -709,4 +809,38 @@ def format_primer_block(s: dict) -> str:
         f"_query via the graphify plugin if installed, or read "
         f"`{s['path']}` directly_"
     )
+    return "\n".join(out) + "\n"
+
+
+def format_coarse_primer_block() -> str:
+    """Primer block for the coarse tree-sitter tier (Graphify absent).
+
+    Used by the SessionStart primer when summary() is None — i.e. no
+    Graphify graph — but graph_source() == "coarse". Without this the
+    primer would silently omit any code-graph signal, leaving Claude
+    unaware that resolve_symbol() actually works.
+    """
+    if graph_source() != "coarse":
+        return ""
+    out = ["### Code graph (coarse, tree-sitter)"]
+    out.append(
+        "_Graphify not installed — running on a coarse tree-sitter "
+        "index. `code_map` / symbol resolution / `--strict-symbols` "
+        "work; cross-file ranking is limited. Install Graphify for "
+        "the full graph._"
+    )
+    try:
+        data, _src = _load_any_graph()
+        if data is not None:
+            nodes = data.get("nodes") or []
+            if isinstance(nodes, list) and nodes:
+                out.append(f"_{len(nodes)} definitions indexed_")
+    except Exception:
+        pass
+    try:
+        hubs = top_god_nodes(5)
+        if hubs:
+            out.append(f"_top symbols: {', '.join(hubs)}_")
+    except Exception:
+        pass
     return "\n".join(out) + "\n"

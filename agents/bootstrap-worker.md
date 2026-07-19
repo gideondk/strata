@@ -29,9 +29,10 @@ related sources. Now you see the whole set and consolidate.
   .planning/auth-rewrite/CONTEXT.md
   .planning/auth-rewrite/SPEC.md
   ```
-- `vault_dir` — absolute path to `<vault>/<repo>/` (used for `domain/`
-  writes you do directly via the Write tool; the Strata scripts
-  resolve their own destinations from project-dir + vault config).
+- `vault_dir` — absolute path to `<vault>/<repo>/` (informational — every
+  write goes through a `strata` command, which resolves its own
+  destination from project-dir + vault config; never write vault files
+  with the raw Write tool).
 - `plugin_root` — absolute path to the plugin install directory. Use it
   to pin `${CLAUDE_PLUGIN_ROOT}` (see below) in case it isn't already
   exported into your shell.
@@ -159,36 +160,37 @@ joined with commas) so provenance is preserved.
 
 #### domain
 
-Filename: `<vault_dir>/domain/<kebab-case-title>.md` (one concept per note;
-split rather than expand). Use the Write tool with this exact shape:
+One concept per note; split rather than expand. Call `strata domain` with
+the body on stdin — the script derives `domain/<kebab-case-title>.md` from
+`--topic`, generates the frontmatter, refreshes the index, and auto-commits
+when the vault is git-backed. Do NOT write domain notes with the raw Write
+tool; that bypasses all of the above. ALWAYS pass `--project-dir`, repeat
+`--source-file` per source, and pass `--code-ref` ONLY for symbols that
+resolved via code-map:
 
-```markdown
----
-title: <Human-readable title>
-status: stable
-source_file: <file_path>
-created: <today YYYY-MM-DD>
-code_refs: [<Symbol1>, <Symbol2>]   # ONLY symbols that resolved via code-map
----
-
+```bash
+cat <<'EOF' | "${CLAUDE_PLUGIN_ROOT}/bin/strata" domain \
+    --topic "<Human-readable title>" \
+    --project-dir "<absolute-path-to-project-root>" \
+    --source-file ".planning/auth-rewrite/TOKENS.md" \
+    --code-ref "Symbol1" --code-ref "Symbol2"
 # <Title>
 
 <2-6 paragraphs of definition / invariants / conventions. Use
 Obsidian-style [[wikilinks]] for related concepts you mention in passing —
 unresolved links are fine, the parent's reconciliation pass will fix them.>
+EOF
 ```
 
-`code_refs` is the list of code-map-verified symbols this concept
-Touches. **List them by name only** — do not embed the code-map
-Output. When something later needs current structure, it calls
-`code_map(focus=code_refs)` fresh from the graph; that way the note
-ages gracefully even as the code moves.
+`--code-ref` symbols land as `code_refs:` frontmatter. **Names only** — do
+not embed the code-map output. When something later needs current
+structure, it calls `code_map(focus=code_refs)` fresh from the graph; that
+way the note ages gracefully even as the code moves.
 
-After Write, refresh the index so the note is searchable:
-
-```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/strata" reindex
-```
+If the script refuses because a note for the concept already exists, the
+group's content overlaps an earlier group — re-run with `--overwrite` only
+if your content genuinely subsumes the existing note; otherwise skip and
+report the collision in your summary line.
 
 #### decide
 

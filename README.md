@@ -10,7 +10,7 @@
   <a href="https://github.com/gideondk/strata/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/gideondk/strata/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/gideondk/strata/blob/main/LICENSE"><img alt="License: MPL-2.0" src="https://img.shields.io/badge/license-MPL--2.0-blue"></a>
   <img alt="Python ≥ 3.10" src="https://img.shields.io/badge/python-3.10%2B-blue">
-  <img alt="No network" src="https://img.shields.io/badge/network-zero%20calls-success">
+  <img alt="No ambient network" src="https://img.shields.io/badge/network-zero%20ambient%20calls-success">
 </p>
 
 <p align="center">
@@ -64,9 +64,11 @@ It proves the mechanism on a hand-built, leakage-checked set of 19 cases. What i
 
 The vault lives on your disk. Default location is `~/StrataVault`. Inside, one subfolder per repo, namespaced by your git remote. Inside that, one subfolder per scope. Plain markdown with YAML frontmatter.
 
-The search index is a local SQLite FTS5 database plus an on-device fastembed model for semantic recall. Nothing in the runtime path touches the network, there's no telemetry, and you can grep the source to check.
+The search index is a local SQLite FTS5 database plus an on-device fastembed model for semantic recall. Nothing that runs on its own touches the network — no hook, no MCP call, no write. There's no telemetry, and you can grep the source to check. The single exception is `/strata:sync`, which you type yourself to push or pull a git-backed vault.
 
 Sync your vault however you already sync things: Obsidian Sync, Syncthing, iCloud, Dropbox, a private git repo. Strata doesn't care. The format is text; everything else is your choice.
+
+For teams there's a first-class git mode: run `strata init --git` once and set `vault_sync: git`, and every confirmed note is committed to the vault's own repo with a readable message (`strata: decide "use per-tenant queues"`). Commits stay local until you run `/strata:sync`, which pulls with rebase, lints outgoing notes for secrets, and pushes. History, blame, and review on your team's memory — without Strata ever reaching the network on its own.
 
 ## Install
 

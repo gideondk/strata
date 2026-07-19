@@ -42,7 +42,8 @@ These never auto-invoke. The audit trail must reflect the user's explicit intent
 
 | Command | Use |
 |---|---|
-| `/strata:init` | One-time vault setup for a repo |
+| `/strata:init` | One-time vault setup for a repo (`--git` makes the vault a git repo) |
+| `/strata:sync` | Pull + push a git-backed vault — the only Strata command that touches the network |
 | `/strata:bootstrap` | One-time migration of existing planning docs ([bootstrap guide](../bootstrap/)) |
 | `/strata:graphify` | Build / refresh the code graph |
 

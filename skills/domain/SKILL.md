@@ -26,19 +26,39 @@ User runs `/strata:domain <concept-name>`. You:
    If one exists, UPDATE it instead of forking a second definition; if two
    notes would conflict, reconcile through `/strata:correct`. Only create a
    new note when recall shows nothing close.
-2. If new, write the body using `templates/domain.md` as the shape.
-3. Save it directly to `<vault>/<repo>/domain/<slug>.md` via the standard
-   Write tool. Use the absolute path printed by `/strata:init` or read it
-   from `strata.memory_status` via MCP.
+2. Compose the body using `templates/domain.md` as the shape (Definition,
+   Invariants, Where it appears — skip the frontmatter block; the script
+   generates it).
+3. Save through the strata command, body on stdin:
 
-After saving, regenerate the index so the MCP search picks it up:
+   ```bash
+   strata domain --topic "<Concept>" <<'EOF'
+   # <Concept>
 
-```bash
-strata reindex
-```
+   ## Definition
+   ...
+   EOF
+   ```
+
+   To update the existing note recall found, add `--overwrite` (the original
+   `created` date is preserved, `updated` is stamped). Without the flag an
+   existing note is refused, so you can't clobber one by accident.
+
+The script writes `domain/<slug>.md`, refreshes the index, and auto-commits
+when the vault is git-backed — no separate `strata reindex` step. Don't write
+domain notes with the raw Write tool; that bypasses the index, the lint
+pre-step, and git-mode auto-commit.
 
 ## Cross-repo (shared) domain notes
 
 For vocabulary that applies across multiple repos (e.g. a company-wide
-Convention), put the note at `<vault>/_shared/domain/<slug>.md`. The MCP
-Search includes shared notes by default.
+convention), target the `_shared` namespace by overriding the repo name:
+
+```bash
+STRATA_REPO_NAME=_shared strata domain --topic "<Concept>" <<'EOF'
+...
+EOF
+```
+
+The note lands at `<vault>/_shared/domain/<slug>.md`; the MCP search
+includes shared notes by default.

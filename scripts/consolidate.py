@@ -21,7 +21,14 @@ from typing import Any
 import frontmatter
 
 import lib_loader  # noqa: F401
-from lib import lessons_dir, memory_dir, safe_slug, today, write_text
+from lib import (
+    lessons_dir,
+    memory_dir,
+    safe_slug,
+    today,
+    vault_git_autocommit,
+    write_text,
+)
 
 PROMOTE_KINDS = {"handoff", "decision-draft", "review"}
 
@@ -116,6 +123,11 @@ def main() -> int:
         post.metadata["consolidated_at"] = today()
         write_text(tgt, frontmatter.dumps(post) + "\n")
         src.unlink()
+        # One commit per promotion carrying both the new lesson and the
+        # source deletion — same move-shape as forget. Committing before the
+        # unlink would strand the deletion as permanently-dirty state.
+        vault_git_autocommit([src, tgt],
+                             f"strata: consolidate → lessons/{tgt.name}")
 
     import importlib.util
     import os

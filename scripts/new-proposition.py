@@ -25,6 +25,7 @@ from lib import (
     safe_resolve,
     safe_slug,
     today,
+    vault_git_autocommit,
     write_text,
 )
 
@@ -137,6 +138,8 @@ def main() -> int:
             post.metadata["status"] = cur  # always present, even if note had none
             post.metadata["updated"] = today()
             write_text(path, frontmatter.dumps(post) + "\n")
+            vault_git_autocommit(
+                [path], f"strata: propose (position) {args.update}")
             print(f"[strata] position ({args.stance}) added to {args.update} "
                   f"→ status={post.metadata['status']}")
             _refresh_index()
@@ -156,6 +159,7 @@ def main() -> int:
         if body:
             post.content = body
         write_text(path, frontmatter.dumps(post) + "\n")
+        vault_git_autocommit([path], f"strata: propose (update) {args.update}")
         print(f"[strata] proposition updated: {args.update} "
               f"→ status={post.metadata['status']}")
         _refresh_index()
@@ -196,6 +200,7 @@ def main() -> int:
         fm_meta["branch"] = ob
     post = frontmatter.Post(content=body.lstrip(), **fm_meta)
     write_text(path, frontmatter.dumps(post) + "\n")
+    vault_git_autocommit([path], f'strata: propose "{args.title}"')
     print(f"[strata] proposition created: {path.relative_to(mem)}")
     _refresh_index()
     return 0

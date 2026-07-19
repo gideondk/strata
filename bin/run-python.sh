@@ -40,29 +40,58 @@ _promote_option() {
 }
 _promote_option STRATA_VAULT_PATH CLAUDE_PLUGIN_OPTION_VAULT_PATH
 _promote_option STRATA_REPO_NAME  CLAUDE_PLUGIN_OPTION_REPO_NAME
+_promote_option STRATA_VAULT_SYNC CLAUDE_PLUGIN_OPTION_VAULT_SYNC
+_promote_option STRATA_GIT_REMOTE CLAUDE_PLUGIN_OPTION_GIT_REMOTE
 
-# Last-resort: read settings.json. Only do this if STRATA_VAULT_PATH
-# still isn't set after the above. Cheap (one small JSON file).
+# Last-resort: read settings.json — but ONLY when STRATA_VAULT_PATH is still
+# unset after the above. That's the rare case (env or auto-export normally
+# covers it), which matters because hooks route every tool call through this
+# wrapper: gating on the always-empty optional vars (git_remote defaults to
+# "") would spawn python3 on every single invocation. The other Strata
+# options ride along in the same one parse.
 if [[ -z "${STRATA_VAULT_PATH:-}" ]] && command -v python3 >/dev/null 2>&1; then
   for settings in "$HOME/.claude/settings.json" "$HOME/.claude/settings.local.json"; do
     [[ -f "$settings" ]] || continue
-    val="$(python3 - "$settings" <<'PYEOF' 2>/dev/null || true
+    # One `KEY=value` line per option. Values have newlines/CRs stripped in
+    # python so a malformed settings value can never span lines, and the
+    # shell assigns them verbatim — no eval, nothing re-parsed by bash.
+    lines="$(python3 - "$settings" <<'PYEOF' 2>/dev/null || true
 import json, sys
+FIELDS = {
+    "vault_path": "STRATA_VAULT_PATH",
+    "repo_name": "STRATA_REPO_NAME",
+    "vault_sync": "STRATA_VAULT_SYNC",
+    "git_remote": "STRATA_GIT_REMOTE",
+}
 try:
     with open(sys.argv[1]) as f:
         s = json.load(f)
     for key in ("strata@strata", "strata@local", "strata"):
         opts = (s.get("pluginConfigs", {}).get(key) or {}).get("options") or {}
-        v = opts.get("vault_path") or ""
-        if v:
-            print(v)
-            break
+        if not opts:
+            continue
+        for field, var in FIELDS.items():
+            v = opts.get(field)
+            if v:
+                clean = str(v).replace("\n", " ").replace("\r", " ").strip()
+                print(f"{var}={clean}")
+        break
 except Exception:
     pass
 PYEOF
 )"
-    if [[ -n "$val" ]]; then
-      export STRATA_VAULT_PATH="$val"
+    if [[ -n "$lines" ]]; then
+      while IFS= read -r line; do
+        [[ "$line" != *=* ]] && continue
+        var="${line%%=*}"
+        val="${line#*=}"
+        case "$var" in
+          STRATA_VAULT_PATH|STRATA_REPO_NAME|STRATA_VAULT_SYNC|STRATA_GIT_REMOTE)
+            # Only fill vars still empty — env / auto-export always win.
+            [[ -z "${!var:-}" ]] && export "$var=$val"
+            ;;
+        esac
+      done <<< "$lines"
       break
     fi
   done

@@ -13,6 +13,7 @@ from lib import (
     origin_branch,
     safe_slug,
     today,
+    vault_git_autocommit,
     write_text,
 )
 
@@ -53,6 +54,7 @@ def main() -> int:
     fm.append("---\n\n")
 
     write_text(path, "\n".join(fm) + body + "\n")
+    vault_git_autocommit([path], f'strata: procedure "{args.title}"')
     print(f"[strata] procedure created: {path}")
 
     import importlib.util

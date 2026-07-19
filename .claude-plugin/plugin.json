@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "strata",
   "displayName": "Strata",
-  "version": "0.12.1",
+  "version": "0.13.0",
   "description": "Typed, local-first memory for Claude Code — decisions, domain rules, and runbooks Claude reads on its own. Human-confirmed writes, read-only MCP, benchmarked supersession-aware recall. Branch/PR-aware and team-shareable.",
   "author": {
     "name": "Strata Contributors"
@@ -37,6 +37,18 @@
       "title": "Lint presets",
       "description": "Comma-separated default presets for `/strata:lint`. Bundled: secrets, pii, phi-uk, phi-us. Custom presets go in presets/<name>.json.",
       "default": "secrets"
+    },
+    "vault_sync": {
+      "type": "string",
+      "title": "Vault sync mode",
+      "description": "How the vault is version-controlled. 'manual' (default): Strata writes plain files and you sync however you like (Obsidian Sync, Syncthing, iCloud, your own commits). 'git': the vault is its own git repo and each confirmed write is committed locally — pull/push still only happens when you run `/strata:sync`, never automatically. Run `/strata:init --git` once to set the repo up.",
+      "default": "manual"
+    },
+    "git_remote": {
+      "type": "string",
+      "title": "Vault git remote (optional)",
+      "description": "Only used when vault_sync is 'git'. Remote that `/strata:sync` pulls from and pushes to. Leave blank to use the vault repo's configured upstream (origin / the current branch's tracking branch).",
+      "default": ""
     }
   }
 }

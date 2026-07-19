@@ -7,11 +7,28 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
+# The coarse-tier tests need the optional tree-sitter dep. Skip them
+# cleanly when it's absent — same convention as test_code_index.py.
+try:
+    import tree_sitter_language_pack  # noqa: F401
+    _TS_AVAILABLE = True
+except ImportError:
+    _TS_AVAILABLE = False
+
 
 def _write_graph(repo, payload: dict):
     out = repo / "graphify-out"
     out.mkdir(parents=True, exist_ok=True)
     (out / "graph.json").write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _write_py_def(repo, rel: str, name: str) -> None:
+    """Drop a one-class .py file so the coarse index has something to find."""
+    p = repo / rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(f"class {name}:\n    pass\n", encoding="utf-8")
 
 
 def _sample_graph() -> dict:
@@ -350,3 +367,76 @@ def test_graph_age_relative_to_head_reports_age(env):
     assert "graph_age_days" in age
     assert "commits_since" in age
     assert "stale" in age
+
+
+# ---- Coarse fallback tier (tree-sitter) ----------------------------------
+#
+# When Graphify is absent, code_graph should serve a coarse index built
+# from tree-sitter so code_map / resolve_symbol / --strict-symbols still
+# work. graph_path() stays Graphify-only (preserves its contract); the
+# new graph_source() reports which tier is active.
+
+
+@pytest.mark.skipif(not _TS_AVAILABLE,
+                    reason="tree-sitter-language-pack not installed")
+def test_graph_source_none_when_neither(env):
+    """No graph.json AND no parseable source → graph_source() is None."""
+    import code_graph
+    assert code_graph.graph_source() is None
+
+
+@pytest.mark.skipif(not _TS_AVAILABLE,
+                    reason="tree-sitter-language-pack not installed")
+def test_resolve_symbol_uses_coarse_when_graphify_absent(env):
+    """A .py def in the repo, no graph.json → resolve_symbol finds it and
+    graph_source() reports the coarse tier."""
+    import code_graph
+    _write_py_def(env["repo"], "svc/foo.py", "Widget")
+    hits = code_graph.resolve_symbol("Widget")
+    assert hits, "coarse index should resolve the def"
+    assert code_graph.graph_source() == "coarse"
+
+
+@pytest.mark.skipif(not _TS_AVAILABLE,
+                    reason="tree-sitter-language-pack not installed")
+def test_project_coarse_provenance_line(env):
+    """Serving from the coarse tier shows a 'coarse (tree-sitter)' note so
+    the caller knows ranking is flatter than a full graph."""
+    import code_graph
+    _write_py_def(env["repo"], "svc/foo.py", "Widget")
+    out = code_graph.project(budget=500)
+    assert "coarse" in out.lower()
+    assert "tree-sitter" in out.lower()
+
+
+@pytest.mark.skipif(not _TS_AVAILABLE,
+                    reason="tree-sitter-language-pack not installed")
+def test_graphify_preferred_over_coarse(env):
+    """Both tiers present → graphify wins. graph_source() == 'graphify'
+    and the projection carries no coarse note."""
+    import code_graph
+    _write_py_def(env["repo"], "svc/foo.py", "Widget")
+    _write_graph(env["repo"], {
+        "nodes": [{"id": "g_node", "label": "GraphifyNode",
+                   "file_type": "code", "source_file": "g.cs",
+                   "source_location": "L1"}],
+        "links": [],
+    })
+    assert code_graph.graph_source() == "graphify"
+    out = code_graph.project(budget=500)
+    assert "GraphifyNode" in out
+    # No coarse note when serving the real graph.
+    assert "coarse (tree-sitter)" not in out.lower()
+
+
+@pytest.mark.skipif(not _TS_AVAILABLE,
+                    reason="tree-sitter-language-pack not installed")
+def test_graph_path_still_none_without_graphify(env):
+    """graph_path() contract is preserved — it's Graphify-only, even when
+    the coarse tier is active. Consumers that gated on graph_path() being
+    None now gate on graph_source() instead."""
+    import code_graph
+    _write_py_def(env["repo"], "svc/foo.py", "Widget")
+    assert code_graph.graph_path() is None
+    # …but symbol resolution still works via the coarse tier.
+    assert code_graph.resolve_symbol("Widget")

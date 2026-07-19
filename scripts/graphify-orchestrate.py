@@ -68,12 +68,8 @@ def main() -> int:
             pass
         return 0
 
-    if shutil.which("graphify") is None:
-        print("[strata] graphify not installed.",
-              file=sys.stderr)
-        print("[strata] install: pip install graphifyy && graphify install",
-              file=sys.stderr)
-        return 2
+    # NOTE: no early "graphify not installed" exit here — the tree-sitter
+    # coarse fallback below handles that case after the repo checks.
 
     if not is_git_repo():
         print("[strata] not in a git repo", file=sys.stderr)
@@ -88,6 +84,30 @@ def main() -> int:
     # — their help text literally says "(no LLM needed)". The bare
     # `graphify .` form now always requires an LLM API key. We use update
     # by default and only opt into the full LLM path when --deep is set.
+    #
+    # If the `graphify` binary isn't installed, fall back to the coarse
+    # tree-sitter index (code_index.build). That keeps `/strata:graphify`
+    # useful without Graphify — code_map / resolve_symbol still work, just
+    # without cross-file / complexity signal. --deep and --obsidian are
+    # Graphify-only and silently ignored on the fallback path.
+    if shutil.which("graphify") is None:
+        try:
+            import code_index
+        except ImportError:
+            info("graphify not installed and tree-sitter fallback "
+                 "unavailable — install one of them for code-graph features")
+            return 2
+        if not code_index.available():
+            info("graphify not installed and tree-sitter-language-"
+                 "pack not available — install one for code-graph features")
+            return 2
+        info("graphify not installed — building coarse tree-sitter "
+             "index (defs + within-file edges only; no cross-file/complexity)")
+        payload = code_index.build(force=args.rebuild)
+        n = len(payload["nodes"]) if payload else 0
+        info(f"coarse index built: {n} definitions")
+        return 0
+
     if args.deep:
         cmd: list[str] = ["graphify", "."]
         cmd.extend(["--mode", "deep"])

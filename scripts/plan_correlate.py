@@ -86,7 +86,7 @@ def _path_exists_now(pd: Path, path: str) -> bool:
 def _resolve_symbol_safely(sym: str) -> bool:
     try:
         import code_graph
-        if code_graph.graph_path() is None:
+        if code_graph.graph_source() is None:
             return False
         if code_graph.resolve_symbol(sym):
             return True

@@ -18,6 +18,7 @@ from lib import (
     memory_dir,
     safe_resolve,
     stamp_minute,
+    vault_git_autocommit,
 )
 
 
@@ -95,6 +96,9 @@ def main() -> int:
 
     print(f"[strata] forgotten — moved to {dest.relative_to(mem)}")
     print(f"[strata] audit appended to {audit_log.relative_to(mem)}")
+
+    # Commit the move (src deletion + dest + audit log) as one local commit.
+    vault_git_autocommit([src, dest, audit_log], f"strata: forget {args.path}")
 
     # Refresh the index so search stops returning the moved file
     try:

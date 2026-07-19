@@ -1,17 +1,27 @@
 ---
 title: Code graph
-description: "Graphify integration. The vault becomes code-aware: notes verify symbols, recall projects compressed structure, drift detection flags stale claims."
+description: "Code-aware vault: notes verify symbols, recall projects compressed structure, drift detection flags stale claims. Works out of the box via tree-sitter; deeper with Graphify."
 ---
 
-[Graphify](https://graphifylabs.ai) builds an AST graph of your repo.
-Install it alongside Strata and the vault becomes code-aware. Notes
-verify their symbol references. Recall returns ranked structure
-projections. Claude answers *"what does this aggregate emit"* from a
-500-token compressed view, not by grepping 200 files.
+Strata's code-graph features work out of the box, then get deeper with
+[Graphify](https://graphifylabs.ai) installed. Two tiers:
+
+- **Coarse (tree-sitter)** — always available. Definitions (functions,
+  classes, methods, structs, enums, interfaces) plus best-effort
+  within-file call edges. Enough for `code_map`, symbol resolution, and
+  `--strict-symbols` with zero setup.
+- **Graphify (deep)** — cross-file and cross-service call resolution,
+  complexity properties, LSP-resolved calls with confidence. Install it
+  for the full projection quality.
+
+Either way, the vault becomes code-aware: notes verify their symbol
+references, recall returns ranked structure projections, and Claude
+answers *"what does this aggregate emit"* from a 500-token compressed
+view instead of grepping 200 files.
 
 This is where the token economy pays off, not just documentation.
 
-## Install Graphify
+## Install Graphify (optional, deeper tier)
 
 ```bash
 brew install graphifylabs/tap/graphify
@@ -19,6 +29,8 @@ brew install graphifylabs/tap/graphify
 ```
 
 Strata doesn't depend on Graphify's Python. We parse the JSON it emits.
+Without it, the coarse tree-sitter tier handles everything below — just
+with flatter ranking (see [Coarse fallback](#coarse-fallback-tree-sitter)).
 
 ## Build the graph
 
@@ -152,6 +164,46 @@ code_map / symbol resolution / freshness scores all read this graph.
 Appears in the SessionStart primer before the regular stats. The
 Stop hook also appends the staleness signal when relevant. Rebuild
 is one command. Typically takes seconds.
+
+## Coarse fallback (tree-sitter)
+
+When Graphify isn't installed, Strata builds a coarse index from
+[tree-sitter-language-pack](https://pypi.org/project/tree-sitter-language-pack/).
+This is the default state on a fresh install — no extra setup required
+for the features above to work.
+
+**What you get:**
+
+- Definitions across Python, C#, TypeScript/TSX, JavaScript, Go, Rust,
+  Java, Kotlin, Ruby, Swift.
+- Best-effort *within-file* call edges (a call resolves to an edge only
+  when the callee is defined in the same file).
+- `code_map` projection, symbol resolution, and `--strict-symbols`
+  enforcement — all functional.
+- Incremental rebuilds via per-file sha256, cached under
+  `plugin_data_dir()/code_index.json`.
+
+**What you don't get (Graphify's job):**
+
+- Cross-file and cross-service call resolution. `code_map` ranking is
+  flatter — in-degree reflects within-file calls only, not the true
+  reference graph. Hubs still surface, but the signal is weaker.
+- Complexity / hot-path properties (cyclomatic, loop depth).
+- LSP-resolved calls with confidence scores.
+
+The provenance is explicit. A coarse `code_map` leads with:
+
+```text
+_coarse (tree-sitter) — cross-file ranking limited.
+Install Graphify for the full graph._
+```
+
+…and the SessionStart primer shows `Code graph (coarse, tree-sitter)`
+instead of `Code graph (Graphify)` when serving from the fallback.
+
+Grammars download on first use for each language (one-time, cached in
+`~/.cache`). If the pack isn't installed at all, `doctor` warns and the
+features need Graphify — same as before the fallback existed.
 
 ---
 

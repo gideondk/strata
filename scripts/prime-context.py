@@ -221,16 +221,37 @@ def build_primer() -> str:
         push(f"_(PR context skipped: {e})_")
         push("")
 
-    # Code graph (Graphify) — if `graphify-out/graph.json` exists at the
-    # project root. We don't depend on graphify; we just surface its output.
+    # Code graph — Graphify's `graphify-out/graph.json` at the project root
+    # when present (we don't depend on graphify; we just surface its output),
+    # else the coarse tree-sitter tier when that's all that's available.
     try:
         import code_graph as _cg
         cg = _cg.summary()
         if cg:
             push(_cg.format_primer_block(cg))
+        else:
+            coarse_block = _cg.format_coarse_primer_block()
+            if coarse_block:
+                push(coarse_block)
     except Exception as e:
         push(f"_(code graph skipped: {e})_")
         push("")
+
+    # Git-backed vault: one-line nudge when local commits haven't been
+    # shared. `rev-list @{u}..HEAD` is purely local — no fetch, no socket.
+    try:
+        from lib import _vault_git, vault_is_git_repo, vault_sync_mode
+        if vault_sync_mode() == "git" and vault_is_git_repo():
+            unpushed = _vault_git("rev-list", "--count", "@{u}..HEAD")
+            if unpushed and unpushed.returncode == 0 \
+                    and unpushed.stdout.strip().isdigit():
+                count = int(unpushed.stdout.strip())
+                if count > 0:
+                    push(f"_vault: {count} unpushed note commit(s) — run "
+                         "`/strata:sync` to share them._")
+                    push("")
+    except Exception:
+        pass  # never let the nudge break the primer
 
     push("_Use `/strata:find <query>` for full search, "
          "`/strata:save` to write a session note, "

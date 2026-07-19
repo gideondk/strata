@@ -51,9 +51,13 @@ def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     if mcp_dir not in sys.path:
         sys.path.insert(0, mcp_dir)
 
-    # Wipe any cached lib state from prior tests
+    # Wipe any cached lib state from prior tests. code_graph + code_index
+    # carry module-level caches (_GRAPH_CACHE, _ANY_GRAPH_CACHE,
+    # _SYMBOL_INDEX_CACHE, _PARSED_CACHE) keyed to per-test tmp paths;
+    # without the wipe, a coarse-tier build from one test leaks into the
+    # next and the tiered loader returns stale data.
     for mod in list(sys.modules):
-        if mod in ("lib", "db", "pr_context"):
+        if mod in ("lib", "db", "pr_context", "code_graph", "code_index"):
             del sys.modules[mod]
 
     return {"vault": vault, "repo": repo, "data": data}

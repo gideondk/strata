@@ -11,7 +11,14 @@ import time
 from pathlib import Path
 
 import lib_loader  # noqa: F401
-from lib import project_dir
+from lib import (
+    git_remote,
+    project_dir,
+    repo_name,
+    vault_is_git_repo,
+    vault_root,
+    vault_sync_mode,
+)
 
 STALE_DAYS_DEFAULT = 180
 
@@ -104,8 +111,27 @@ def main() -> int:
         f"_project: `{pd}`_",
         f"_stale threshold: {args.stale_days} days_",
         "",
-        "## Top-level files",
+        "## Strata settings (resolved)",
+        f"- vault: `{vault_root()}`",
+        f"- repo namespace: `{repo_name()}`",
+        f"- vault_sync: `{vault_sync_mode()}`",
     ]
+    if vault_sync_mode() == "git":
+        remote = git_remote()
+        lines.append(f"- git_remote: `{remote}`" if remote
+                     else "- git_remote: _(unset — sync uses the vault's "
+                          "own upstream)_")
+        if vault_is_git_repo():
+            lines.append("- vault git repo: present — writes auto-commit "
+                         "locally; `/strata:sync` pulls/pushes")
+        else:
+            lines.append("- vault git repo: 🔴 MISSING — vault_sync=git but "
+                         "the vault was never initialised. Auto-commits are "
+                         "silently skipped. Run `strata init --git`.")
+    lines.extend([
+        "",
+        "## Top-level files",
+    ])
     stale_total = 0
     stale_total += _check_file(pd, "CLAUDE.md", args.stale_days, lines)
     stale_total += _check_file(pd, ".claude/settings.json", args.stale_days,

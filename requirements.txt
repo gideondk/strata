@@ -13,3 +13,9 @@ pathspec>=0.12.0,<1.0.0
 # falls back to FTS5-only. Comment out to skip.
 fastembed>=0.4.0,<1.0.0
 numpy>=1.26.0,<3.0.0
+
+# Optional: coarse code-graph fallback. When Graphify isn't installed,
+# tree-sitter-language-pack lets code_map / resolve_symbol / --strict-
+# symbols work off a def + within-file-call index built locally. Pre-
+# built wheels — no compiler needed. Grammars download on first use.
+tree-sitter-language-pack>=1.0.0,<2.0.0

@@ -34,11 +34,42 @@ def _install_graphify_stub(tmp_path, monkeypatch, exit_code: int = 0):
     monkeypatch.setenv("PATH", f"{stub_dir}:{os.environ['PATH']}")
 
 
-def test_orchestrate_missing_graphify_exits_2(env, monkeypatch):
+def _ts_available() -> bool:
+    try:
+        import tree_sitter_language_pack  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def _path_without_graphify() -> str:
+    """PATH with any directory containing a `graphify` binary removed —
+    keeps git + everything else reachable while forcing the no-Graphify path."""
+    keep = [d for d in os.environ["PATH"].split(os.pathsep)
+            if not (Path(d) / "graphify").exists()]
+    return os.pathsep.join(keep)
+
+
+def test_orchestrate_missing_graphify_falls_back_to_coarse(env, monkeypatch):
+    """No graphify binary → build the coarse tree-sitter index instead of a
+    hard failure (when the optional tree-sitter-language-pack is installed).
+    Without the pack the old contract holds: exit 2 with an install hint."""
+    monkeypatch.setenv("PATH", _path_without_graphify())
+    r = _run(env=os.environ.copy())
+    if _ts_available():
+        assert r.returncode == 0
+        assert "coarse" in r.stderr
+    else:
+        assert r.returncode == 2
+        assert "graphify not installed" in r.stderr
+
+
+def test_orchestrate_not_a_git_repo_exits_2(env, monkeypatch):
+    """No git on PATH at all → the repo check fires before any fallback."""
     monkeypatch.setenv("PATH", "/nonexistent")
     r = _run(env=os.environ.copy())
     assert r.returncode == 2
-    assert "graphify not installed" in r.stderr
+    assert "not in a git repo" in r.stderr
 
 
 def test_orchestrate_default_uses_update_subcommand(

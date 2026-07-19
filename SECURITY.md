@@ -14,8 +14,11 @@ assistant can have durable memory **without** becoming an unaudited write path:
   command (Guarantee #1). A prompt injection can't mutate a decision behind your
   back. This is verifiable: a CI test fails if any write tool is ever exposed
   over MCP.
-- **No network.** Nothing in the runtime path opens a socket; grep the source to
-  confirm (Guarantee #3). The vault stays on infrastructure you control.
+- **No ambient network.** Nothing that runs on its own — hooks, the MCP server,
+  recall, a write — opens a socket (Guarantee #3). The single exception is
+  `/strata:sync`, which you run by hand to push/pull a git-backed vault. It's the
+  only network path, and only you trigger it. The vault stays on infrastructure
+  you control.
 - **Provenance you can audit.** Every note carries author + timestamps in
   frontmatter; supersession and invalidation are explicit and bi-temporal; the
   durable audit record is the vault's git history, not a disposable log.
@@ -50,22 +53,31 @@ We assume:
    - Absolute paths (`/etc/passwd`)
    - Traversal (`../`, `..\\`)
    - Anything resolving outside the configured vault root
-3. **No network.** The plugin's own Python imports no networking modules —
-   it never opens a socket, serves HTTP, or makes a request. Verify (catches
-   both `import x` and `from x import …`, including `socketserver` /
-   `http.server`):
+3. **No ambient network.** Strata's own Python imports no networking modules —
+   no hook, the MCP server, recall, or a write ever opens a socket, serves HTTP,
+   or makes a request. Verify (catches both `import x` and `from x import …`,
+   including `socketserver` / `http.server`):
 
    ```
    grep -REn "^[[:space:]]*(import|from)[[:space:]]+(urllib|socket|socketserver|http|https|requests|httpx|aiohttp|ftplib|smtplib|telnetlib|ssl)([. ]|$)" scripts/ mcp/
    ```
 
-   is empty. (The dashboard is a static `index.html` opened via `file://` with a
+   is empty. The one deliberate exception is **`/strata:sync`**, which shells
+   `git pull` / `git push` to a git-backed vault's remote. It is the only network
+   operation in the plugin; it runs `git` as a subprocess (not a Python socket),
+   and it fires **only when you invoke it** — never from a hook, a timer, or the
+   MCP server. The injection-relevant property is unchanged: there is no ambient
+   path by which reading a poisoned tool output reaches the network. (The
+   dashboard is a static `index.html` opened via `file://` with a
    `connect-src 'none'` CSP — there is no server. The optional `fastembed`
    embedding dep is loaded strictly offline; it is not a networking module.)
-4. **Subprocesses are limited to read-only `git` and Strata's own bundled
-   scripts.** Git is invoked read-only (`config`, `rev-parse`,
-   `diff --cached --name-only`) — never `commit`, `push`, `checkout`. The MCP
-   server also runs Strata's vendored Python scripts (e.g. `recall.py`,
+4. **Subprocesses are limited to `git` and Strata's own bundled scripts.**
+   In the *project* repo, git is invoked read-only for context detection
+   (`config`, `rev-parse`, `diff --cached --name-only`) — never a mutation.
+   Against the *vault* repo, and only when `vault_sync=git`, Strata additionally
+   runs local `git add` / `git commit` after a confirmed write (no network), and
+   `git pull` / `git push` exclusively from the user-invoked `/strata:sync`. The
+   MCP server also runs Strata's vendored Python scripts (e.g. `recall.py`,
    `bootstrap-scan.py`) via the bundled interpreter (`sys.executable`); it never
    shells out to arbitrary or user-supplied commands.
 5. **No environment leakage.** Tool responses contain only memory content

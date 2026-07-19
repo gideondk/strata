@@ -13,9 +13,9 @@ Just the notes in your vault for the current project. When you ask Claude someth
 
 ## Does Strata send my code anywhere?
 
-No. Strata writes markdown to your disk, reads it locally with SQLite full-text search and an on-device embedding model. It has no network code. No telemetry, no analytics, no cloud sync.
+No. Strata writes markdown to your disk, reads it locally with SQLite full-text search and an on-device embedding model. It has no network code. No telemetry, no analytics, no background sync.
 
-If you want the vault to sync between your machines, you choose how: Obsidian Sync, Syncthing, iCloud, Dropbox, a git repo, Strata doesn't care.
+If you want the vault to sync between your machines, you choose how: Obsidian Sync, Syncthing, iCloud, Dropbox, a git repo, Strata doesn't care. The one command that does touch the network is `/strata:sync`, which pushes and pulls a git-backed vault — and only when you type it.
 
 ## Do I need to know Markdown?
 
