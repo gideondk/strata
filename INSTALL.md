@@ -321,3 +321,40 @@ up:
 ```bash
 strata generate-opencode-skills
 ```
+
+## Installing for Kimi Code and other agents (`~/.agents/skills`)
+
+Kimi Code, OpenCode, and Codex all scan a shared, tool-neutral skills
+directory — `~/.agents/skills/` at user level (Kimi Code additionally reads
+`~/.kimi-code/skills/` and `.agents/skills/` at project level). The generated
+`strata-<name>` layer is already in the common SKILL.md shape, so one
+installer covers every agent that follows the convention:
+
+```bash
+~/Development/bigbrain/bin/bootstrap-venv.sh   # venv + ~/.local/bin/strata
+strata agents-setup
+```
+
+`agents-setup` symlinks each generated skill from `opencode/skills/` into
+`~/.agents/skills/` — symlinks, not copies, so a later `git pull` refreshes
+every agent at once. It's idempotent, never overwrites a real directory it
+didn't create, and `strata agents-setup --uninstall` removes only its own
+links.
+
+The command also prints a snippet for Kimi Code's MCP config — deep-merge it
+into `~/.kimi-code/mcp.json` (or run `/mcp-config` in the Kimi TUI) to get
+the read/recall tools. Restart the agent afterwards; skills and MCP servers
+are both picked up at startup.
+
+### What works
+
+| Feature | Claude Code | Kimi Code / generic agents |
+|---|---|---|
+| MCP read tools (`recall`, `code_map`, …) | Yes | Yes (via `mcp.json`) |
+| Skills (save, decide, domain, …) | `/strata:save` | `/skill:strata-save` or auto-invoked |
+| `strata` CLI on PATH | Yes (via `${CLAUDE_PLUGIN_ROOT}`) | Yes (via `~/.local/bin/strata`) |
+| Hooks (SessionStart, Stop draft, …) | Yes | No — run `strata prime` manually |
+
+As with opencode/zcode, `vault_sync`/`git_remote` come from the environment
+(`STRATA_VAULT_SYNC`, `STRATA_GIT_REMOTE`) — there's no plugin userConfig
+outside Claude Code.

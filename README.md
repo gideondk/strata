@@ -21,7 +21,7 @@
 
 ---
 
-Strata gives your coding agent structured memory: the decisions you've made, the domain rules you follow, the runbooks you reach for. They're kept as plain markdown on your disk, each on its own retrieval path. The agent reads them on its own through the MCP layer, so you stop pasting context dumps and you stop hand-maintaining a giant prompt file. Works with Claude Code, opencode, and zcode — all reading the same vault.
+Strata gives your coding agent structured memory: the decisions you've made, the domain rules you follow, the runbooks you reach for. They're kept as plain markdown on your disk, each on its own retrieval path. The agent reads them on its own through the MCP layer, so you stop pasting context dumps and you stop hand-maintaining a giant prompt file. Works with Claude Code, opencode, zcode, and Kimi Code — all reading the same vault.
 
 The usual alternatives make recall worse. One big context file blows the window and answers in the wrong shape: you ask how to add a service and get a paragraph defining what a service is. A vector database returns whatever pattern-matches most recently, which is often a stale note that's since been corrected, handed back with full confidence. Strata writes only what you confirm and retires old notes explicitly, so what comes back is current.
 
@@ -82,7 +82,7 @@ In any Claude Code session:
 
 Requirements: Python 3.10 or newer on `PATH`. A `.venv/` is created inside the plugin directory on first run with its pinned runtime dependencies (`mcp`, `python-frontmatter`, `pathspec`; `fastembed` is optional and only adds semantic search). Nothing global, nothing system-wide.
 
-**Other agents:** Strata also works with [opencode](https://opencode.ai) and [zcode](https://z.ai) (Z.ai) — both read the same vault. Run `strata opencode-setup` or `strata zcode-setup --apply` to wire the MCP server + skills. See [`INSTALL.md`](./INSTALL.md) for the full matrix; the one gap is hooks (SessionStart priming, Stop save-draft), which neither exposes.
+**Other agents:** Strata also works with [opencode](https://opencode.ai), [zcode](https://z.ai) (Z.ai), and any agent that scans `~/.agents/skills` (Kimi Code, Codex) — all read the same vault. Run `strata opencode-setup`, `strata zcode-setup --apply`, or `strata agents-setup` to wire the MCP server + skills. See [`INSTALL.md`](./INSTALL.md) for the full matrix; the one gap is hooks (SessionStart priming, Stop save-draft), which none of them exposes.
 
 Full setup notes, team-config patterns, pre-push lint hook: [`INSTALL.md`](./INSTALL.md).
 

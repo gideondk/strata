@@ -145,6 +145,83 @@ Then restart zcode — it loads config once at startup.
 ZESCRIPT
     exit 0
     ;;
+  agents-setup)
+    # Generic agent install: symlink the generated strata-* skills into
+    # ~/.agents/skills/ — the cross-tool location Kimi Code (~/.agents/skills
+    # user tier), OpenCode, and Codex all scan on their own. Symlinks, not
+    # copies, so a `git pull` here refreshes every agent at once.
+    SKILLS_DIR="$ROOT/opencode/skills"
+    if [ ! -d "$SKILLS_DIR" ]; then
+      echo "strata: skills not found at $SKILLS_DIR" >&2
+      echo "         run 'strata generate-opencode-skills' first" >&2
+      exit 1
+    fi
+    TARGET_DIR="${STRATA_AGENTS_SKILLS_DIR:-$HOME/.agents/skills}"
+
+    if [ "${1:-}" = "--uninstall" ]; then
+      removed=0
+      for dest in "$TARGET_DIR"/strata-*; do
+        [ -L "$dest" ] || continue
+        case "$(readlink "$dest")" in
+          "$SKILLS_DIR"/*) rm "$dest"; echo "strata: removed $dest" >&2
+                           removed=$((removed + 1)) ;;
+        esac
+      done
+      [ "$removed" -eq 0 ] && echo "strata: no strata links in $TARGET_DIR" >&2
+      exit 0
+    fi
+
+    mkdir -p "$TARGET_DIR"
+    linked=0; present=0; conflicts=0
+    for src in "$SKILLS_DIR"/strata-*; do
+      [ -d "$src" ] || continue
+      dest="$TARGET_DIR/$(basename "$src")"
+      if [ -L "$dest" ]; then
+        if [ "$(readlink "$dest")" = "$src" ]; then
+          present=$((present + 1)); continue
+        fi
+        ln -sfn "$src" "$dest"  # stale/foreign symlink — safe to repoint
+        echo "strata: repointed $dest → $src" >&2
+        linked=$((linked + 1))
+      elif [ -e "$dest" ]; then
+        echo "strata: SKIP $dest — real directory, not our symlink; remove it by hand to link" >&2
+        conflicts=$((conflicts + 1))
+      else
+        ln -s "$src" "$dest"
+        echo "strata: linked $dest → $src" >&2
+        linked=$((linked + 1))
+      fi
+    done
+    echo "strata: $linked linked, $present already in place, $conflicts skipped — $TARGET_DIR" >&2
+
+    VAULT="${STRATA_VAULT_PATH:-$HOME/StrataVault}"
+    cat <<AGENTSCRIPT
+
+Skills are live for any agent that scans ~/.agents/skills (Kimi Code,
+OpenCode, Codex). Restart the agent to pick them up.
+
+Kimi Code users: to also get the read/recall MCP tools, deep-merge this
+into ~/.kimi-code/mcp.json (or run /mcp-config in the TUI):
+
+{
+  "mcpServers": {
+    "strata": {
+      "command": "$ROOT/bin/run-python.sh",
+      "args": ["$ROOT/mcp/server.py"],
+      "env": {
+        "STRATA_VAULT_PATH": "$VAULT"
+      }
+    }
+  }
+}
+
+Uninstall the skills with: strata agents-setup --uninstall
+AGENTSCRIPT
+    if [ "$conflicts" -gt 0 ]; then
+      exit 1
+    fi
+    exit 0
+    ;;
   generate-opencode-skills)
     exec "$ROOT/bin/run-python.sh" "$ROOT/scripts/generate-opencode-skills.py" "$@"
     ;;
@@ -202,7 +279,8 @@ Setup:
   link              install ~/.local/bin/strata symlink (enables bare `strata` on PATH)
   opencode-setup    print opencode.json config snippet for Strata MCP + skills
   zcode-setup       print zcode (~/.zcode/v2/config.json) snippet; --apply merges it in
-  generate-opencode-skills  build opencode/skills/ from skills/ (shared by opencode + zcode)
+  agents-setup      symlink skills into ~/.agents/skills (Kimi Code, Codex, …); --uninstall removes
+  generate-opencode-skills  build opencode/skills/ from skills/ (shared by opencode, zcode, agents)
 
 Writes (visible, permission-gated; no write tool is exposed over MCP):
   decide            record an ADR (scripts/new-decision.py)
